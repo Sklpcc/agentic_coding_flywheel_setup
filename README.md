@@ -113,13 +113,14 @@ ACFS provides a **reproducible, idempotent** setup that ensures every team membe
 
 ## Architecture & Design
 
-ACFS is a **multi-component system** designed for both human users and automated deployment:
+ACFS is built around a **single source of truth**: the manifest file. Everything else—the installer scripts, doctor checks, website content—derives from this central definition. This architecture ensures consistency and makes the system easy to extend.
 
 ```mermaid
 graph TD
     %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'lineColor': '#90a4ae'}}}%%
 
     classDef manifest fill:#e3f2fd,stroke:#90caf9,stroke-width:2px,color:#1565c0
+    classDef generator fill:#e0f7fa,stroke:#80deea,stroke-width:2px,color:#00695c
     classDef website fill:#fff8e1,stroke:#ffcc80,stroke-width:2px,color:#e65100
     classDef installer fill:#f3e5f5,stroke:#ce93d8,stroke-width:2px,color:#6a1b9a
     classDef config fill:#e8f5e9,stroke:#a5d6a7,stroke-width:2px,color:#2e7d32
@@ -128,10 +129,22 @@ graph TD
         MANIFEST["acfs.manifest.yaml<br/>Tool Definitions"]:::manifest
     end
 
+    subgraph generator [" Code Generation "]
+        PARSER["TypeScript Parser<br/>(Zod Validation)"]:::generator
+        GEN["generate.ts"]:::generator
+    end
+
+    subgraph outputs [" Generated Outputs "]
+        SCRIPTS["scripts/generated/<br/>11 Category Scripts"]:::installer
+        DOCTOR["doctor_checks.sh<br/>Verification Logic"]:::installer
+        MASTER["install_all.sh<br/>Master Installer"]:::installer
+    end
+
     subgraph components [" Components "]
         WEBSITE["apps/web/<br/>Next.js Wizard"]:::website
         INSTALLER["install.sh<br/>Bash Installer"]:::installer
         CONFIGS["acfs/<br/>Shell Configs"]:::config
+        SECURITY["checksums.yaml<br/>SHA256 Hashes"]:::config
     end
 
     subgraph target [" Target VPS "]
@@ -140,100 +153,199 @@ graph TD
         AGENTS["AI Agents"]
     end
 
+    MANIFEST --> PARSER
+    PARSER --> GEN
+    GEN --> SCRIPTS
+    GEN --> DOCTOR
+    GEN --> MASTER
     MANIFEST --> WEBSITE
-    MANIFEST --> INSTALLER
+    SCRIPTS --> INSTALLER
+    DOCTOR --> INSTALLER
+    SECURITY --> INSTALLER
     INSTALLER --> TOOLS
     INSTALLER --> SHELL
     INSTALLER --> AGENTS
     CONFIGS --> SHELL
 
-    linkStyle 0,1,2,3,4,5 stroke:#90a4ae,stroke-width:2px
+    linkStyle 0,1,2,3,4,5,6,7,8,9,10,11,12,13 stroke:#90a4ae,stroke-width:2px
 ```
+
+### Why This Architecture?
+
+**Single Source of Truth**: The manifest file (`acfs.manifest.yaml`) defines every tool—its name, description, install commands, and verification logic. When you add a tool to the manifest, the generator automatically creates the installer function, doctor check, and updates the master script. No manual synchronization required.
+
+**TypeScript + Zod Validation**: The manifest parser uses Zod schemas to validate the YAML at parse time. Typos, missing fields, and structural errors are caught immediately during generation—not at runtime on a user's VPS when the installer fails halfway through.
+
+**Generated Scripts**: Rather than hand-maintaining 11 category installer scripts and keeping them synchronized, the generator produces them from the manifest. This means:
+- No drift between the manifest and actual install logic
+- Consistent error handling and logging across all modules
+- Changes propagate automatically
 
 ### Components
 
 | Component | Path | Technology | Purpose |
 |-----------|------|------------|---------|
 | **Manifest** | `acfs.manifest.yaml` | YAML | Single source of truth for all tools |
+| **Generator** | `packages/manifest/src/generate.ts` | TypeScript/Bun | Produces installer scripts from manifest |
 | **Website** | `apps/web/` | Next.js 16 + Tailwind 4 | Step-by-step wizard for beginners |
 | **Installer** | `install.sh` | Bash | One-liner bootstrap script |
 | **Lib Scripts** | `scripts/lib/` | Bash | Modular installer functions |
+| **Generated Scripts** | `scripts/generated/` | Bash | Auto-generated category installers |
 | **Configs** | `acfs/` | Shell/Tmux configs | Files deployed to `~/.acfs/` |
-| **Onboarding** | `acfs/onboard/lessons/` | Markdown | Interactive tutorial content |
+| **Onboarding** | `acfs/onboard/` | Bash + Markdown | Interactive tutorial system |
+| **Checksums** | `checksums.yaml` | YAML | SHA256 hashes for upstream installers |
 
 ---
 
-## The Wizard Website
+## The Manifest System
 
-The wizard guides beginners through a **10-step journey** from "I have a laptop" to "AI agents are coding for me":
+`acfs.manifest.yaml` is the **single source of truth** for all tools installed by ACFS. It defines what gets installed, how to install it, and how to verify the installation worked.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ACFS Wizard                                                   [Step 3/10]  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌────────────────────────────────────────────────────────────────────────┐ │
-│  │  STEP 3: Generate SSH Key                                              │ │
-│  │  ──────────────────────────────────────────────────────────────────    │ │
-│  │                                                                        │ │
-│  │  Run this command in your terminal:                                    │ │
-│  │                                                                        │ │
-│  │  ┌─────────────────────────────────────────────────────────────────┐  │ │
-│  │  │ ssh-keygen -t ed25519 -C "your-email@example.com"         [📋] │  │ │
-│  │  └─────────────────────────────────────────────────────────────────┘  │ │
-│  │                                                                        │ │
-│  │  ☐ I ran this command                                                  │ │
-│  │                                                                        │ │
-│  │  [← Previous]                                        [Next Step →]     │ │
-│  └────────────────────────────────────────────────────────────────────────┘ │
-│                                                                             │
-│  Progress: ●●●○○○○○○○                                                      │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+### Manifest Structure
 
-### Wizard Steps
+```yaml
+version: "1.0"
+meta:
+  name: "ACFS"
+  description: "Agentic Coding Flywheel Setup"
+  version: "0.1.0"
 
-| Step | Title | What Happens |
-|------|-------|--------------|
-| 1 | **Choose Your OS** | Select Mac or Windows (auto-detected) |
-| 2 | **Install Terminal** | Windows Terminal or Homebrew instructions |
-| 3 | **Generate SSH Key** | Create ed25519 key for VPS access |
-| 4 | **Rent a VPS** | Links to OVH, Contabo, Hetzner with pricing |
-| 5 | **Create VPS Instance** | Checklist for VPS setup with SSH key |
-| 6 | **SSH Connect** | First connection with troubleshooting tips |
-| 7 | **Run Installer** | The `curl \| bash` one-liner |
-| 8 | **Reconnect as Ubuntu** | Post-install reconnection |
-| 9 | **Status Check** | Run `acfs doctor` to verify |
-| 10 | **Launch Onboarding** | Start the interactive tutorial |
+modules:
+  base.system:
+    description: "Base packages + sane defaults"
+    category: base
+    install:
+      - sudo apt-get update -y
+      - sudo apt-get install -y curl git ca-certificates unzip tar xz-utils jq build-essential
+    verify:
+      - curl --version
+      - git --version
+      - jq --version
 
-### Key Features
-
-- **OS Detection:** Auto-detects Mac vs Windows for tailored instructions
-- **Copy-to-Clipboard:** One-click copy for all commands
-- **Progress Tracking:** localStorage persistence across browser sessions
-- **Confirmation Checkboxes:** "I ran this command" acknowledgments
-- **Troubleshooting:** Expandable help for common issues
-
-### Technology Stack
-
-```
-Next.js 16 (App Router)
-├── React 19
-├── Tailwind CSS 4 (OKLCH colors)
-├── shadcn/ui components
-├── Radix UI primitives
-└── Lucide icons
+  agents.claude:
+    description: "Claude Code"
+    category: agents
+    install:
+      - "Install claude code via official method"
+    verify:
+      - claude --version || claude --help
 ```
 
-**No backend required.** All state is stored in:
-- URL query parameters
-- localStorage (`acfs-user-os`, `acfs-vps-ip`, `acfs-wizard-completed-steps`)
+Each module specifies:
+- **description**: Human-readable name
+- **category**: Grouping for installer organization (base, shell, cli, lang, tools, db, cloud, agents, stack, acfs)
+- **install**: Commands to run (or descriptions that become TODOs)
+- **verify**: Commands that must succeed to confirm installation
+
+### The Generator Pipeline
+
+The TypeScript generator (`packages/manifest/src/generate.ts`) reads the manifest and produces:
+
+1. **Category Scripts** (`scripts/generated/install_base.sh`, `install_agents.sh`, etc.)
+   - One script per category with individual install functions
+   - Consistent logging and error handling
+   - Verification checks after each module
+
+2. **Doctor Checks** (`scripts/generated/doctor_checks.sh`)
+   - All verify commands extracted into a runnable health check
+   - Tab-delimited format (to safely handle `||` in shell commands)
+   - Reports pass/fail/skip for each module
+
+3. **Master Installer** (`scripts/generated/install_all.sh`)
+   - Sources all category scripts
+   - Runs them in dependency order
+   - Single entry point for full installation
+
+To regenerate after manifest changes:
+
+```bash
+cd packages/manifest
+bun run generate        # Generate scripts
+bun run generate:dry    # Preview without writing
+```
+
+### Why TypeScript for Code Generation?
+
+Shell can parse YAML with `yq`, but TypeScript + Zod offers:
+- **Type safety**: The parser knows the exact shape of a manifest
+- **Validation**: Zod catches malformed YAML with descriptive errors
+- **Transformation**: Complex logic (sorting by dependencies, escaping) is natural in TypeScript
+- **Consistency**: All generated code follows the same patterns
+
+The generator itself is ~400 lines of TypeScript. The generated output is ~1000 lines of Bash across 13 files. The trade-off is clearly in favor of maintaining the generator.
+
+---
+
+## Security Verification
+
+ACFS downloads and executes installer scripts from the internet. This is inherently risky—a compromised upstream could inject malicious code. The security verification system mitigates this risk.
+
+### How It Works
+
+The `checksums.yaml` file contains SHA256 hashes for all upstream installer scripts:
+
+```yaml
+# checksums.yaml
+installers:
+  bun:
+    url: "https://bun.sh/install"
+    sha256: "a1b2c3d4..."
+
+  rust:
+    url: "https://sh.rustup.rs"
+    sha256: "e5f6a7b8..."
+```
+
+The security library (`scripts/lib/security.sh`) provides:
+
+1. **HTTPS Enforcement**: All installer URLs must use HTTPS. Non-HTTPS URLs fail immediately.
+
+2. **Checksum Verification**: Before executing a downloaded script, the system:
+   - Downloads the content to memory
+   - Calculates the SHA256 hash
+   - Compares against the stored hash
+   - Only executes if they match
+
+3. **Verification Modes**:
+   ```bash
+   ./scripts/lib/security.sh --print              # List all upstream URLs
+   ./scripts/lib/security.sh --verify             # Verify all against saved checksums
+   ./scripts/lib/security.sh --update-checksums   # Generate new checksums.yaml
+   ./scripts/lib/security.sh --checksum URL       # Calculate SHA256 of any URL
+   ```
+
+### When Checksums Fail
+
+A checksum mismatch can mean:
+1. **Normal update**: The upstream maintainer released a new version
+2. **Potential compromise**: Someone modified the script maliciously
+
+The verification report distinguishes these cases:
+- If multiple checksums fail simultaneously, investigate before updating
+- If a single checksum fails after a known release, update is likely safe
+
+To update after verifying a legitimate upstream change:
+```bash
+./scripts/lib/security.sh --update-checksums > checksums.yaml
+git diff checksums.yaml  # Review what changed
+git commit -m "chore: update upstream checksums"
+```
+
+### Why This Approach?
+
+The `curl | bash` pattern is controversial but practical. ACFS makes it safer by:
+- Verifying content before execution (not just transport via HTTPS)
+- Making checksums auditable in version control
+- Providing tools to detect and investigate changes
+- Failing closed (no execution on mismatch)
+
+This is defense in depth—HTTPS protects transport, checksums protect content.
 
 ---
 
 ## The Installer
 
-The installer is the heart of ACFS—a **1,020-line Bash script** that transforms a fresh Ubuntu VPS into a fully-configured development environment.
+The installer is the heart of ACFS—a modular Bash script that transforms a fresh Ubuntu VPS into a fully-configured development environment.
 
 ### Usage
 
@@ -285,7 +397,7 @@ graph TD
 | **Idempotent** | Safe to re-run; skips already-installed tools |
 | **Checkpointed** | Phases resume on failure |
 | **Logged** | Colored output with progress indicators |
-| **Cached** | Caches version detection, source lists |
+| **Modular** | Each category is a separate sourceable script |
 
 ### Console Output
 
@@ -298,6 +410,102 @@ The installer uses semantic colors for progress visibility:
 ✖ Failed to install package               # Red: errors
 ✔ Shell setup complete                    # Green: success
 ```
+
+---
+
+## The Update Command
+
+After installation, keeping tools current is handled by `acfs update`. It provides a unified interface for updating all installed components.
+
+### Usage
+
+```bash
+acfs update                  # Update apt, agents, and cloud CLIs
+acfs update --stack          # Include Dicklesworthstone stack tools
+acfs update --agents-only    # Only update coding agents
+acfs update --dry-run        # Preview changes without making them
+```
+
+### What Gets Updated
+
+| Category | Tools | Method |
+|----------|-------|--------|
+| **System** | apt packages | `apt update && apt upgrade` |
+| **Runtime** | Bun | `bun upgrade` |
+| **Agents** | Claude, Codex, Gemini | `claude update`, `bun install -g` |
+| **Cloud** | Wrangler, Supabase, Vercel | `bun install -g @latest` |
+| **Rust** | rustc, cargo | `rustup update stable` |
+| **Python** | uv | `uv self update` |
+| **Stack** | ntm, slb, ubs, etc. | Re-run upstream installers |
+
+### Options
+
+```bash
+--apt-only       Only update system packages
+--agents-only    Only update coding agents
+--cloud-only     Only update cloud CLIs
+--stack          Include Dicklesworthstone stack (disabled by default)
+--no-apt         Skip apt updates
+--no-agents      Skip agent updates
+--no-cloud       Skip cloud CLI updates
+--force          Install missing tools
+--dry-run        Show what would be updated
+--verbose        Show command details
+```
+
+### Why Separate from the Installer?
+
+The installer transforms a fresh VPS. The update command maintains an existing installation. Separating them allows:
+- **Focused updates**: Update just agents without touching system packages
+- **Dry-run previews**: See what would change before committing
+- **Skip flags**: Temporarily exclude categories that are working fine
+- **Stack control**: The full stack reinstallation is opt-in (it's slow)
+
+---
+
+## Interactive Onboarding
+
+After installation, users can learn the ACFS workflow through an interactive tutorial system. The onboarding TUI guides users through 8 lessons covering Linux basics through full agentic workflows.
+
+### Running Onboarding
+
+```bash
+onboard                # Launch interactive menu
+onboard --list         # List lessons with completion status
+onboard 3              # Jump to lesson 3
+onboard --reset        # Reset progress and start fresh
+```
+
+### Lessons
+
+| # | Title | Duration | Topics |
+|---|-------|----------|--------|
+| 0 | Welcome & Overview | 2 min | What's installed, system overview |
+| 1 | Linux Navigation | 5 min | Filesystem, basic commands |
+| 2 | SSH & Persistence | 4 min | Keys, config, tunnels, screen/tmux |
+| 3 | tmux Basics | 6 min | Sessions, windows, panes, navigation |
+| 4 | Agent Commands | 5 min | `cc`, `cod`, `gmi` aliases |
+| 5 | NTM Core | 7 min | Named Tmux Manager basics |
+| 6 | NTM Prompt Palette | 5 min | Command palette features |
+| 7 | Flywheel Loop | 8 min | Complete agentic workflow |
+
+### Progress Tracking
+
+Progress is saved in `~/.acfs/onboard_progress.json`:
+
+```json
+{
+  "completed": [0, 1, 2],
+  "current": 3,
+  "started_at": "2024-12-20T10:30:00-05:00"
+}
+```
+
+The TUI shows completion status for each lesson and suggests the next one to take. Users can jump to any lesson or re-take completed ones.
+
+### Enhanced UX with Gum
+
+If [Charmbracelet Gum](https://github.com/charmbracelet/gum) is installed, the onboarding system uses it for enhanced terminal UI—selection menus, styled prompts, and better formatting. Without Gum, it falls back to simple numbered menus that work everywhere.
 
 ---
 
@@ -385,147 +593,6 @@ The complete suite of tools for professional agentic workflows:
 
 ---
 
-## Configuration Files
-
-ACFS deploys optimized configuration files to `~/.acfs/` on the target VPS.
-
-### `~/.acfs/zsh/acfs.zshrc`
-
-A comprehensive zsh configuration (242 lines) that's sourced by `~/.zshrc`:
-
-**Path Configuration:**
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-export PATH="$HOME/.cargo/bin:$PATH"
-export PATH="$HOME/go/bin:$PATH"
-export PATH="$HOME/.bun/bin:$PATH"
-export PATH="$HOME/.atuin/bin:$PATH"
-```
-
-**Modern CLI Aliases:**
-```bash
-alias ls='lsd --inode --long --all'
-alias ll='lsd -l'
-alias tree='lsd --tree'
-alias cat='bat'
-alias grep='rg'
-alias vim='nvim'
-alias lg='lazygit'
-```
-
-**Tool Integrations:**
-```bash
-# Atuin (better shell history)
-eval "$(atuin init zsh)"
-
-# Zoxide (smarter cd)
-eval "$(zoxide init zsh)"
-
-# direnv (directory env vars)
-eval "$(direnv hook zsh)"
-
-# fzf (fuzzy finder)
-source /usr/share/doc/fzf/examples/key-bindings.zsh
-```
-
-### `~/.acfs/tmux/tmux.conf`
-
-An optimized tmux configuration (122 lines):
-
-**Key Bindings:**
-```
-Prefix: Ctrl+a (not Ctrl+b)
-Split horizontal: |
-Split vertical: -
-Navigate panes: h/j/k/l (vim-style)
-```
-
-**Features:**
-- Mouse support enabled
-- Catppuccin-inspired colors
-- Status bar at top
-- Larger scrollback buffer (50,000 lines)
-
-### Onboarding Lessons
-
-Interactive tutorials in `~/.acfs/onboard/lessons/`:
-
-| Lesson | Title | Topics |
-|--------|-------|--------|
-| 00 | Welcome | What's installed, overview |
-| 01 | Linux Basics | Filesystem navigation |
-| 02 | SSH Basics | Keys, config, tunnels |
-| 03 | Tmux Basics | Sessions, windows, panes |
-| 04 | Agent Login | API key configuration |
-| 05 | NTM Core | Named Tmux Manager basics |
-| 06 | NTM Palette | Command palette features |
-| 07 | Flywheel Loop | Complete agentic workflow |
-
----
-
-## The Manifest
-
-`acfs.manifest.yaml` is the **single source of truth** for all tools installed by ACFS:
-
-```yaml
-version: "1.0"
-meta:
-  name: "ACFS"
-  description: "Agentic Coding Flywheel Setup"
-  version: "0.1.0"
-
-categories:
-  - shell_and_terminal
-  - languages_and_package_managers
-  - dev_tools
-  - coding_agents
-  - cloud_and_database
-  - dicklesworthstone_stack
-
-tools:
-  zsh:
-    category: shell_and_terminal
-    name: "zsh"
-    description: "Modern shell with powerful scripting"
-    install:
-      apt: "zsh"
-    verify: "zsh --version"
-
-  bun:
-    category: languages_and_package_managers
-    name: "bun"
-    description: "Fast JavaScript runtime and package manager"
-    install:
-      script: "curl -fsSL https://bun.sh/install | bash"
-    verify: "bun --version"
-
-  claude:
-    category: coding_agents
-    name: "Claude Code"
-    description: "Anthropic's AI coding agent"
-    install:
-      npm: "@anthropic-ai/claude-code"
-    verify: "claude --version"
-    aliases:
-      vibe: "cc"
-```
-
-### Manifest Schema
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `category` | string | Tool category for organization |
-| `name` | string | Human-readable name |
-| `description` | string | Brief description |
-| `install.apt` | string | APT package name |
-| `install.script` | string | Install script URL |
-| `install.npm` | string | NPM package name |
-| `install.cargo` | string | Cargo crate name |
-| `verify` | string | Command to verify installation |
-| `aliases` | object | Shell aliases by mode |
-
----
-
 ## Doctor Command
 
 `acfs doctor` performs comprehensive health checks on your installation:
@@ -582,13 +649,148 @@ $ acfs doctor
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-### Doctor Options
+### Generated Doctor Checks
+
+Doctor checks are generated from the manifest, ensuring they stay synchronized with what the installer actually installs. The generated `doctor_checks.sh` script contains all verification commands in a structured format.
+
+### Options
 
 ```bash
 acfs doctor          # Interactive colorful output
 acfs doctor --json   # Machine-readable JSON output
 acfs doctor --quiet  # Exit code only (0=healthy, 1=issues)
 ```
+
+---
+
+## The Wizard Website
+
+The wizard guides beginners through a **10-step journey** from "I have a laptop" to "AI agents are coding for me":
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ACFS Wizard                                                   [Step 3/10]  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │  STEP 3: Generate SSH Key                                              │ │
+│  │  ──────────────────────────────────────────────────────────────────    │ │
+│  │                                                                        │ │
+│  │  Run this command in your terminal:                                    │ │
+│  │                                                                        │ │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │ │
+│  │  │ ssh-keygen -t ed25519 -C "your-email@example.com"         [📋] │  │ │
+│  │  └─────────────────────────────────────────────────────────────────┘  │ │
+│  │                                                                        │ │
+│  │  ☐ I ran this command                                                  │ │
+│  │                                                                        │ │
+│  │  [← Previous]                                        [Next Step →]     │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  Progress: ●●●○○○○○○○                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Wizard Steps
+
+| Step | Title | What Happens |
+|------|-------|--------------|
+| 1 | **Choose Your OS** | Select Mac or Windows (auto-detected) |
+| 2 | **Install Terminal** | Windows Terminal or Homebrew instructions |
+| 3 | **Generate SSH Key** | Create ed25519 key for VPS access |
+| 4 | **Rent a VPS** | Links to OVH, Contabo, Hetzner with pricing |
+| 5 | **Create VPS Instance** | Checklist for VPS setup with SSH key |
+| 6 | **SSH Connect** | First connection with troubleshooting tips |
+| 7 | **Run Installer** | The `curl \| bash` one-liner |
+| 8 | **Reconnect as Ubuntu** | Post-install reconnection |
+| 9 | **Status Check** | Run `acfs doctor` to verify |
+| 10 | **Launch Onboarding** | Start the interactive tutorial |
+
+### Key Features
+
+- **OS Detection:** Auto-detects Mac vs Windows for tailored instructions
+- **Copy-to-Clipboard:** One-click copy for all commands
+- **Progress Tracking:** localStorage persistence across browser sessions
+- **Confirmation Checkboxes:** "I ran this command" acknowledgments
+- **Troubleshooting:** Expandable help for common issues
+
+### Technology Stack
+
+```
+Next.js 16 (App Router)
+├── React 19
+├── Tailwind CSS 4 (OKLCH colors)
+├── shadcn/ui components
+├── Radix UI primitives
+└── Lucide icons
+```
+
+**No backend required.** All state is stored in:
+- URL query parameters
+- localStorage (`acfs-user-os`, `acfs-vps-ip`, `acfs-wizard-completed-steps`)
+
+---
+
+## Configuration Files
+
+ACFS deploys optimized configuration files to `~/.acfs/` on the target VPS.
+
+### `~/.acfs/zsh/acfs.zshrc`
+
+A comprehensive zsh configuration that's sourced by `~/.zshrc`:
+
+**Path Configuration:**
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
+export PATH="$HOME/.bun/bin:$PATH"
+export PATH="$HOME/.atuin/bin:$PATH"
+```
+
+**Modern CLI Aliases:**
+```bash
+alias ls='lsd --inode --long --all'
+alias ll='lsd -l'
+alias tree='lsd --tree'
+alias cat='bat'
+alias grep='rg'
+alias vim='nvim'
+alias lg='lazygit'
+```
+
+**Tool Integrations:**
+```bash
+# Atuin (better shell history)
+eval "$(atuin init zsh)"
+
+# Zoxide (smarter cd)
+eval "$(zoxide init zsh)"
+
+# direnv (directory env vars)
+eval "$(direnv hook zsh)"
+
+# fzf (fuzzy finder)
+source /usr/share/doc/fzf/examples/key-bindings.zsh
+```
+
+### `~/.acfs/tmux/tmux.conf`
+
+An optimized tmux configuration:
+
+**Key Bindings:**
+```
+Prefix: Ctrl+a (not Ctrl+b)
+Split horizontal: |
+Split vertical: -
+Navigate panes: h/j/k/l (vim-style)
+```
+
+**Features:**
+- Mouse support enabled
+- Catppuccin-inspired colors
+- Status bar at top
+- Larger scrollback buffer (50,000 lines)
 
 ---
 
@@ -607,6 +809,16 @@ log_success "Complete"                    # Green checkmark
 log_warn "May take a while"              # Yellow warning
 log_error "Failed"                        # Red error
 log_fatal "Cannot continue"              # Red error + exit 1
+```
+
+### `security.sh`
+
+HTTPS enforcement and checksum verification:
+
+```bash
+enforce_https "$url"                     # Fail if not HTTPS
+verify_checksum "$url" "$sha256" "$name" # Verify before execute
+fetch_and_run "$url" "$sha256" "$name"   # Verify + execute in one
 ```
 
 ### `os_detect.sh`
@@ -633,17 +845,18 @@ migrate_ssh_keys()         # Copies keys from root to ubuntu
 normalize_user()           # Full normalization sequence
 ```
 
-### `zsh.sh`
+### `update.sh`
 
-Shell setup functions:
+Component update logic:
 
 ```bash
-install_zsh()            # apt install zsh
-install_ohmyzsh()        # Oh My Zsh installer
-install_powerlevel10k()  # Theme installation
-install_zsh_plugins()    # autosuggestions, syntax-highlighting
-install_acfs_zshrc()     # Download and install acfs.zshrc
-setup_shell()            # Full sequence
+update_apt()       # apt update/upgrade
+update_bun()       # bun upgrade
+update_agents()    # Claude, Codex, Gemini
+update_cloud()     # Wrangler, Supabase, Vercel
+update_rust()      # rustup update
+update_uv()        # uv self update
+update_stack()     # Dicklesworthstone stack tools
 ```
 
 ### `gum_ui.sh`
@@ -660,37 +873,6 @@ gum_choose               # Selection menu
 ```
 
 Falls back to basic echo if Gum is not installed.
-
-### `cli_tools.sh`
-
-CLI tool installation:
-
-```bash
-# APT packages
-install_apt_packages()   # ripgrep, fzf, tmux, neovim, etc.
-
-# Cargo packages
-install_cargo_packages() # zoxide, ast-grep, lsd
-
-# Other installers
-install_lazygit()        # GitHub releases
-install_atuin()          # setup.atuin.sh
-install_docker()         # docker.io
-```
-
-### `doctor.sh`
-
-System health check:
-
-```bash
-check_identity()    # ubuntu user, passwordless sudo
-check_workspace()   # /data/projects exists
-check_shell()       # zsh, oh-my-zsh, p10k, plugins
-check_core_tools()  # bun, uv, cargo, go, tmux, rg, sg
-check_agents()      # claude, codex, gemini + aliases
-check_cloud()       # vault, psql, wrangler, supabase, vercel
-check_stack()       # ntm, slb, ubs, bv, cass, cm, caam
-```
 
 ---
 
@@ -750,6 +932,43 @@ mcp.macro_contact_handshake(...)  # Request contact permissions
 
 ---
 
+## CI/CD
+
+ACFS uses GitHub Actions for continuous integration:
+
+### Installer Testing (`installer.yml`)
+
+```yaml
+# Runs on every push and PR
+jobs:
+  shellcheck:
+    - Lints all bash scripts with ShellCheck
+
+  integration:
+    - Matrix tests across Ubuntu 24.04, 24.10, 25.04
+    - Runs full installation in Docker
+    - Verifies all tools installed correctly
+    - Runs acfs doctor to confirm health
+```
+
+This ensures the installer works on all supported Ubuntu versions and catches shell scripting issues early.
+
+### Website Deployment (`website.yml`)
+
+```yaml
+# Builds and deploys the Next.js wizard
+jobs:
+  build:
+    - Type-check TypeScript
+    - Run ESLint
+    - Build production bundle
+
+  deploy:
+    - Deploy to Vercel (production)
+```
+
+---
+
 ## VPS Providers
 
 ACFS works on any Ubuntu VPS. Here are recommended providers:
@@ -788,6 +1007,11 @@ ACFS works on any Ubuntu VPS. Here are recommended providers:
 | **CPU** | 2 vCPU | 4 vCPU |
 | **Network** | SSH access | Low latency |
 
+Detailed provider setup guides are available in `scripts/providers/`:
+- `ovh.md` - Step-by-step OVH setup
+- `contabo.md` - Step-by-step Contabo setup
+- `hetzner.md` - Step-by-step Hetzner setup
+
 ---
 
 ## Project Structure
@@ -795,10 +1019,11 @@ ACFS works on any Ubuntu VPS. Here are recommended providers:
 ```
 agentic_coding_flywheel_setup/
 ├── README.md                     # This file
-├── VERSION                       # Current version (0.1.0)
-├── install.sh                    # Main installer (1,020 lines)
-├── acfs.manifest.yaml            # Canonical tool manifest (510 lines)
 ├── AGENTS.md                     # Development guidelines
+├── VERSION                       # Current version (0.1.0)
+├── install.sh                    # Main installer entry point
+├── acfs.manifest.yaml            # Canonical tool manifest (510 lines)
+├── checksums.yaml                # SHA256 hashes for upstream scripts
 ├── package.json                  # Root monorepo config
 │
 ├── apps/
@@ -808,41 +1033,64 @@ agentic_coding_flywheel_setup/
 │       │   ├── page.tsx          # Landing page
 │       │   └── wizard/           # Wizard step pages
 │       ├── components/           # UI components
-│       │   ├── stepper.tsx       # Step navigation
-│       │   ├── command-card.tsx  # Copy-to-clipboard commands
-│       │   └── ui/               # shadcn/ui components
 │       └── lib/                  # Utilities
-│           ├── utils.ts          # cn() helper
-│           ├── wizardSteps.ts    # Step definitions
-│           └── userPreferences.ts # OS/IP storage
+│
+├── packages/
+│   ├── manifest/                 # Manifest parser + generator
+│   │   └── src/
+│   │       ├── parser.ts         # YAML parsing
+│   │       ├── schema.ts         # Zod validation schemas
+│   │       ├── types.ts          # TypeScript types
+│   │       ├── utils.ts          # Helper functions
+│   │       └── generate.ts       # Script generator
+│   ├── installer/                # Installer helper scripts
+│   └── onboard/                  # Onboard TUI source
 │
 ├── acfs/                         # Files deployed to ~/.acfs/
 │   ├── zsh/
-│   │   └── acfs.zshrc            # Shell configuration (242 lines)
+│   │   └── acfs.zshrc            # Shell configuration
 │   ├── tmux/
-│   │   └── tmux.conf             # Tmux configuration (122 lines)
+│   │   └── tmux.conf             # Tmux configuration
 │   └── onboard/
+│       ├── onboard.sh            # Onboarding TUI script
 │       └── lessons/              # Tutorial markdown (8 files)
 │
 ├── scripts/
 │   ├── lib/                      # Installer bash libraries
 │   │   ├── logging.sh            # Console output
+│   │   ├── security.sh           # HTTPS + checksum verification
 │   │   ├── os_detect.sh          # OS detection
 │   │   ├── user.sh               # User management
 │   │   ├── zsh.sh                # Shell setup
+│   │   ├── update.sh             # Update command logic
 │   │   ├── gum_ui.sh             # Enhanced UI
 │   │   ├── cli_tools.sh          # Tool installation
 │   │   └── doctor.sh             # Health checks
-│   └── providers/                # VPS provider guides
+│   ├── generated/                # Auto-generated from manifest
+│   │   ├── install_base.sh       # Base packages
+│   │   ├── install_shell.sh      # Shell tools
+│   │   ├── install_cli.sh        # CLI tools
+│   │   ├── install_lang.sh       # Language runtimes
+│   │   ├── install_agents.sh     # AI coding agents
+│   │   ├── install_cloud.sh      # Cloud CLIs
+│   │   ├── install_stack.sh      # Dicklesworthstone stack
+│   │   ├── install_all.sh        # Master installer
+│   │   └── doctor_checks.sh      # Verification checks
+│   ├── providers/                # VPS provider guides
+│   │   ├── ovh.md
+│   │   ├── contabo.md
+│   │   └── hetzner.md
+│   └── sync/
+│       └── sync_ntm_palette.sh   # Sync NTM command palette
 │
-├── packages/                     # (Planned)
-│   ├── manifest/                 # YAML parser
-│   ├── installer/                # Helper scripts
-│   └── onboard/                  # Onboard TUI
+├── .github/
+│   └── workflows/
+│       ├── installer.yml         # ShellCheck + Ubuntu matrix tests
+│       └── website.yml           # Next.js build + deploy
 │
 └── tests/
     └── vm/
-        └── test_install_ubuntu.sh # Docker integration test script
+        └── test_install_ubuntu.sh # Docker integration test
 ```
 
 ---
@@ -860,6 +1108,15 @@ bun run lint          # Lint check
 bun run type-check    # TypeScript check
 ```
 
+### Manifest Development
+
+```bash
+cd packages/manifest
+bun install           # Install dependencies
+bun run generate      # Generate installer scripts
+bun run generate:dry  # Preview without writing files
+```
+
 ### Installer Testing
 
 ```bash
@@ -868,6 +1125,19 @@ shellcheck install.sh scripts/lib/*.sh
 
 # Full installer integration test (Docker, same as CI)
 ./tests/vm/test_install_ubuntu.sh
+```
+
+### Security Verification
+
+```bash
+# Print all upstream URLs
+./scripts/lib/security.sh --print
+
+# Verify all checksums
+./scripts/lib/security.sh --verify
+
+# Update checksums after reviewing upstream changes
+./scripts/lib/security.sh --update-checksums > checksums.yaml
 ```
 
 ### Requirements
@@ -909,18 +1179,11 @@ It will skip already-completed phases and resume where it left off.
 
 ### How do I update tools?
 
+Use the built-in update command:
 ```bash
-# Update all npm tools (claude, etc.)
-bun update -g
-
-# Update cargo tools
-cargo install-update -a
-
-# Update apt packages
-sudo apt update && sudo apt upgrade -y
-
-# Re-run installer for new tools
-curl -fsSL ... | bash -s -- --yes --mode vibe
+acfs update                  # Update all standard components
+acfs update --stack          # Include Dicklesworthstone stack
+acfs update --agents-only    # Just update AI agents
 ```
 
 ### How do I uninstall?
@@ -967,9 +1230,11 @@ ACFS kicks off this flywheel by providing the **best possible starting environme
 
 3. **Idempotent:** Re-run without fear. The installer handles already-installed tools gracefully.
 
-4. **Single Source of Truth:** The manifest defines everything. Website and installer are generated from it.
+4. **Single Source of Truth:** The manifest defines everything. Installer scripts are generated from it.
 
-5. **Modern Defaults:** Latest versions, modern tools, optimal configurations out of the box.
+5. **Security by Default:** HTTPS enforcement, checksum verification, no blind `curl | bash`.
+
+6. **Modern Defaults:** Latest versions, modern tools, optimal configurations out of the box.
 
 ---
 

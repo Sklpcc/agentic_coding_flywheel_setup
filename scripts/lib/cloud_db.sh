@@ -64,39 +64,41 @@ _cloud_get_sudo() {
 _cloud_run_as_user() {
     local target_user="${TARGET_USER:-ubuntu}"
     local cmd="$1"
+    local wrapped_cmd="set -o pipefail; $cmd"
 
     if [[ "$(whoami)" == "$target_user" ]]; then
-        bash -c "$cmd"
+        bash -c "$wrapped_cmd"
         return $?
     fi
 
     if command -v sudo &>/dev/null; then
-        sudo -u "$target_user" -H bash -c "$cmd"
+        sudo -u "$target_user" -H bash -c "$wrapped_cmd"
         return $?
     fi
 
     if command -v runuser &>/dev/null; then
-        runuser -u "$target_user" -- bash -c "$cmd"
+        runuser -u "$target_user" -- bash -c "$wrapped_cmd"
         return $?
     fi
 
-    su - "$target_user" -c "bash -c $(printf %q "$cmd")"
+    su - "$target_user" -c "bash -c $(printf %q "$wrapped_cmd")"
 }
 
 _cloud_run_as_postgres() {
     local cmd="$1"
+    local wrapped_cmd="set -o pipefail; $cmd"
 
     if [[ $EUID -eq 0 ]]; then
         if command -v runuser &>/dev/null; then
-            runuser -u postgres -- bash -c "$cmd"
+            runuser -u postgres -- bash -c "$wrapped_cmd"
             return $?
         fi
 
-        su - postgres -c "bash -c $(printf %q "$cmd")"
+        su - postgres -c "bash -c $(printf %q "$wrapped_cmd")"
         return $?
     fi
 
-    sudo -u postgres -H bash -c "$cmd"
+    sudo -u postgres -H bash -c "$wrapped_cmd"
 }
 
 # Get bun binary path for target user
