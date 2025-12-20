@@ -1,20 +1,52 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import { JetBrains_Mono, Instrument_Sans } from "next/font/google";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Agentic Coding Flywheel Setup (ACFS)",
-  description: "From zero to fully configured agentic coding VPS in ~30 minutes.",
+  title: "ACFS - Agentic Coding Flywheel Setup",
+  description:
+    "Transform a fresh Ubuntu VPS into a fully-configured agentic coding environment with Claude, Codex, and Gemini in 30 minutes.",
+  keywords: [
+    "VPS setup",
+    "AI coding",
+    "Claude",
+    "Codex",
+    "Gemini",
+    "developer tools",
+    "agentic coding",
+  ],
+  authors: [{ name: "Dicklesworthstone" }],
+  openGraph: {
+    title: "ACFS - Agentic Coding Flywheel Setup",
+    description:
+      "From zero to fully-configured agentic coding VPS in 30 minutes.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ACFS - Agentic Coding Flywheel Setup",
+    description:
+      "From zero to fully-configured agentic coding VPS in 30 minutes.",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a12",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -23,11 +55,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${jetbrainsMono.variable} ${instrumentSans.variable} font-sans antialiased`}
       >
-        {children}
+        {/* Noise texture overlay */}
+        <div className="pointer-events-none fixed inset-0 z-50 bg-noise" />
+        <Suspense fallback={null}>
+          <AnalyticsProvider>{children}</AnalyticsProvider>
+        </Suspense>
       </body>
     </html>
   );
