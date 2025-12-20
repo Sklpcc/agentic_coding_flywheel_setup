@@ -28,7 +28,7 @@ const getClientId = (): string => {
   if (typeof window === 'undefined') return '';
   let clientId = localStorage.getItem('ga_client_id');
   if (!clientId) {
-    clientId = `${Date.now()}.${Math.random().toString(36).substr(2, 9)}`;
+    clientId = `${Date.now()}.${Math.random().toString(36).slice(2, 11)}`;
     localStorage.setItem('ga_client_id', clientId);
   }
   return clientId;
@@ -387,10 +387,17 @@ export const trackOutboundLink = (
   url: string,
   linkText: string
 ): void => {
+  let linkDomain = 'unknown';
+  try {
+    linkDomain = new URL(url).hostname;
+  } catch {
+    // Invalid URL, use fallback
+  }
+
   sendEvent('outbound_link_click', {
     link_url: url,
     link_text: linkText,
-    link_domain: new URL(url).hostname,
+    link_domain: linkDomain,
   });
 };
 
@@ -692,10 +699,8 @@ export const trackFunnelStepComplete = (
     ...additionalData,
   });
 
-  // Track step-specific conversions
-  if (stepNumber === 3) {
-    trackConversion('wizard_start', 1);
-  } else if (stepNumber === 5) {
+  // Track step-specific conversions (note: wizard_start is tracked on step 1 entry in useWizardAnalytics)
+  if (stepNumber === 5) {
     trackConversion('vps_created', 10);
   } else if (stepNumber === 7) {
     trackConversion('installer_run', 50);
@@ -781,7 +786,12 @@ export const trackLandingCTA = (
     cta_type: ctaType,
     cta_text: ctaText,
     page_scroll_depth: typeof window !== 'undefined'
-      ? Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100)
+      ? (() => {
+          const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+          return scrollableHeight > 0
+            ? Math.round((window.scrollY / scrollableHeight) * 100)
+            : 0;
+        })()
       : 0,
   });
 
