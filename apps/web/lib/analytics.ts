@@ -446,6 +446,322 @@ export const trackExperimentVariant = (
 };
 
 // ============================================================
+// Funnel Tracking
+// ============================================================
+
+const FUNNEL_STORAGE_KEY = 'acfs_funnel_data';
+
+interface FunnelData {
+  sessionId: string;
+  startedAt: string;
+  currentStep: number;
+  maxStepReached: number;
+  stepTimestamps: Record<number, { entered: string; completed?: string }>;
+  completedSteps: number[];
+  source: string;
+  medium: string;
+  campaign: string;
+}
+
+/**
+ * Get or initialize funnel tracking data
+ */
+export const getFunnelData = (): FunnelData | null => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const stored = localStorage.getItem(FUNNEL_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Initialize a new funnel session
+ */
+export const initFunnel = (): FunnelData => {
+  if (typeof window === 'undefined') {
+    return {
+      sessionId: '',
+      startedAt: new Date().toISOString(),
+      currentStep: 0,
+      maxStepReached: 0,
+      stepTimestamps: {},
+      completedSteps: [],
+      source: '',
+      medium: '',
+      campaign: '',
+    };
+  }
+
+  // Parse UTM parameters
+  const params = new URLSearchParams(window.location.search);
+
+  const funnelData: FunnelData = {
+    sessionId: `funnel_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    startedAt: new Date().toISOString(),
+    currentStep: 0,
+    maxStepReached: 0,
+    stepTimestamps: {},
+    completedSteps: [],
+    source: params.get('utm_source') || document.referrer || 'direct',
+    medium: params.get('utm_medium') || 'none',
+    campaign: params.get('utm_campaign') || 'none',
+  };
+
+  localStorage.setItem(FUNNEL_STORAGE_KEY, JSON.stringify(funnelData));
+
+  // Track funnel initiation
+  sendEvent('funnel_initiated', {
+    funnel_id: funnelData.sessionId,
+    source: funnelData.source,
+    medium: funnelData.medium,
+    campaign: funnelData.campaign,
+    referrer: document.referrer,
+  });
+
+  setUserProperties({
+    funnel_source: funnelData.source,
+    funnel_medium: funnelData.medium,
+    funnel_campaign: funnelData.campaign,
+  });
+
+  return funnelData;
+};
+
+/**
+ * Track entering a funnel step
+ */
+export const trackFunnelStepEnter = (
+  stepNumber: number,
+  stepName: string,
+  stepTitle: string
+): void => {
+  if (typeof window === 'undefined') return;
+
+  let funnelData = getFunnelData();
+  if (!funnelData) {
+    funnelData = initFunnel();
+  }
+
+  const now = new Date().toISOString();
+  const previousStep = funnelData.currentStep;
+  const isNewMaxStep = stepNumber > funnelData.maxStepReached;
+
+  // Update funnel data
+  funnelData.currentStep = stepNumber;
+  funnelData.maxStepReached = Math.max(funnelData.maxStepReached, stepNumber);
+  funnelData.stepTimestamps[stepNumber] = {
+    ...funnelData.stepTimestamps[stepNumber],
+    entered: now,
+  };
+
+  localStorage.setItem(FUNNEL_STORAGE_KEY, JSON.stringify(funnelData));
+
+  // Calculate time from previous step
+  let timeFromPreviousStep: number | undefined;
+  if (previousStep > 0 && funnelData.stepTimestamps[previousStep]?.entered) {
+    const prevTime = new Date(funnelData.stepTimestamps[previousStep].entered).getTime();
+    timeFromPreviousStep = Math.round((Date.now() - prevTime) / 1000);
+  }
+
+  // Track the funnel step entry
+  sendEvent('funnel_step_enter', {
+    funnel_id: funnelData.sessionId,
+    step_number: stepNumber,
+    step_name: stepName,
+    step_title: stepTitle,
+    previous_step: previousStep,
+    is_new_max_step: isNewMaxStep,
+    max_step_reached: funnelData.maxStepReached,
+    time_from_previous_step_seconds: timeFromPreviousStep,
+    total_steps: 10,
+    progress_percentage: Math.round((stepNumber / 10) * 100),
+    is_returning: !isNewMaxStep && stepNumber <= funnelData.maxStepReached,
+  });
+
+  // Track as conversion milestone for key steps
+  if (stepNumber === 1) {
+    sendEvent('funnel_milestone', {
+      milestone: 'wizard_started',
+      funnel_id: funnelData.sessionId,
+    });
+  } else if (stepNumber === 4) {
+    sendEvent('funnel_milestone', {
+      milestone: 'vps_selection',
+      funnel_id: funnelData.sessionId,
+    });
+  } else if (stepNumber === 7) {
+    sendEvent('funnel_milestone', {
+      milestone: 'installer_step',
+      funnel_id: funnelData.sessionId,
+    });
+  } else if (stepNumber === 10) {
+    sendEvent('funnel_milestone', {
+      milestone: 'final_step',
+      funnel_id: funnelData.sessionId,
+    });
+  }
+};
+
+/**
+ * Track completing a funnel step
+ */
+export const trackFunnelStepComplete = (
+  stepNumber: number,
+  stepName: string,
+  additionalData?: Record<string, unknown>
+): void => {
+  if (typeof window === 'undefined') return;
+
+  const funnelData = getFunnelData();
+  if (!funnelData) return;
+
+  const now = new Date().toISOString();
+
+  // Calculate time spent on step
+  let timeOnStep: number | undefined;
+  if (funnelData.stepTimestamps[stepNumber]?.entered) {
+    const enterTime = new Date(funnelData.stepTimestamps[stepNumber].entered).getTime();
+    timeOnStep = Math.round((Date.now() - enterTime) / 1000);
+  }
+
+  // Update funnel data
+  if (!funnelData.completedSteps.includes(stepNumber)) {
+    funnelData.completedSteps.push(stepNumber);
+    funnelData.completedSteps.sort((a, b) => a - b);
+  }
+  funnelData.stepTimestamps[stepNumber] = {
+    ...funnelData.stepTimestamps[stepNumber],
+    completed: now,
+  };
+
+  localStorage.setItem(FUNNEL_STORAGE_KEY, JSON.stringify(funnelData));
+
+  // Track the completion
+  sendEvent('funnel_step_complete', {
+    funnel_id: funnelData.sessionId,
+    step_number: stepNumber,
+    step_name: stepName,
+    time_on_step_seconds: timeOnStep,
+    completed_steps_count: funnelData.completedSteps.length,
+    total_steps: 10,
+    completion_percentage: Math.round((funnelData.completedSteps.length / 10) * 100),
+    ...additionalData,
+  });
+
+  // Track step-specific conversions
+  if (stepNumber === 3) {
+    trackConversion('wizard_start', 1);
+  } else if (stepNumber === 5) {
+    trackConversion('vps_created', 10);
+  } else if (stepNumber === 7) {
+    trackConversion('installer_run', 50);
+  } else if (stepNumber === 10) {
+    trackFunnelComplete();
+  }
+};
+
+/**
+ * Track funnel completion
+ */
+export const trackFunnelComplete = (): void => {
+  if (typeof window === 'undefined') return;
+
+  const funnelData = getFunnelData();
+  if (!funnelData) return;
+
+  const startTime = new Date(funnelData.startedAt).getTime();
+  const totalTimeSeconds = Math.round((Date.now() - startTime) / 1000);
+  const totalTimeMinutes = Math.round(totalTimeSeconds / 60);
+
+  sendEvent('funnel_complete', {
+    funnel_id: funnelData.sessionId,
+    total_time_seconds: totalTimeSeconds,
+    total_time_minutes: totalTimeMinutes,
+    completed_steps: funnelData.completedSteps.length,
+    max_step_reached: funnelData.maxStepReached,
+    source: funnelData.source,
+    medium: funnelData.medium,
+    campaign: funnelData.campaign,
+  });
+
+  trackConversion('wizard_complete', 100);
+
+  // Set user property for completed users
+  setUserProperties({
+    wizard_completed: true,
+    wizard_completion_date: new Date().toISOString(),
+    wizard_completion_time_minutes: totalTimeMinutes,
+  });
+};
+
+/**
+ * Track funnel drop-off (called on page exit or navigation away)
+ */
+export const trackFunnelDropoff = (reason?: string): void => {
+  if (typeof window === 'undefined') return;
+
+  const funnelData = getFunnelData();
+  if (!funnelData || funnelData.completedSteps.includes(10)) return;
+
+  const startTime = new Date(funnelData.startedAt).getTime();
+  const totalTimeSeconds = Math.round((Date.now() - startTime) / 1000);
+
+  // Calculate time on current step
+  let timeOnCurrentStep: number | undefined;
+  if (funnelData.stepTimestamps[funnelData.currentStep]?.entered) {
+    const enterTime = new Date(funnelData.stepTimestamps[funnelData.currentStep].entered).getTime();
+    timeOnCurrentStep = Math.round((Date.now() - enterTime) / 1000);
+  }
+
+  sendEvent('funnel_dropoff', {
+    funnel_id: funnelData.sessionId,
+    dropped_at_step: funnelData.currentStep,
+    max_step_reached: funnelData.maxStepReached,
+    completed_steps_count: funnelData.completedSteps.length,
+    total_time_seconds: totalTimeSeconds,
+    time_on_current_step_seconds: timeOnCurrentStep,
+    dropoff_reason: reason || 'unknown',
+    source: funnelData.source,
+    medium: funnelData.medium,
+  });
+};
+
+/**
+ * Track CTA clicks on landing page
+ */
+export const trackLandingCTA = (
+  ctaType: 'hero_start' | 'feature_start' | 'footer_start' | 'nav_start',
+  ctaText: string
+): void => {
+  sendEvent('landing_cta_click', {
+    cta_type: ctaType,
+    cta_text: ctaText,
+    page_scroll_depth: typeof window !== 'undefined'
+      ? Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100)
+      : 0,
+  });
+
+  // Initialize funnel on CTA click
+  initFunnel();
+};
+
+/**
+ * Track landing page engagement
+ */
+export const trackLandingEngagement = (
+  engagementType: 'feature_view' | 'step_preview' | 'faq_expand' | 'video_play',
+  details?: Record<string, unknown>
+): void => {
+  sendEvent('landing_engagement', {
+    engagement_type: engagementType,
+    ...details,
+  });
+};
+
+// ============================================================
 // Debug Mode
 // ============================================================
 
@@ -463,4 +779,25 @@ export const enableDebugMode = (): void => {
   }
 
   console.log('[Analytics] Debug mode enabled');
+};
+
+/**
+ * Get funnel analytics summary (for debugging)
+ */
+export const getFunnelSummary = (): Record<string, unknown> | null => {
+  const funnelData = getFunnelData();
+  if (!funnelData) return null;
+
+  const startTime = new Date(funnelData.startedAt).getTime();
+  const totalTimeSeconds = Math.round((Date.now() - startTime) / 1000);
+
+  return {
+    funnelId: funnelData.sessionId,
+    currentStep: funnelData.currentStep,
+    maxStepReached: funnelData.maxStepReached,
+    completedSteps: funnelData.completedSteps,
+    totalTimeMinutes: Math.round(totalTimeSeconds / 60),
+    source: funnelData.source,
+    completionRate: Math.round((funnelData.completedSteps.length / 10) * 100),
+  };
 };
