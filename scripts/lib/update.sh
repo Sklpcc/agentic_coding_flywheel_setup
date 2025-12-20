@@ -153,7 +153,7 @@ update_agents() {
 
     if [[ ! -x "$bun_bin" ]]; then
         log_item "fail" "Bun not installed" "required for agent updates"
-        return 1
+        return 0
     fi
 
     # Claude Code has its own update command
@@ -190,7 +190,7 @@ update_cloud() {
 
     if [[ ! -x "$bun_bin" ]]; then
         log_item "fail" "Bun not installed" "required for cloud CLI updates"
-        return 1
+        return 0
     fi
 
     # Wrangler
