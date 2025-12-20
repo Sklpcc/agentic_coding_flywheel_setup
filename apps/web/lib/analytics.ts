@@ -681,7 +681,7 @@ export const trackFunnelStepComplete = (
     completed: now,
   };
 
-  localStorage.setItem(FUNNEL_STORAGE_KEY, JSON.stringify(funnelData));
+  safeSetJSON(FUNNEL_STORAGE_KEY, funnelData);
 
   // Track the completion
   sendEvent('funnel_step_complete', {
