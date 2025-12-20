@@ -137,6 +137,27 @@ const PROMPT_REVIEW_BEADS = `Check over each bead super carefully-- are you sure
 
 const PROMPT_AGENT_SWARM = `First read ALL of the AGENTS.md file and README.md file super carefully and understand ALL of both! Then use your code investigation agent mode to fully understand the code, and technical architecture and purpose of the project. Then register with MCP Agent Mail and introduce yourself to the other agents. Be sure to check your agent mail and to promptly respond if needed to any messages; then proceed meticulously with your next assigned beads, working on the tasks systematically and meticulously and tracking your progress via beads and agent mail messages. Don't get stuck in "communication purgatory" where nothing is getting done; be proactive about starting tasks that need to be done, but inform your fellow agents via messages when you do so and mark beads appropriately. When you're not sure what to do next, use the bv tool mentioned in AGENTS.md to prioritize the best beads to work on next; pick the next one that you can usefully work on and get started. Make sure to acknowledge all communication requests from other agents and that you are aware of all active agents and their names. Use ultrathink.`;
 
+// Daily maintenance prompts
+const PROMPT_RANDOMLY_INSPECT = `I want you to sort of randomly explore the code files in this project, choosing code files to deeply investigate and understand and trace their functionality and execution flows through the related code files which they import or which they are imported by. Once you understand the purpose of the code in the larger context of the workflows, I want you to do a super careful, methodical, and critical check with "fresh eyes" to find any obvious bugs, problems, errors, issues, silly mistakes, etc. and then systematically and meticulously and intelligently correct them. Be sure to comply with ALL rules in AGENTS.md.`;
+
+const PROMPT_CHECK_OTHER_AGENTS = `Ok can you now turn your attention to reviewing the code written by your fellow agents and checking for any issues, bugs, errors, problems, inefficiencies, security problems, reliability issues, etc. and carefully diagnose their underlying root causes using first-principle analysis and then fix or revise them if necessary? Don't restrict yourself to the latest commits, cast a wider net and go super deep! Use ultrathink.`;
+
+const PROMPT_FRESH_REVIEW = `Great, now I want you to carefully read over all of the new code you just wrote and other existing code you just modified with "fresh eyes" looking super carefully for any obvious bugs, errors, problems, issues, confusion, etc. Carefully fix anything you uncover.`;
+
+const PROMPT_SCRUTINIZE_UI = `Great, now I want you to super carefully scrutinize every aspect of the application workflow and implementation and look for things that just seem sub-optimal or even wrong/mistaken to you, things that could very obviously be improved from a user-friendliness and intuitiveness standpoint, places where our UI/UX could be improved and polished to be slicker, more visually appealing, and more premium feeling and just ultra high quality, like Stripe-level apps.`;
+
+const PROMPT_WORK_ON_BEADS = `OK, so start systematically and methodically and meticulously and diligently executing those remaining beads tasks that you created in the optimal logical order! Don't forget to mark beads as you work on them.`;
+
+const PROMPT_GIT_COMMIT = `Now, based on your knowledge of the project, commit all changed files now in a series of logically connected groupings with super detailed commit messages for each and then push. Take your time to do it right. Don't edit the code at all. Don't commit obviously ephemeral files. Use ultrathink.`;
+
+const PROMPT_NEXT_BEAD = `Pick the next bead you can actually do usefully now and start coding on it immediately; communicate what you're working on to your fellow agents and mark beads appropriately as you work. And respond to any agent mail messages you've received.`;
+
+const PROMPT_ANALYZE_BEADS = `Re-read AGENTS.md first. Then, can you try using bv to get some insights on what each agent should most usefully work on? Then share those insights with the other agents via agent mail and strongly suggest in your messages the optimal work for each one and explain how/why you came up with that using bv. Use ultrathink.`;
+
+const PROMPT_LEVERAGE_TANSTACK = `Ok I want you to look through the ENTIRE project and look for areas where, if we leveraged one of the many TanStack libraries (e.g., query, table, forms, etc), we could make part of the code much better, simpler, more performant, more maintainable, elegant, shorter, more reliable, etc.`;
+
+const PROMPT_BUILD_UI_UX = `I also want you to do a spectacular job building absolutely world-class UI/UX components, with an intense focus on making the most visually appealing, user-friendly, intuitive, slick, polished, "Stripe level" of quality UI/UX possible for this that leverages the good libraries that are already part of the project.`;
+
 export default function WorkflowPage() {
   return (
     <div className="min-h-screen bg-background">
@@ -520,7 +541,252 @@ export default function WorkflowPage() {
           </SimplerGuide>
         </CollapsibleSection>
 
-        {/* Section 6: Post-Install Script */}
+        {/* Section 6: Daily Maintenance Prompts */}
+        <CollapsibleSection title="Step 6: Daily Maintenance (Autopilot Mode)" icon={RefreshCw}>
+          <p className="text-muted-foreground mb-4">
+            The real power of this workflow is making forward progress on ALL your projects
+            every day, even when you&apos;re too busy for deep work. These &quot;autopilot&quot; prompts
+            keep agents productively improving code while you handle other things.
+          </p>
+
+          <Card className="p-4 border-[oklch(0.72_0.19_145/0.3)] bg-[oklch(0.72_0.19_145/0.08)] mb-6">
+            <p className="text-sm">
+              <strong>The philosophy:</strong> Modern AI models are good enough, and with
+              comprehensive tests, you don&apos;t need to worry about agents &quot;going rogue&quot;.
+              If one makes a mistake, other agents will catch and fix it. Trust the swarm!
+            </p>
+          </Card>
+
+          <div className="space-y-6">
+            {/* Random code inspection */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Eye className="h-4 w-4 text-primary" />
+                Random Code Inspection
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Have agents explore your codebase with &quot;fresh eyes&quot; to find bugs and issues:
+              </p>
+              <CodeBlock code={PROMPT_RANDOMLY_INSPECT} language="prompt" />
+            </div>
+
+            {/* Check other agents work */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Peer Review Agent Work
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Have agents review code written by their fellow agents:
+              </p>
+              <CodeBlock code={PROMPT_CHECK_OTHER_AGENTS} language="prompt" />
+            </div>
+
+            {/* Scrutinize UI/UX */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                UI/UX Polish Pass
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                When you&apos;re dissatisfied but lack energy to engage directly (use with Opus 4.5 or GPT 5.2):
+              </p>
+              <CodeBlock code={PROMPT_SCRUTINIZE_UI} language="prompt" />
+            </div>
+
+            {/* Fresh review */}
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                Fresh Review
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                After any coding session, have the agent self-review:
+              </p>
+              <CodeBlock code={PROMPT_FRESH_REVIEW} language="prompt" />
+            </div>
+          </div>
+
+          <SimplerGuide>
+            <GuideExplain term="Why &quot;autopilot&quot; works">
+              These prompts are designed to be:
+              <ul className="mt-2 space-y-1">
+                <li>• <strong>Open-ended but bounded</strong> — agents explore but stay within the codebase</li>
+                <li>• <strong>Self-correcting</strong> — multiple agents catch each other&apos;s mistakes</li>
+                <li>• <strong>Low-supervision</strong> — you can come back hours later to see progress</li>
+                <li>• <strong>Incremental</strong> — small improvements compound over time</li>
+              </ul>
+            </GuideExplain>
+
+            <GuideTip>
+              Run these prompts on 7+ projects daily, keeping 3 machines busy constantly.
+              The compound effect is incredible — you wake up to meaningful improvements!
+            </GuideTip>
+          </SimplerGuide>
+        </CollapsibleSection>
+
+        {/* Section 7: Command Palette */}
+        <CollapsibleSection title="Step 7: The Command Palette (One-Button Prompts)" icon={Keyboard}>
+          <p className="text-muted-foreground mb-4">
+            Each prompt takes under a second to send using NTM&apos;s command palette feature.
+            Configure your prompts once, then trigger them with a single button press.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2 mb-6">
+            <Card className="p-4">
+              <h4 className="font-medium mb-2">Analysis & Review</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><code className="bg-muted px-1 rounded">fresh_review</code> — Self-review new code</li>
+                <li><code className="bg-muted px-1 rounded">check_other_agents_work</code> — Peer review</li>
+                <li><code className="bg-muted px-1 rounded">randomly_inspect_code</code> — Deep exploration</li>
+                <li><code className="bg-muted px-1 rounded">scrutinize_ui</code> — UI/UX polish</li>
+              </ul>
+            </Card>
+
+            <Card className="p-4">
+              <h4 className="font-medium mb-2">Planning & Beads</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><code className="bg-muted px-1 rounded">turn_plan_into_beads</code> — Create tasks</li>
+                <li><code className="bg-muted px-1 rounded">improve_beads</code> — Refine in &quot;plan space&quot;</li>
+                <li><code className="bg-muted px-1 rounded">work_on_beads</code> — Execute tasks</li>
+                <li><code className="bg-muted px-1 rounded">next_bead</code> — Pick and start next task</li>
+              </ul>
+            </Card>
+
+            <Card className="p-4">
+              <h4 className="font-medium mb-2">Agent Coordination</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><code className="bg-muted px-1 rounded">default_new_agent</code> — Initialize an agent</li>
+                <li><code className="bg-muted px-1 rounded">check_mail</code> — Process agent mail</li>
+                <li><code className="bg-muted px-1 rounded">analyze_beads_and_allocate</code> — Distribute work</li>
+                <li><code className="bg-muted px-1 rounded">introduce_to_agents</code> — Join the swarm</li>
+              </ul>
+            </Card>
+
+            <Card className="p-4">
+              <h4 className="font-medium mb-2">Git & Operations</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><code className="bg-muted px-1 rounded">git_commit</code> — Smart grouped commits</li>
+                <li><code className="bg-muted px-1 rounded">reread_agents_md</code> — Refresh context</li>
+                <li><code className="bg-muted px-1 rounded">ultrathink</code> — Force deep reasoning</li>
+              </ul>
+            </Card>
+          </div>
+
+          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
+            <h4 className="font-medium mb-2">Example: The Git Commit Prompt</h4>
+            <CodeBlock code={PROMPT_GIT_COMMIT} language="prompt" />
+          </div>
+
+          <SimplerGuide>
+            <GuideExplain term="How to set up the command palette">
+              NTM (Named Tmux Manager) includes a command palette feature. Add your prompts
+              to <code className="bg-muted px-1 rounded">~/.config/ntm/prompts.yaml</code> and
+              bind a keyboard shortcut to open the palette. Each prompt can be triggered
+              in any active agent session with a single keypress.
+            </GuideExplain>
+          </SimplerGuide>
+        </CollapsibleSection>
+
+        {/* Section 8: Queued Workflows */}
+        <CollapsibleSection title="Step 8: Queued Workflows (Codex Power Move)" icon={ListOrdered}>
+          <p className="text-muted-foreground mb-4">
+            Codex CLI has a powerful feature: you can queue up multiple messages that execute
+            sequentially, one after the other. This lets you set up entire improvement cycles
+            that run autonomously for hours.
+          </p>
+
+          <Card className="p-4 border-[oklch(0.78_0.16_75/0.3)] bg-[oklch(0.78_0.16_75/0.08)] mb-6">
+            <p className="text-sm">
+              <strong>Note:</strong> This works with Codex CLI but not Claude Code (which
+              interrupts the agent when you send follow-up messages). For Claude Code, use
+              individual prompts or the NTM palette.
+            </p>
+          </Card>
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <h4 className="font-medium">The &quot;Improvement Cycle&quot; Queue</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Enter these prompts upfront — Codex processes them one at a time as each completes:
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">1</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Scrutinize and find improvements:</p>
+                    <CodeBlock code={PROMPT_SCRUTINIZE_UI} language="prompt" />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">2</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Turn suggestions into beads:</p>
+                    <CodeBlock code={PROMPT_CREATE_BEADS} language="prompt" />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">3</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Review the beads:</p>
+                    <CodeBlock code={PROMPT_REVIEW_BEADS} language="prompt" />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">4</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Execute the beads:</p>
+                    <CodeBlock code={PROMPT_WORK_ON_BEADS} language="prompt" />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">5</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">A couple &quot;proceed&quot; messages...</p>
+                    <code className="block bg-muted px-2 py-1 rounded text-sm">proceed</code>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">6</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Final fresh review:</p>
+                    <CodeBlock code={PROMPT_FRESH_REVIEW} language="prompt" />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[oklch(0.72_0.19_145/0.2)] text-xs font-bold text-[oklch(0.72_0.19_145)]">7</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Finally, commit everything:</p>
+                    <CodeBlock code={PROMPT_GIT_COMMIT} language="prompt" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <SimplerGuide>
+            <GuideTip>
+              <strong>Come back 3+ hours later</strong> to see an incredible amount of work
+              done autonomously. This works especially well with GPT 5.2 with extra effort.
+              Run this cycle multiple times a day across all your projects!
+            </GuideTip>
+
+            <GuideCaution>
+              <strong>Test coverage is crucial!</strong> This autopilot approach only works
+              safely when you have comprehensive unit tests and e2e integration tests. The
+              tests act as guardrails preventing agents from breaking things.
+            </GuideCaution>
+          </SimplerGuide>
+        </CollapsibleSection>
+
+        {/* Section 9: Post-Install Script */}
         <CollapsibleSection title="Bonus: Post-Install Setup Script" icon={Settings}>
           <p className="text-muted-foreground mb-4">
             After Part One is complete, run this script to install and configure all
