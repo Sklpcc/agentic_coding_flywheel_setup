@@ -6,7 +6,7 @@ import { Check, Copy, Terminal, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { cn, safeGetItem, safeSetItem } from "@/lib/utils";
 import { useDetectedOS, useUserOS } from "@/lib/userPreferences";
 import { springs } from "@/components/motion";
 
@@ -45,13 +45,12 @@ function getCompletionKey(persistKey: string | undefined): string | null {
 }
 
 function getCompletionFromStorage(key: string | null): boolean {
-  if (!key || typeof window === "undefined") return false;
-  return localStorage.getItem(key) === "true";
+  if (!key) return false;
+  return safeGetItem(key) === "true";
 }
 
 function setCompletionInStorage(key: string, completed: boolean): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(key, completed ? "true" : "false");
+  safeSetItem(key, completed ? "true" : "false");
 }
 
 export function CommandCard({

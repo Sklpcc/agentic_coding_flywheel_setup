@@ -144,6 +144,139 @@ export default function GenerateSSHKeyPage() {
         </div>
       </DetailsSection>
 
+      {/* Beginner Guide */}
+      <SimplerGuide>
+        <div className="space-y-6">
+          <GuideExplain term="SSH Key">
+            An SSH key is like a special password that lets you securely connect
+            to another computer over the internet.
+            <br /><br />
+            Unlike regular passwords that you type, SSH keys are files stored on
+            your computer. There are always <strong>two files</strong>:
+            <br /><br />
+            <strong>1. Private key</strong> — This is your secret key. It stays on YOUR
+            computer and you never share it with anyone. It&apos;s like the key to
+            your house.
+            <br /><br />
+            <strong>2. Public key</strong> — This is the one you share. You&apos;ll give
+            this to your VPS provider. It&apos;s like giving someone a copy of your
+            lock so they know it&apos;s really you when you connect.
+          </GuideExplain>
+
+          <GuideSection title="Detailed Step-by-Step Instructions">
+            <div className="space-y-4">
+              <GuideStep number={1} title="Open your terminal">
+                {os === "mac" ? (
+                  <>
+                    Open the terminal app you installed (Ghostty or WezTerm).
+                    You can press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">⌘</kbd> + <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Space</kbd>,
+                    type the name, and press Enter.
+                  </>
+                ) : (
+                  <>
+                    Open Windows Terminal. Click Start, type &quot;Terminal&quot;,
+                    and click on Windows Terminal.
+                  </>
+                )}
+              </GuideStep>
+
+              <GuideStep number={2} title="Copy the command">
+                Look at the gray box above that shows the ssh-keygen command.
+                Click the <strong>copy button</strong> (it looks like two overlapping squares)
+                on the right side of the box. This copies the command to your clipboard.
+              </GuideStep>
+
+              <GuideStep number={3} title="Paste and run the command">
+                Click inside the terminal window to make sure it&apos;s active.
+                Then paste the command:
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li><strong>Mac:</strong> Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">⌘</kbd> + <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">V</kbd></li>
+                  <li><strong>Windows:</strong> Right-click inside the terminal OR press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Ctrl</kbd> + <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">V</kbd></li>
+                </ul>
+                <p className="mt-2">Then press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> to run it.</p>
+              </GuideStep>
+
+              <GuideStep number={4} title="Answer the prompts">
+                The terminal will ask you two questions. For both, just press
+                <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> without typing anything:
+                <br /><br />
+                <strong>First prompt:</strong> &quot;Enter passphrase&quot;
+                → Just press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> (leave it empty)
+                <br /><br />
+                <strong>Second prompt:</strong> &quot;Enter same passphrase again&quot;
+                → Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">Enter</kbd> again
+                <br /><br />
+                <em className="text-xs">
+                  Note: Not using a passphrase is fine for this purpose. It makes things simpler.
+                </em>
+              </GuideStep>
+
+              <GuideStep number={5} title="Success!">
+                You should see a message like &quot;Your identification has been saved&quot;
+                and some ASCII art that looks like a random pattern in a box.
+                This means your key was created!
+              </GuideStep>
+            </div>
+          </GuideSection>
+
+          <GuideSection title="Now Copy Your Public Key">
+            <div className="space-y-4">
+              <GuideStep number={1} title="Run the second command">
+                Now look at the second gray command box (the &quot;cat&quot; or &quot;type&quot; command).
+                Click its copy button and paste it into the terminal, then press Enter.
+              </GuideStep>
+
+              <GuideStep number={2} title="Select and copy the output">
+                You&apos;ll see a long string of text that starts with{" "}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ssh-ed25519</code>.
+                This is your public key!
+                <br /><br />
+                <strong>To copy it:</strong>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li><strong>Mac:</strong> Triple-click to select the whole line, then <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">⌘</kbd> + <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">C</kbd></li>
+                  <li><strong>Windows:</strong> Triple-click to select, then right-click to copy</li>
+                </ul>
+              </GuideStep>
+
+              <GuideStep number={3} title="Save it somewhere safe">
+                Open a notes app (like Notes on Mac, or Notepad on Windows) and paste your
+                public key there. You&apos;ll need it in the next step when setting up your VPS.
+              </GuideStep>
+            </div>
+          </GuideSection>
+
+          <GuideTip>
+            Your public key looks something like this:
+            <code className="mt-2 block overflow-x-auto rounded bg-muted p-2 font-mono text-xs">
+              ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGx... acfs
+            </code>
+            Make sure you copy the WHOLE thing, from &quot;ssh-ed25519&quot; to &quot;acfs&quot;!
+          </GuideTip>
+
+          <GuideCaution>
+            <strong>Never share your private key!</strong> The private key is the file
+            WITHOUT &quot;.pub&quot; at the end. Only share the public key (the one
+            that ends in &quot;.pub&quot;). If anyone asks for your private key,
+            that&apos;s a scam.
+          </GuideCaution>
+
+          <GuideSection title="What if something went wrong?">
+            <p>
+              <strong>&quot;Command not found&quot;</strong> — Make sure you&apos;re in the terminal,
+              not in a web browser or text editor.
+              <br /><br />
+              <strong>&quot;Permission denied&quot;</strong> — Try this command first, then run the
+              ssh-keygen command again:
+              <code className="my-2 block rounded bg-muted px-3 py-2 font-mono text-xs">
+                mkdir -p ~/.ssh && chmod 700 ~/.ssh
+              </code>
+              <strong>&quot;File already exists&quot;</strong> — You already have a key! You can
+              use your existing key, or type &quot;y&quot; and press Enter to overwrite it.
+            </p>
+          </GuideSection>
+        </div>
+      </SimplerGuide>
+
       {/* Continue button */}
       <div className="flex justify-end pt-4">
         <Button onClick={handleContinue} disabled={isNavigating} size="lg">

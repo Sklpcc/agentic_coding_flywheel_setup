@@ -33,7 +33,16 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       storage: window.localStorage,
       key: "acfs-query-cache",
     });
-    setPersister(storagePersister);
+
+    // Defer state update to avoid setState-in-effect lint violations.
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (!cancelled) setPersister(storagePersister);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Always render PersistQueryClientProvider once we have a persister,

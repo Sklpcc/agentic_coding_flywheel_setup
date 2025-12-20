@@ -13,6 +13,7 @@ import {
   setUserProperties,
   sendEvent,
 } from '@/lib/analytics';
+import { safeGetItem, safeSetItem } from '@/lib/utils';
 
 interface AnalyticsProviderProps {
   children: React.ReactNode;
