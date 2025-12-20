@@ -22,6 +22,31 @@ FAIL_COUNT=0
 JSON_MODE=false
 JSON_CHECKS=()
 
+# Print a section header only in human output mode.
+section() {
+    if [[ "$JSON_MODE" != "true" ]]; then
+        echo "$1"
+    fi
+}
+
+# Print a blank line only in human output mode.
+blank_line() {
+    if [[ "$JSON_MODE" != "true" ]]; then
+        echo ""
+    fi
+}
+
+# Escape a string for safe inclusion in JSON (without surrounding quotes).
+json_escape() {
+    local s="${1:-}"
+    s=${s//\\/\\\\}
+    s=${s//\"/\\\"}
+    s=${s//$'\n'/\\n}
+    s=${s//$'\r'/\\r}
+    s=${s//$'\t'/\\t}
+    printf '%s' "$s"
+}
+
 # Check result helper
 check() {
     local id="$1"
@@ -30,34 +55,39 @@ check() {
     local details="${4:-}"
     local fix="${5:-}"
 
+    case "$status" in
+        pass) ((PASS_COUNT++)) ;;
+        warn) ((WARN_COUNT++)) ;;
+        fail) ((FAIL_COUNT++)) ;;
+    esac
+
     if [[ "$JSON_MODE" == "true" ]]; then
         local fix_json="null"
         if [[ -n "$fix" ]]; then
-            fix_json="\"$fix\""
+            fix_json="\"$(json_escape "$fix")\""
         fi
-        JSON_CHECKS+=("{\"id\":\"$id\",\"label\":\"$label\",\"status\":\"$status\",\"details\":\"$details\",\"fix\":$fix_json}")
-    else
-        case "$status" in
-            pass)
-                echo -e "  ${GREEN}PASS${NC} $label"
-                ((PASS_COUNT++))
-                ;;
-            warn)
-                echo -e "  ${YELLOW}WARN${NC} $label"
-                if [[ -n "$fix" ]]; then
-                    echo -e "        Fix: $fix"
-                fi
-                ((WARN_COUNT++))
-                ;;
-            fail)
-                echo -e "  ${RED}FAIL${NC} $label"
-                if [[ -n "$fix" ]]; then
-                    echo -e "        Fix: $fix"
-                fi
-                ((FAIL_COUNT++))
-                ;;
-        esac
+
+        JSON_CHECKS+=("{\"id\":\"$(json_escape "$id")\",\"label\":\"$(json_escape "$label")\",\"status\":\"$(json_escape "$status")\",\"details\":\"$(json_escape "$details")\",\"fix\":$fix_json}")
+        return 0
     fi
+
+    case "$status" in
+        pass)
+            echo -e "  ${GREEN}PASS${NC} $label"
+            ;;
+        warn)
+            echo -e "  ${YELLOW}WARN${NC} $label"
+            if [[ -n "$fix" ]]; then
+                echo -e "        Fix: $fix"
+            fi
+            ;;
+        fail)
+            echo -e "  ${RED}FAIL${NC} $label"
+            if [[ -n "$fix" ]]; then
+                echo -e "        Fix: $fix"
+            fi
+            ;;
+    esac
 }
 
 # Check if command exists
@@ -94,7 +124,7 @@ check_optional_command() {
 
 # Check identity
 check_identity() {
-    echo "Identity"
+    section "Identity"
 
     # Check user
     local user
@@ -112,12 +142,12 @@ check_identity() {
         check "identity.passwordless_sudo" "Passwordless sudo" "fail" "requires password" "Re-run ACFS installer with --mode vibe"
     fi
 
-    echo ""
+    blank_line
 }
 
 # Check workspace
 check_workspace() {
-    echo "Workspace"
+    section "Workspace"
 
     if [[ -d "/data/projects" ]] && [[ -w "/data/projects" ]]; then
         check "workspace.data_projects" "/data/projects exists and writable" "pass"
@@ -125,12 +155,12 @@ check_workspace() {
         check "workspace.data_projects" "/data/projects" "fail" "missing or not writable" "sudo mkdir -p /data/projects && sudo chown ubuntu:ubuntu /data"
     fi
 
-    echo ""
+    blank_line
 }
 
 # Check shell
 check_shell() {
-    echo "Shell"
+    section "Shell"
 
     check_command "shell.zsh" "zsh" "zsh" "sudo apt install zsh"
 
@@ -175,12 +205,12 @@ check_shell() {
     check_command "shell.zoxide" "zoxide" "zoxide"
     check_command "shell.direnv" "direnv" "direnv" "sudo apt install direnv"
 
-    echo ""
+    blank_line
 }
 
 # Check core tools
 check_core_tools() {
-    echo "Core tools"
+    section "Core tools"
 
     check_command "tool.bun" "Bun" "bun" "curl -fsSL https://bun.sh/install | bash"
     check_command "tool.uv" "uv" "uv" "curl -LsSf https://astral.sh/uv/install.sh | sh"
@@ -190,12 +220,12 @@ check_core_tools() {
     check_command "tool.rg" "ripgrep" "rg" "sudo apt install ripgrep"
     check_command "tool.sg" "ast-grep" "sg" "cargo install ast-grep"
 
-    echo ""
+    blank_line
 }
 
 # Check coding agents
 check_agents() {
-    echo "Agents"
+    section "Agents"
 
     check_command "agent.claude" "Claude Code" "claude"
     check_command "agent.codex" "Codex CLI" "codex" "bun install -g @openai/codex@latest"
@@ -220,12 +250,12 @@ check_agents() {
         check "agent.alias.gmi" "gmi alias" "warn" "not in zshrc"
     fi
 
-    echo ""
+    blank_line
 }
 
 # Check cloud tools
 check_cloud() {
-    echo "Cloud/DB"
+    section "Cloud/DB"
 
     check_optional_command "cloud.vault" "Vault" "vault"
     check_optional_command "cloud.postgres" "PostgreSQL" "psql"
@@ -233,12 +263,12 @@ check_cloud() {
     check_optional_command "cloud.supabase" "Supabase CLI" "supabase" "bun install -g supabase"
     check_optional_command "cloud.vercel" "Vercel CLI" "vercel" "bun install -g vercel"
 
-    echo ""
+    blank_line
 }
 
 # Check Dicklesworthstone stack
 check_stack() {
-    echo "Dicklesworthstone stack"
+    section "Dicklesworthstone stack"
 
     check_command "stack.ntm" "NTM" "ntm"
     check_command "stack.slb" "SLB" "slb"
@@ -255,7 +285,7 @@ check_stack() {
         check "stack.mcp_agent_mail" "MCP Agent Mail" "warn"
     fi
 
-    echo ""
+    blank_line
 }
 
 # Print summary
@@ -280,13 +310,22 @@ print_json() {
     local checks_json
     checks_json=$(printf '%s,' "${JSON_CHECKS[@]}" | sed 's/,$//')
 
+    local os_id="unknown"
+    local os_version="unknown"
+    if [[ -f /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        os_id="${ID:-unknown}"
+        os_version="${VERSION_ID:-unknown}"
+    fi
+
     cat << EOF
 {
   "acfs_version": "$ACFS_VERSION",
   "timestamp": "$(date -Iseconds)",
   "mode": "${ACFS_MODE:-vibe}",
   "user": "$(whoami)",
-  "os": {"id": "$(. /etc/os-release && echo "$ID")", "version": "$(. /etc/os-release && echo "$VERSION_ID")"},
+  "os": {"id": "$os_id", "version": "$os_version"},
   "checks": [$checks_json],
   "summary": {"pass": $PASS_COUNT, "warn": $WARN_COUNT, "fail": $FAIL_COUNT}
 }
