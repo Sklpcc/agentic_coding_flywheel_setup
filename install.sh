@@ -880,6 +880,42 @@ run_smoke_test() {
 # Print summary
 # ============================================================
 print_summary() {
+    if [[ "$DRY_RUN" == "true" ]]; then
+        {
+            if [[ "$HAS_GUM" == "true" ]]; then
+                echo ""
+                gum style \
+                    --border double \
+                    --border-foreground "$ACFS_WARNING" \
+                    --padding "1 3" \
+                    --margin "1 0" \
+                    --align left \
+                    "$(gum style --foreground "$ACFS_WARNING" --bold '🧪 ACFS Dry Run Complete (no changes made)')
+
+Version: $ACFS_VERSION
+Mode:    $MODE
+
+No commands were executed. To actually install, re-run without --dry-run.
+Tip: use --print to see upstream install scripts that will be fetched."
+            else
+                echo ""
+                echo -e "${YELLOW}╔════════════════════════════════════════════════════════════╗${NC}"
+                echo -e "${YELLOW}║          🧪 ACFS Dry Run Complete (no changes made)        ║${NC}"
+                echo -e "${YELLOW}╠════════════════════════════════════════════════════════════╣${NC}"
+                echo ""
+                echo -e "Version: ${BLUE}$ACFS_VERSION${NC}"
+                echo -e "Mode:    ${BLUE}$MODE${NC}"
+                echo ""
+                echo -e "${GRAY}No commands were executed. Re-run without --dry-run to install.${NC}"
+                echo -e "${GRAY}Tip: use --print to see upstream install scripts.${NC}"
+                echo ""
+                echo -e "${YELLOW}╚════════════════════════════════════════════════════════════╝${NC}"
+                echo ""
+            fi
+        } >&2
+        return 0
+    fi
+
     local summary_content="Version: $ACFS_VERSION
 Mode:    $MODE
 
