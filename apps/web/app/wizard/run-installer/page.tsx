@@ -6,13 +6,13 @@ import {
   Sparkles,
   Clock,
   ExternalLink,
-  AlertTriangle,
-  ChevronDown,
   Check,
+  Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
+import { AlertCard, OutputPreview, DetailsSection } from "@/components/alert-card";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 
@@ -60,11 +60,19 @@ export default function RunInstallerPage() {
     <div className="space-y-8">
       {/* Header with sparkle */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold tracking-tight">
-            Run the ACFS installer
-          </h1>
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/30 to-[oklch(0.7_0.2_330/0.3)] shadow-lg shadow-primary/20">
+            <Rocket className="h-6 w-6 text-primary" />
+            <Sparkles className="absolute -right-1 -top-1 h-4 w-4 text-[oklch(0.78_0.16_75)] animate-pulse" />
+          </div>
+          <div>
+            <h1 className="bg-gradient-to-r from-primary via-foreground to-[oklch(0.7_0.2_330)] bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
+              Run the ACFS installer
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              ~15 min
+            </p>
+          </div>
         </div>
         <p className="text-lg text-muted-foreground">
           This is the magic moment. One command sets everything up.
@@ -72,20 +80,10 @@ export default function RunInstallerPage() {
       </div>
 
       {/* Warning */}
-      <Card className="border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
-        <div className="flex gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-          <div className="space-y-1">
-            <p className="font-medium text-amber-800 dark:text-amber-200">
-              Don&apos;t close the terminal
-            </p>
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              Stay connected during installation. If disconnected, SSH back in
-              and check if it&apos;s still running.
-            </p>
-          </div>
-        </div>
-      </Card>
+      <AlertCard variant="warning" title="Don't close the terminal">
+        Stay connected during installation. If disconnected, SSH back in
+        and check if it&apos;s still running.
+      </AlertCard>
 
       {/* The command */}
       <div className="space-y-4">
@@ -108,40 +106,23 @@ export default function RunInstallerPage() {
       </div>
 
       {/* What it installs - collapsible */}
-      <div className="rounded-lg border">
-        <button
-          type="button"
-          onClick={() => setShowDetails(!showDetails)}
-          className="flex w-full items-center justify-between p-4 text-left hover:bg-muted/50"
-        >
-          <span className="font-semibold">What this command installs</span>
-          <ChevronDown
-            className={cn(
-              "h-5 w-5 text-muted-foreground transition-transform",
-              showDetails && "rotate-180"
-            )}
-          />
-        </button>
-        {showDetails && (
-          <div className="border-t px-4 pb-4">
-            <div className="grid gap-4 pt-4 sm:grid-cols-2">
-              {WHAT_IT_INSTALLS.map((group) => (
-                <div key={group.category}>
-                  <h4 className="mb-2 font-medium">{group.category}</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    {group.items.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <Check className="h-3 w-3 text-green-500" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+      <DetailsSection summary="What this command installs">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {WHAT_IT_INSTALLS.map((group) => (
+            <div key={group.category}>
+              <h4 className="mb-2 font-medium text-foreground">{group.category}</h4>
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {group.items.map((item, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <Check className="h-3 w-3 text-[oklch(0.72_0.19_145)]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      </DetailsSection>
 
       {/* View source */}
       <div className="flex items-center gap-2 text-sm">

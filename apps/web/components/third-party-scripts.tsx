@@ -3,6 +3,8 @@
 import Script from 'next/script';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Environment variables for third-party services
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -106,19 +108,11 @@ export function ThirdPartyScripts() {
         />
       )}
 
-      {/* Vercel Web Analytics */}
-      <Script
-        src="/_vercel/insights/script.js"
-        strategy="afterInteractive"
-        data-sdkn="@vercel/analytics"
-      />
+      {/* Vercel Web Analytics - automatic pageview & event tracking */}
+      <Analytics />
 
-      {/* Vercel Speed Insights */}
-      <Script
-        src="/_vercel/speed-insights/script.js"
-        strategy="afterInteractive"
-        data-sdkn="@vercel/speed-insights"
-      />
+      {/* Vercel Speed Insights - Core Web Vitals monitoring */}
+      <SpeedInsights />
     </>
   );
 }

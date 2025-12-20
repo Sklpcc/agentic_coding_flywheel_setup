@@ -1,7 +1,15 @@
 // ============================================================
-// AGENTIC CODING FLYWHEEL - Comprehensive Data Model
-// These 8 tools form a self-reinforcing ecosystem for multi-agent
-// coding workflows. Each tool enhances the others.
+// AGENTIC CODING FLYWHEEL - The Complete Multi-Agent Ecosystem
+// ============================================================
+//
+// This isn't just a collection of tools. It's a self-reinforcing
+// system that enables unheard-of velocity in complex software
+// development. Multiple AI agents working in parallel across 7+
+// projects, reviewing each other's work, creating and executing
+// tasks, and making incredible autonomous progress.
+//
+// The magic isn't in any single tool - it's in how they work
+// together. Using three tools is 10x better than using one.
 // ============================================================
 
 export type FlywheelTool = {
@@ -24,6 +32,289 @@ export type FlywheelTool = {
   language: string;
 };
 
+export type WorkflowScenario = {
+  id: string;
+  title: string;
+  description: string;
+  steps: Array<{
+    tool: string;
+    action: string;
+    result: string;
+  }>;
+  outcome: string;
+  timeframe: string;
+};
+
+export type AgentPrompt = {
+  id: string;
+  title: string;
+  category: "exploration" | "review" | "improvement" | "planning" | "execution";
+  prompt: string;
+  whenToUse: string;
+  bestWith: string[];
+};
+
+// ============================================================
+// WORKFLOW SCENARIOS - How the tools work together in practice
+// ============================================================
+
+export const workflowScenarios: WorkflowScenario[] = [
+  {
+    id: "daily-parallel",
+    title: "Daily Parallel Progress",
+    description:
+      "Keep multiple projects moving forward simultaneously, even when you don't have mental bandwidth for all of them.",
+    steps: [
+      {
+        tool: "ntm",
+        action: "Spawn agents across 3 projects: `ntm spawn proj1 --cc=2 proj2 --cod=1 proj3 --gmi=1`",
+        result: "6 agents running in parallel across your machines",
+      },
+      {
+        tool: "bv",
+        action: "Each agent runs `bv --robot-triage` to find what to work on",
+        result: "Agents autonomously select high-priority unblocked tasks",
+      },
+      {
+        tool: "mail",
+        action: "Agents coordinate via mail threads when their work overlaps",
+        result: "No file conflicts, clear communication trails",
+      },
+      {
+        tool: "cm",
+        action: "Memory system provides context from previous sessions",
+        result: "Agents don't repeat past mistakes or rediscover solutions",
+      },
+    ],
+    outcome: "Come back 3+ hours later to find incredible autonomous progress across all projects",
+    timeframe: "3+ hours of autonomous work",
+  },
+  {
+    id: "agent-review",
+    title: "Agents Reviewing Agents",
+    description: "Have your agents review each other's work to catch bugs, errors, and issues before they become problems.",
+    steps: [
+      {
+        tool: "cass",
+        action: "Agent searches prior sessions: `cass search 'authentication flow' --robot`",
+        result: "Finds all previous work on the topic across all agents",
+      },
+      {
+        tool: "ubs",
+        action: "Bug scanner runs: `ubs . --format=json`",
+        result: "Static analysis catches issues in 7 languages",
+      },
+      {
+        tool: "bv",
+        action: "Creates beads for each issue: `bd create --title='Fix auth bug'`",
+        result: "Issues tracked with dependencies and priorities",
+      },
+      {
+        tool: "slb",
+        action: "Dangerous fixes require approval: `slb run 'git reset --hard'`",
+        result: "Two-person rule prevents catastrophic mistakes",
+      },
+    ],
+    outcome: "Multiple agents catching each other's errors before they ship",
+    timeframe: "Continuous improvement loop",
+  },
+  {
+    id: "massive-planning",
+    title: "5,500 Lines to 347 Beads",
+    description:
+      "Transform massive planning documents into executable, dependency-tracked task graphs that agents can work through systematically.",
+    steps: [
+      {
+        tool: "bv",
+        action: "Create granular beads with dependency structure",
+        result: "347 tasks with clear blocking relationships",
+      },
+      {
+        tool: "mail",
+        action: "Agents claim tasks and communicate progress",
+        result: "Coordination without conflicts",
+      },
+      {
+        tool: "cass",
+        action: "Search for prior art and existing solutions",
+        result: "Reuse patterns, avoid reinventing",
+      },
+      {
+        tool: "cm",
+        action: "Store successful approaches as procedural memory",
+        result: "Future agents learn from successes",
+      },
+    ],
+    outcome: "Project nearly complete the same day, agents pushing commits while you're in bed",
+    timeframe: "~1 day for complex feature",
+  },
+  {
+    id: "fresh-eyes",
+    title: "Fresh Eyes Code Review",
+    description: "Have agents deeply investigate code with fresh perspectives, finding bugs that humans miss.",
+    steps: [
+      {
+        tool: "cass",
+        action: "Agent explores codebase, tracing execution flows",
+        result: "Deep understanding of how code actually works",
+      },
+      {
+        tool: "ubs",
+        action: "Static analysis with 18 detection categories",
+        result: "Null safety, async bugs, security issues found",
+      },
+      {
+        tool: "cm",
+        action: "Cross-reference with memory of past bugs",
+        result: "Pattern recognition across projects",
+      },
+      {
+        tool: "bv",
+        action: "Critical issues become blocking beads",
+        result: "Nothing ships until issues resolved",
+      },
+    ],
+    outcome: "Systematic, methodical bug discovery and correction",
+    timeframe: "Continuous",
+  },
+];
+
+// ============================================================
+// AGENT PROMPTS - The actual prompts that power the workflow
+// ============================================================
+
+export const agentPrompts: AgentPrompt[] = [
+  {
+    id: "exploration",
+    title: "Deep Code Exploration",
+    category: "exploration",
+    prompt: `I want you to sort of randomly explore the code files in this project, choosing code files to deeply investigate and understand and trace their functionality and execution flows through the related code files which they import or which they are imported by. Once you understand the purpose of the code in the larger context of the workflows, I want you to do a super careful, methodical, and critical check with "fresh eyes" to find any obvious bugs, problems, errors, issues, silly mistakes, etc. and then systematically and meticulously and intelligently correct them.`,
+    whenToUse: "When you want agents to find hidden bugs and understand the codebase deeply",
+    bestWith: ["cass", "ubs", "bv"],
+  },
+  {
+    id: "peer-review",
+    title: "Agent Peer Review",
+    category: "review",
+    prompt: `Ok can you now turn your attention to reviewing the code written by your fellow agents and checking for any issues, bugs, errors, problems, inefficiencies, security problems, reliability issues, etc. and carefully diagnose their underlying root causes using first-principle analysis and then fix or revise them if necessary? Don't restrict yourself to the latest commits, cast a wider net and go super deep!`,
+    whenToUse: "After agents have been working independently, have them review each other",
+    bestWith: ["mail", "cass", "ubs"],
+  },
+  {
+    id: "ux-polish",
+    title: "UX/UI Deep Scrutiny",
+    category: "improvement",
+    prompt: `I want you to super carefully scrutinize every aspect of the application workflow and implementation and look for things that just seem sub-optimal or even wrong/mistaken to you, things that could very obviously be improved from a user-friendliness and intuitiveness standpoint, places where our UI/UX could be improved and polished to be slicker, more visually appealing, and more premium feeling and just ultra high-quality, like Stripe-level apps.`,
+    whenToUse: "When dissatisfied with UX but don't have energy to grapple with it directly",
+    bestWith: ["bv", "cm"],
+  },
+  {
+    id: "beads-creation",
+    title: "Comprehensive Beads Planning",
+    category: "planning",
+    prompt: `OK so please take ALL of that and elaborate on it more and then create a comprehensive and granular set of beads for all this with tasks, subtasks, and dependency structure overlaid, with detailed comments so that the whole thing is totally self-contained and self-documenting (including relevant background, reasoning/justification, considerations, etc.-- anything we'd want our "future self" to know about the goals and intentions and thought process and how it serves the over-arching goals of the project.)`,
+    whenToUse: "After generating improvement suggestions, turn them into actionable tasks",
+    bestWith: ["bv", "mail"],
+  },
+  {
+    id: "beads-validation",
+    title: "Plan Space Validation",
+    category: "planning",
+    prompt: `Check over each bead super carefully-- are you sure it makes sense? Is it optimal? Could we change anything to make the system work better for users? If so, revise the beads. It's a lot easier and faster to operate in "plan space" before we start implementing these things!`,
+    whenToUse: "Before executing a large batch of beads, validate the plan",
+    bestWith: ["bv"],
+  },
+  {
+    id: "systematic-execution",
+    title: "Systematic Bead Execution",
+    category: "execution",
+    prompt: `OK, so start systematically and methodically and meticulously and diligently executing those remaining beads tasks that you created in the optimal logical order! Don't forget to mark beads as you work on them.`,
+    whenToUse: "After planning and validation, execute the work",
+    bestWith: ["bv", "mail", "slb"],
+  },
+  {
+    id: "fresh-eyes-review",
+    title: "Post-Implementation Review",
+    category: "review",
+    prompt: `Great, now I want you to carefully read over all of the new code you just wrote and other existing code you just modified with "fresh eyes" looking super carefully for any obvious bugs, errors, problems, issues, confusion, etc. Carefully fix anything you uncover.`,
+    whenToUse: "After a batch of implementation work, review everything",
+    bestWith: ["ubs", "cass"],
+  },
+  {
+    id: "smart-commit",
+    title: "Intelligent Commit Grouping",
+    category: "execution",
+    prompt: `Now, based on your knowledge of the project, commit all changed files now in a series of logically connected groupings with super detailed commit messages for each and then push. Take your time to do it right. Don't edit the code at all. Don't commit obviously ephemeral files.`,
+    whenToUse: "Final step after all work is done",
+    bestWith: ["slb"],
+  },
+];
+
+// ============================================================
+// SYNERGY EXPLANATIONS - Why using multiple tools is 10x better
+// ============================================================
+
+export const synergyExplanations = [
+  {
+    tools: ["ntm", "mail", "bv"],
+    title: "The Core Loop",
+    description:
+      "NTM spawns agents that register with Mail for coordination. They use BV to find tasks to work on. The result: autonomous agents that figure out what to do next without human intervention.",
+    multiplier: "10x",
+    example:
+      "Spawn 6 agents across 3 projects. Each finds work via BV, coordinates via Mail. You return 3 hours later to merged PRs.",
+  },
+  {
+    tools: ["cass", "cm"],
+    title: "Collective Memory",
+    description:
+      "CASS indexes all agent sessions for instant search. CM stores learnings as procedural memory. Together: agents that never repeat mistakes and always remember what worked.",
+    multiplier: "5x",
+    example:
+      "New agent asks 'how did we handle auth?' CASS finds the answer in 60ms. CM surfaces the playbook that worked.",
+  },
+  {
+    tools: ["ubs", "slb"],
+    title: "Safety Net",
+    description:
+      "UBS catches bugs before they're committed. SLB prevents dangerous commands from running without approval. Together: aggressive automation with guardrails.",
+    multiplier: "∞",
+    example:
+      "Agent finds a bug, wants to `git reset --hard`. SLB requires a second agent to approve. UBS validates the fix before merge.",
+  },
+  {
+    tools: ["mail", "slb"],
+    title: "Approval Workflow",
+    description:
+      "SLB sends approval requests directly to agent inboxes via Mail. Recipients can review context and approve or reject. Fully auditable decision trail.",
+    multiplier: "Trust",
+    example:
+      "Agent proposes database migration. SLB notifies reviewers via Mail. Second agent reviews diff, approves. Audit log preserved.",
+  },
+  {
+    tools: ["bv", "cm"],
+    title: "Learned Patterns",
+    description:
+      "BV tracks task patterns and completion history. CM stores what approaches worked. Together: each new task benefits from all past solutions.",
+    multiplier: "Compounding",
+    example:
+      "Similar bug appears in new project. CM surfaces the pattern. BV creates bead linking to successful prior fix.",
+  },
+  {
+    tools: ["caam", "ntm"],
+    title: "Account Orchestration",
+    description:
+      "CAAM manages API keys for all your agent accounts. NTM spawns agents with the right credentials automatically. Seamless multi-account workflows.",
+    multiplier: "Infinite agents",
+    example:
+      "Rate limited on one Claude account? NTM spawns agents with fresh credentials from CAAM. No manual switching.",
+  },
+];
+
+// ============================================================
+// TOOL DEFINITIONS - Detailed info about each tool
+// ============================================================
+
 export const flywheelTools: FlywheelTool[] = [
   {
     id: "ntm",
@@ -32,33 +323,32 @@ export const flywheelTools: FlywheelTool[] = [
     href: "https://github.com/Dicklesworthstone/ntm",
     icon: "LayoutGrid",
     color: "from-sky-400 to-blue-500",
-    tagline: "Multi-agent command center",
+    tagline: "The agent cockpit",
     description:
-      "Transform tmux into a multi-agent command center. Spawn named agent panes, broadcast prompts to specific agent types, capture outputs with regex filtering, and manage persistent SSH-compatible sessions.",
+      "Transform tmux into a multi-agent command center. Spawn Claude, Codex, and Gemini agents in named panes. Broadcast prompts to specific agent types. Persistent sessions survive SSH disconnects.",
     deepDescription:
-      "NTM orchestrates multiple AI coding agents (Claude, Codex, Gemini) in parallel within tmux sessions. Features include: pane naming with type classification (cc/cod/gmi), broadcasting prompts with variant filtering, command palette TUI with fuzzy search and categories, interactive dashboard with agent color coding, configurable hooks (pre/post-spawn, pre/post-send), robot mode for automation (--robot-status, --robot-plan), session persistence across SSH disconnects, and deep Agent Mail integration for inter-agent messaging.",
+      "NTM is the orchestration layer that lets you run multiple AI agents in parallel. Spawn agents with type classification (cc/cod/gmi), broadcast prompts with filtering, use the command palette TUI for quick actions. Features include configurable hooks, robot mode for automation, and deep Agent Mail integration.",
     connectsTo: ["slb", "mail", "cass", "caam"],
     connectionDescriptions: {
-      slb: "Routes dangerous commands through SLB safety checks before execution",
-      mail: "Spawned agents auto-register and coordinate via Agent Mail threads",
-      cass: "All agent session history indexed for instant cross-agent search",
-      caam: "Quick-switches between API keys when spawning new agent instances",
+      slb: "Routes dangerous commands through SLB safety checks",
+      mail: "Spawned agents auto-register with Mail for coordination",
+      cass: "All session history indexed for cross-agent search",
+      caam: "Quick-switches credentials when spawning new agents",
     },
     stars: 16,
     features: [
-      "Spawn Claude/Codex/Gemini in named panes with `ntm spawn --cc=3 --cod=2`",
-      "Broadcast prompts to agent types: `ntm send --cc 'prompt'`",
-      "Command palette TUI with fuzzy search, categories, and 1-9 quick-select",
-      "Real-time dashboard showing agent status with Catppuccin color themes",
-      "Robot mode: `--robot-status`, `--robot-plan`, `--robot-dashboard`",
-      "Configurable hooks: pre/post-spawn, pre/post-send, pre/post-shutdown",
+      "Spawn multiple agents: ntm spawn project --cc=3 --cod=2 --gmi=1",
+      "Broadcast to agent types: ntm send project --cc 'prompt'",
+      "Command palette TUI with fuzzy search and categories",
+      "Real-time dashboard with Catppuccin color themes",
+      "Robot mode for scripting: --robot-status, --robot-plan",
+      "Hooks: pre/post-spawn, pre/post-send, pre/post-shutdown",
     ],
     cliCommands: [
       "ntm spawn <session> --cc=N --cod=N --gmi=N",
       "ntm send <session> --cc 'prompt'",
       "ntm palette [session]",
       "ntm dashboard [session]",
-      "ntm mail send <session> --to <agent> 'message'",
     ],
     installCommand:
       "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash",
@@ -71,34 +361,33 @@ export const flywheelTools: FlywheelTool[] = [
     href: "https://github.com/Dicklesworthstone/mcp_agent_mail",
     icon: "Mail",
     color: "from-violet-400 to-purple-500",
-    tagline: "Gmail for your coding agents",
+    tagline: "Gmail for your agents",
     description:
-      "A complete coordination system for multi-agent workflows. Agents register identities, send/receive GitHub-flavored Markdown messages, search conversation history, and declare advisory file reservations to prevent edit conflicts.",
+      "A complete coordination system for multi-agent workflows. Agents register identities, send/receive messages, search conversations, and declare file reservations to prevent edit conflicts.",
     deepDescription:
-      "MCP Agent Mail is an MCP server (HTTP on port 8765) providing agent coordination primitives. Core concepts: Projects (identified by absolute paths), Agents (adjective+noun names like 'BlueLake'), Messages (GFM markdown with threading), and File Reservations (advisory locks on file paths). Features 20+ MCP tools including ensure_project, register_agent, send_message, reply_message, file_reservation_paths, fetch_inbox, search_messages, and summarize_thread. Git-backed storage provides complete audit trails. Supports contact policies (open/auto/contacts_only/block_all) and cross-project coordination.",
+      "Agent Mail is the nervous system of the flywheel. It provides: agent identities (adjective+noun names like 'BlueLake'), threaded markdown messages, full-text search, and advisory file locks. Git-backed storage means complete audit trails. 20+ MCP tools for programmatic access.",
     connectsTo: ["bv", "cm", "slb", "ntm"],
     connectionDescriptions: {
-      bv: "Task IDs link mail conversations to Beads issues for context",
-      cm: "Shared context and memories accessible across agent sessions",
-      slb: "SLB approval requests delivered directly to agent inboxes",
-      ntm: "NTM-spawned agents auto-register and coordinate via mail",
+      bv: "Task IDs link conversations to Beads issues",
+      cm: "Shared memories accessible across sessions",
+      slb: "Approval requests delivered to agent inboxes",
+      ntm: "NTM-spawned agents auto-register",
     },
     stars: 1015,
     demoUrl: "https://dicklesworthstone.github.io/cass-memory-system-agent-mailbox-viewer/viewer/",
     features: [
-      "20+ MCP tools: ensure_project, register_agent, send/reply_message",
-      "Advisory file reservations with exclusive/shared modes and TTL",
-      "Thread summarization with LLM-powered key points extraction",
-      "Git-backed storage for complete audit trails",
+      "Agent identities with auto-generated names",
+      "GitHub-flavored Markdown messages with threading",
+      "Advisory file reservations (exclusive/shared, TTL)",
+      "Full-text search across all conversations",
       "Contact policies: open, auto, contacts_only, block_all",
-      "Macro helpers: macro_start_session, macro_prepare_thread",
+      "Macro helpers for common workflows",
     ],
     cliCommands: [
-      "am status",
-      "am inbox --project /path",
-      "ensure_project(human_key='/abs/path')",
-      "register_agent(project_key, program, model)",
-      "send_message(project_key, sender, to, subject, body_md)",
+      "ensure_project(human_key='/path/to/project')",
+      "register_agent(project_key, program='claude-code', model='opus-4.5')",
+      "send_message(project_key, sender, to=['Agent'], subject, body_md)",
+      "file_reservation_paths(project_key, agent, paths, ttl_seconds)",
     ],
     installCommand:
       'curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh" | bash -s -- --yes',
@@ -111,35 +400,34 @@ export const flywheelTools: FlywheelTool[] = [
     href: "https://github.com/Dicklesworthstone/ultimate_bug_scanner",
     icon: "Bug",
     color: "from-rose-400 to-red-500",
-    tagline: "Polyglot static analysis for agents",
+    tagline: "Polyglot static analysis",
     description:
-      "Wraps best-in-class static analyzers (ESLint, Ruff, Clippy, golangci-lint, and more) with a consistent JSON interface. Perfect as a pre-commit hook or post-processing step for autonomous agents.",
+      "Wraps best-in-class static analyzers (ESLint, Ruff, Clippy, golangci-lint) with consistent JSON output. Sub-5-second feedback loops. Perfect as pre-commit hook or agent post-processor.",
     deepDescription:
-      "UBS v5.0 is an AI-native multi-language static analysis tool supporting 7 languages (JS/TS, Python, Go, Rust, C/C++, Java, Ruby, Swift) with 18 detection categories. Each language has dedicated modules with AST helpers for resource lifecycle tracking, type narrowing, and taint analysis. Features sub-5-second feedback loops, zero configuration, unified JSON/JSONL/SARIF output, baseline comparison for drift detection, and integration hooks for Claude Code, Cursor, Windsurf, and Cline. Supply chain secured with SHA-256 checksums and minisign verification.",
+      "UBS v5.0 supports 7 languages with 18 detection categories including null safety, async bugs, security vulnerabilities, and memory leaks. Zero configuration required. Unified JSON/JSONL/SARIF output for automation. Supply chain secured with SHA-256 checksums.",
     connectsTo: ["bv", "slb"],
     connectionDescriptions: {
-      bv: "Creates Beads issues for discovered bugs with priority rankings",
-      slb: "Pre-validates code before risky commits and deployments",
+      bv: "Creates Beads issues for discovered bugs",
+      slb: "Pre-validates code before risky operations",
     },
     stars: 91,
     features: [
-      "7 languages: JS/TS, Python, Go, Rust, C/C++, Java, Ruby, Swift",
-      "18 detection categories: null safety, async bugs, security, memory leaks",
+      "7 languages: JS/TS, Python, Go, Rust, C/C++, Java, Ruby",
+      "18 detection categories: security, async bugs, null safety",
+      "Sub-5-second feedback loops",
       "Unified output: --format=json|jsonl|sarif",
-      "Baseline comparison: --comparison baseline.json --report-json latest.json",
-      "AST helpers for resource lifecycle and type narrowing",
-      "On-file-write hooks for Claude Code and Cursor",
+      "Baseline comparison for drift detection",
+      "On-file-write hooks for Claude Code, Cursor",
     ],
     cliCommands: [
       "ubs . --format=json",
       "ubs --ci --fail-on-warning .",
       "ubs --only=python,js src/",
-      "ubs --comparison baseline.json --report-json latest.json .",
-      "ubs doctor --fix",
+      "ubs --comparison baseline.json .",
     ],
     installCommand:
       'curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh" | bash -s -- --easy-mode',
-    language: "Bash/Python",
+    language: "Python",
   },
   {
     id: "bv",
@@ -148,34 +436,33 @@ export const flywheelTools: FlywheelTool[] = [
     href: "https://github.com/Dicklesworthstone/beads_viewer",
     icon: "GitBranch",
     color: "from-emerald-400 to-teal-500",
-    tagline: "Graph analytics for task dependencies",
+    tagline: "Task dependency graphs",
     description:
-      "Transforms how agents visualize task dependencies using DAG-based analysis. Features nine graph metrics, robot protocol for AI-ready JSON output, and time-travel diffing across git revisions.",
+      "Transforms task tracking with DAG-based analysis. Nine graph metrics, robot protocol for AI, time-travel diffing. Agents use BV to figure out what to work on next.",
     deepDescription:
-      "Beads Viewer is a production-grade TUI for the Beads issue tracker, treating projects as Directed Acyclic Graphs. Computes 9 graph metrics in two phases: Phase 1 (instant): Degree, Topological Sort, Density; Phase 2 (async with 500ms timeout): PageRank, Betweenness Centrality, HITS, Critical Path, Eigenvector Centrality, K-Core Decomposition. Features 6 view modes (list, kanban board, graph, insights, history, flow matrix), responsive layouts, live reload on beads.jsonl changes, and comprehensive export to Markdown/HTML/SQLite. Robot protocol (--robot-*) provides structured JSON for AI agents.",
+      "BV treats your project as a Directed Acyclic Graph. Computes PageRank, Betweenness Centrality, HITS, Critical Path, and more. Robot protocol (--robot-*) outputs structured JSON for agents. Time-travel lets you diff across git history.",
     connectsTo: ["mail", "ubs", "cass", "cm"],
     connectionDescriptions: {
-      mail: "Task updates trigger mail notifications to relevant agents",
-      ubs: "Bug scanner results create blocking issues in the graph",
-      cass: "Search prior sessions for context on related tasks",
-      cm: "Remembers task patterns and successful solution approaches",
+      mail: "Task updates trigger notifications",
+      ubs: "Bug scan results create blocking issues",
+      cass: "Search prior sessions for task context",
+      cm: "Remembers successful approaches",
     },
     stars: 546,
     demoUrl: "https://dicklesworthstone.github.io/beads_viewer-pages/",
     features: [
-      "9 graph metrics: PageRank, Betweenness, HITS, Critical Path, Eigenvector",
-      "6 TUI views: list, kanban, graph, insights, history, flow matrix",
+      "9 graph metrics: PageRank, Betweenness, HITS, Critical Path",
+      "6 TUI views: list, kanban, graph, insights, history, flow",
       "Robot protocol: --robot-triage, --robot-plan, --robot-insights",
-      "Time-travel diffing: --as-of HEAD~30, --diff-since '30 days ago'",
-      "Bead-to-commit correlation with lifecycle event tracking",
-      "Export to Markdown, HTML (Cytoscape.js), and SQLite",
+      "Time-travel: --as-of HEAD~30, --diff-since '30 days ago'",
+      "Export to Markdown, HTML (Cytoscape.js), SQLite",
+      "Live reload on beads.jsonl changes",
     ],
     cliCommands: [
       "bv --robot-triage",
       "bv --robot-plan --label backend",
       "bv --robot-insights --force-full-analysis",
       "bv --diff-since HEAD~100",
-      "bv --export-pages ./bv-pages",
     ],
     installCommand:
       'curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh" | bash',
@@ -190,33 +477,32 @@ export const flywheelTools: FlywheelTool[] = [
     color: "from-cyan-400 to-sky-500",
     tagline: "Instant search across all agents",
     description:
-      "A centralized search interface for all your AI coding sessions. Indexes conversation history from Claude Code, Codex, Cursor, Gemini, ChatGPT, and Cline using Tantivy full-text search.",
+      "Unified search for all AI coding sessions. Indexes Claude, Codex, Cursor, Gemini, ChatGPT, Cline, and more. Tantivy-powered <60ms prefix queries.",
     deepDescription:
-      "CASS (coding-agent-session-search) is a high-performance Rust TUI that unifies session history from 10 agents (Claude Code, Codex, Cline, Gemini CLI, Cursor, OpenCode, ChatGPT, Aider, Pi-Agent, Amp) into a single searchable timeline. Uses Tantivy with edge n-gram indexing for <60ms prefix queries. Features include: three-pane responsive layout, 6 ranking modes (RecentHeavy, Balanced, RelevanceHeavy, MatchQualityHeavy, DateNewest, DateOldest), sharded LRU cache with Bloom filter gating, predictive query warming, remote source sync via SSH/rsync, and robot mode with cursor pagination and token budgeting.",
+      "CASS unifies session history from 10 agent formats into a single searchable timeline. Edge n-gram indexing for instant prefix matching. Six ranking modes balance relevance, recency, and match quality. Robot mode with cursor pagination and token budgeting.",
     connectsTo: ["cm", "ntm", "bv"],
     connectionDescriptions: {
-      cm: "Indexes stored memories for instant semantic retrieval",
-      ntm: "Searches all NTM-managed agent session histories",
-      bv: "Links search results to related Beads tasks",
+      cm: "Indexes stored memories for retrieval",
+      ntm: "Searches all NTM-managed session histories",
+      bv: "Links search results to related tasks",
     },
     stars: 145,
     features: [
-      "10 agent formats: Claude Code, Codex, Cursor, Gemini, ChatGPT, Cline, Aider",
-      "Tantivy search with edge n-grams for <60ms prefix queries",
-      "6 ranking modes combining BM25, recency, and match quality",
-      "Three-pane TUI with Vim navigation and 50+ keyboard shortcuts",
-      "Robot mode: --robot with cursor pagination and token budgeting",
-      "Remote sources via SSH/rsync with path mapping",
+      "10 agent formats: Claude Code, Codex, Cursor, Gemini, ChatGPT",
+      "Tantivy search with <60ms prefix queries",
+      "6 ranking modes: RecentHeavy, Balanced, RelevanceHeavy",
+      "Three-pane TUI with 50+ keyboard shortcuts",
+      "Robot mode with cursor pagination",
+      "Remote sources via SSH/rsync",
     ],
     cliCommands: [
       'cass search "query" --robot --limit 10',
-      "cass search --robot-format json --max-tokens 200",
       "cass index --watch",
       "cass sources add user@host --preset macos-defaults",
       "cass timeline --today --json",
     ],
     installCommand:
-      "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh | bash -s -- --easy-mode --verify",
+      "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh | bash -s -- --easy-mode",
     language: "Rust",
   },
   {
@@ -226,36 +512,35 @@ export const flywheelTools: FlywheelTool[] = [
     href: "https://github.com/Dicklesworthstone/cass_memory_system",
     icon: "Brain",
     color: "from-pink-400 to-fuchsia-500",
-    tagline: "Persistent memory across sessions",
+    tagline: "Persistent agent memory",
     description:
-      "Implements the Autonomous Cognitive Entity framework to give agents human-like memory. Stores procedural knowledge (how-to playbooks), episodic memory (session histories), and semantic facts.",
+      "Human-like memory for AI agents. Procedural playbooks, episodic session logs, semantic facts. Agents learn from experience and never repeat mistakes.",
     deepDescription:
-      "CM implements the ACE (Agentic Context Engineering) framework with a four-stage pipeline: Generator (cm context) → Reflector (cm reflect) → Validator (evidence gate) → Curator (deterministic delta merge). Three memory layers: Episodic (diary entries with session summaries), Working (feedback and tracking), and Procedural (playbook bullets with confidence scoring). Features 90-day decay half-life, 4× harmful weight, multi-iteration reflection with deduplication, evidence validation against cass history, and maturity state machine (candidate → established → proven → deprecated). The Curator deliberately has NO LLM to prevent context collapse.",
+      "CM implements the ACE (Agentic Context Engineering) framework. Four-stage pipeline: Generator → Reflector → Validator → Curator. Playbook bullets with 90-day decay half-life. Evidence validation against CASS history. The Curator has NO LLM to prevent context collapse.",
     connectsTo: ["mail", "cass", "bv"],
     connectionDescriptions: {
-      mail: "Stores conversation summaries for future recall",
-      cass: "Semantic search over all stored memories",
-      bv: "Remembers task patterns and successful solutions",
+      mail: "Stores conversation summaries",
+      cass: "Semantic search over memories",
+      bv: "Remembers successful approaches",
     },
     stars: 71,
     demoUrl: "https://dicklesworthstone.github.io/cass-memory-system-agent-mailbox-viewer/viewer/",
     features: [
       "ACE pipeline: Generator → Reflector → Validator → Curator",
-      "Playbook bullets with decay (90-day half-life) and 4× harmful weight",
-      "5 MCP tools: cm_context, cm_feedback, cm_outcome, memory_search, memory_reflect",
+      "Playbook bullets with decay (90-day half-life)",
+      "5 MCP tools: cm_context, cm_feedback, memory_search",
       "Multi-iteration reflection with deduplication",
-      "Evidence validation gate against cass session history",
-      "Cross-agent enrichment with privacy audit logging",
+      "Evidence validation against session history",
+      "4× harmful weight for mistake avoidance",
     ],
     cliCommands: [
       'cm context "task description" --json',
       "cm reflect --days 7 --max-sessions 20",
       "cm feedback --bullet-id b-123 --helpful",
       "cm serve",
-      "cm doctor --json",
     ],
     installCommand:
-      "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh | bash -s -- --easy-mode --verify",
+      "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh | bash -s -- --easy-mode",
     language: "TypeScript",
   },
   {
@@ -267,25 +552,24 @@ export const flywheelTools: FlywheelTool[] = [
     color: "from-amber-400 to-orange-500",
     tagline: "Instant auth switching",
     description:
-      "Manages multiple API keys and accounts for different coding agents. Switch between Anthropic, OpenAI, and Google credentials instantly without editing config files.",
+      "Manage multiple API keys for Claude, Codex, and Gemini. Sub-100ms account switching. Smart rotation with cooldown tracking. Encrypted credential bundles.",
     deepDescription:
-      "CAAM enables sub-100ms account switching for fixed-cost AI subscriptions (Claude Max, GPT Pro, Gemini Ultra) by managing auth file backups locally. Supports 3 providers: Claude Code (~/.claude.json), Codex CLI ($CODEX_HOME/auth.json), and Gemini CLI (~/.gemini/settings.json). Features smart profile rotation using multi-factor scoring (cooldown state, health, recency, plan type), transparent rate limit detection with auto-failover via `caam run`, profile isolation with pseudo-HOME directories, background token refresh daemon, and encrypted export bundles (AES-256-GCM with Argon2id key derivation). All credentials stored with 0600 permissions.",
+      "CAAM enables seamless multi-account workflows. Smart profile rotation considers cooldown state, health, recency, and plan type. Transparent failover with auto-retry. AES-256-GCM encryption with Argon2id key derivation for secure export.",
     connectsTo: ["ntm"],
     connectionDescriptions: {
-      ntm: "Provides credentials when NTM spawns new agent instances",
+      ntm: "Provides credentials when spawning agents",
     },
     stars: 12,
     features: [
-      "Sub-100ms account switching: caam activate claude bob@gmail.com",
-      "Smart rotation: considers cooldown, health, recency, plan type",
-      "Transparent failover: caam run claude -- 'prompt' with auto-retry",
+      "Sub-100ms account switching",
+      "Smart rotation: cooldown, health, recency, plan type",
+      "Transparent failover with auto-retry",
       "3 providers: Claude Code, Codex CLI, Gemini CLI",
-      "Encrypted bundles: AES-256-GCM with Argon2id (19MB memory-hard)",
+      "AES-256-GCM encryption for export bundles",
       "Background daemon for proactive token refresh",
     ],
     cliCommands: [
       "caam activate claude alice@gmail.com",
-      "caam backup claude alice@gmail.com",
       "caam run claude -- 'your prompt'",
       "caam cooldown set claude/alice --minutes 90",
       "caam daemon start",
@@ -301,31 +585,30 @@ export const flywheelTools: FlywheelTool[] = [
     href: "https://github.com/Dicklesworthstone/simultaneous_launch_button",
     icon: "ShieldCheck",
     color: "from-yellow-400 to-amber-500",
-    tagline: "Two-person rule for dangerous commands",
+    tagline: "Two-person rule for agents",
     description:
-      "Adds safety friction for autonomous agents. Three-tier risk classification, cryptographic command binding with SHA256+HMAC, dynamic quorum based on active agents, and complete audit trails.",
+      "Safety friction for autonomous agents. Three-tier risk classification. Cryptographic command binding with SHA-256+HMAC. Dynamic quorum. Complete audit trails.",
     deepDescription:
-      "SLB implements the two-person rule for AI agents running potentially destructive commands. Three-tier risk classification: CRITICAL (2+ approvals, rm -rf /, DROP DATABASE), DANGEROUS (1 approval, git reset --hard), CAUTION (auto-approve after 30s). Commands bound with SHA-256 hash including raw command, CWD, argv, and shell flag. Reviews signed with HMAC-SHA256 using per-session keys. Features include: pattern-based classification with conservative failure modes, self-review protection, different-model enforcement for CRITICAL tier, conflict resolution strategies, and Agent Mail integration for approval notifications. SQLite database provides complete audit trails with transactional integrity.",
+      "SLB implements nuclear-launch-style safety for AI agents. CRITICAL commands need 2+ approvals from different models. Commands bound with SHA-256 hash. Reviews signed with HMAC. Self-review protection prevents agents from approving their own requests.",
     connectsTo: ["mail", "ubs", "ntm"],
     connectionDescriptions: {
-      mail: "Approval requests sent as urgent messages to reviewer inboxes",
-      ubs: "Pre-flight scans validate code before execution approval",
-      ntm: "Coordinates approval quorum across NTM-managed agents",
+      mail: "Approval requests sent as urgent messages",
+      ubs: "Pre-flight scans before execution",
+      ntm: "Coordinates quorum across agents",
     },
     stars: 23,
     features: [
-      "3-tier risk: CRITICAL (2+ approvals), DANGEROUS (1), CAUTION (auto-30s)",
-      "SHA-256 command hash binding (raw + cwd + argv + shell)",
-      "HMAC-SHA256 review signatures with per-session keys",
-      "Different-model enforcement for CRITICAL tier",
-      "Agent Mail notifications for approval requests",
-      "SQLite audit trails with transactional integrity",
+      "3-tier: CRITICAL (2+), DANGEROUS (1), CAUTION (auto-30s)",
+      "SHA-256 command binding (raw + cwd + argv)",
+      "HMAC-SHA256 review signatures",
+      "Different-model enforcement for CRITICAL",
+      "Self-review protection",
+      "SQLite audit trails",
     ],
     cliCommands: [
       'slb run "rm -rf ./build"',
-      "slb approve <request-id> --session-id <id>",
+      "slb approve <request-id>",
       "slb reject <request-id> --reason '...'",
-      'slb patterns test "kubectl delete node"',
       "slb tui",
     ],
     installCommand:
@@ -334,31 +617,35 @@ export const flywheelTools: FlywheelTool[] = [
   },
 ];
 
+// ============================================================
+// FLYWHEEL DESCRIPTION - The big picture
+// ============================================================
+
 export const flywheelDescription = {
   title: "The Agentic Coding Flywheel",
-  subtitle: "Eight tools that work together in a self-reinforcing loop",
+  subtitle: "Eight tools that create unheard-of velocity",
   description:
-    "Each tool in this ecosystem enhances the others. NTM spawns agents that communicate via Mail, which coordinates with Beads for task tracking. UBS catches bugs, SLB adds safety gates, CM provides persistent memory, CASS lets you search everything, and CAAM manages credentials. The more you use them together, the more powerful they become.",
+    "This isn't just a toolkit—it's a self-reinforcing system that enables multiple AI agents to work in parallel across 7+ projects, reviewing each other's work, creating and executing tasks, and making incredible autonomous progress while you're away.",
   philosophy: [
     {
       title: "Unix Philosophy",
       description:
-        "Each tool does one thing exceptionally well. They compose together through standard protocols: JSON for data, MCP for coordination, Git for storage.",
+        "Each tool does one thing exceptionally well. They compose through JSON, MCP, and Git.",
     },
     {
-      title: "Agent-First Design",
+      title: "Agent-First",
       description:
-        "Every tool has --robot mode or JSON output. Designed for AI agents to call programmatically, not just humans at terminals.",
+        "Every tool has --robot mode. Designed for AI agents to call programmatically.",
     },
     {
       title: "Self-Reinforcing",
       description:
-        "The flywheel effect: each tool makes the others more powerful. NTM spawns agents that use Mail, which coordinates tasks tracked in Beads.",
+        "Using three tools is 10x better than one. The flywheel effect compounds over time.",
     },
     {
       title: "Battle-Tested",
       description:
-        "Born from daily use building complex software with 3+ AI agents simultaneously on production codebases.",
+        "Born from daily use across 7+ projects with multiple AI agents running simultaneously.",
     },
   ],
   metrics: {
@@ -366,56 +653,32 @@ export const flywheelDescription = {
     toolCount: 8,
     languages: ["Go", "Rust", "TypeScript", "Python"],
     avgInstallTime: "< 30s each",
+    projectsSimultaneous: "7+",
+    agentsParallel: "6+",
   },
-  synergies: [
-    {
-      tools: ["ntm", "mail"],
-      description: "NTM spawns agents that auto-register with Mail for coordination",
-    },
-    {
-      tools: ["mail", "bv"],
-      description: "Mail threads link to Beads issues for task context",
-    },
-    {
-      tools: ["cass", "cm"],
-      description: "CM searches CASS history for evidence validation",
-    },
-    {
-      tools: ["ubs", "slb"],
-      description: "UBS pre-validates before SLB approves risky operations",
-    },
-    {
-      tools: ["caam", "ntm"],
-      description: "CAAM provides credentials when NTM spawns agents",
-    },
-    {
-      tools: ["slb", "mail"],
-      description: "SLB sends approval requests via Mail to reviewers",
-    },
-  ],
+  keyInsight:
+    "The magic isn't in any single tool. It's in how they work together. Agents figuring out what to work on using BV, coordinating via Mail, searching past sessions with CASS, learning from CM, protected by SLB—all orchestrated by NTM.",
 };
 
-// Calculate flywheel synergy - how many connections each tool has
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+
 export function getToolSynergy(toolId: string): number {
   const tool = flywheelTools.find((t) => t.id === toolId);
   if (!tool) return 0;
-
   let connections = tool.connectsTo.length;
   connections += flywheelTools.filter((t) => t.connectsTo.includes(toolId)).length;
-
   return connections;
 }
 
-// Get tools sorted by synergy (most connected first)
 export function getToolsBySynergy(): FlywheelTool[] {
   return [...flywheelTools].sort((a, b) => getToolSynergy(b.id) - getToolSynergy(a.id));
 }
 
-// Get all unique connections for visualization
 export function getAllConnections(): Array<{ from: string; to: string }> {
   const seen = new Set<string>();
   const connections: Array<{ from: string; to: string }> = [];
-
   flywheelTools.forEach((tool) => {
     tool.connectsTo.forEach((targetId) => {
       const key = [tool.id, targetId].sort().join("-");
@@ -425,11 +688,13 @@ export function getAllConnections(): Array<{ from: string; to: string }> {
       }
     });
   });
-
   return connections;
 }
 
-// Get synergy pairs for visualization
-export function getSynergyPairs() {
-  return flywheelDescription.synergies;
+export function getPromptsByCategory(category: AgentPrompt["category"]): AgentPrompt[] {
+  return agentPrompts.filter((p) => p.category === category);
+}
+
+export function getScenarioById(id: string): WorkflowScenario | undefined {
+  return workflowScenarios.find((s) => s.id === id);
 }

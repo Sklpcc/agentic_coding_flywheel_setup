@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Terminal, AlertCircle, Check, ChevronDown } from "lucide-react";
+import { Terminal, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
+import { AlertCard, OutputPreview, DetailsSection } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useVPSIP, useUserOS, useMounted } from "@/lib/userPreferences";
@@ -159,24 +160,29 @@ export default function SSHConnectPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          SSH into your VPS
-        </h1>
-        <p className="text-lg text-muted-foreground">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20">
+            <Terminal className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
+              SSH into your VPS
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              ~1 min
+            </p>
+          </div>
+        </div>
+        <p className="text-muted-foreground">
           Connect to your new VPS for the first time.
         </p>
       </div>
 
       {/* IP confirmation */}
-      <Card className="border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <span className="text-blue-800 dark:text-blue-200">
-            Connecting to:{" "}
-            <code className="font-mono font-bold">{vpsIP}</code>
-          </span>
-        </div>
-      </Card>
+      <AlertCard variant="info" icon={Terminal}>
+        Connecting to:{" "}
+        <code className="ml-1 rounded bg-[oklch(0.75_0.18_195/0.15)] px-2 py-0.5 font-mono font-bold text-[oklch(0.85_0.12_195)]">{vpsIP}</code>
+      </AlertCard>
 
       {/* Primary command */}
       <div className="space-y-4">
@@ -191,19 +197,11 @@ export default function SSHConnectPage() {
       </div>
 
       {/* Host key prompt */}
-      <Card className="p-4">
-        <div className="flex gap-3">
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-          <div className="space-y-2">
-            <p className="font-medium">First-time connection prompt</p>
-            <p className="text-sm text-muted-foreground">
-              You&apos;ll see a message about &quot;authenticity of host&quot;.
-              Type <code className="rounded bg-muted px-1">yes</code> and press
-              Enter. This is normal for first-time connections.
-            </p>
-          </div>
-        </div>
-      </Card>
+      <AlertCard variant="warning" title="First-time connection prompt">
+        You&apos;ll see a message about &quot;authenticity of host&quot;.
+        Type <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">yes</code> and press
+        Enter. This is normal for first-time connections.
+      </AlertCard>
 
       {/* Fallback to root */}
       <div className="space-y-3">
@@ -223,23 +221,15 @@ export default function SSHConnectPage() {
       </div>
 
       {/* Success indicator */}
-      <Card className="border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
-        <div className="flex gap-3">
-          <Check className="mt-0.5 h-5 w-5 text-green-600 dark:text-green-400" />
-          <div>
-            <p className="font-medium text-green-800 dark:text-green-200">
-              You&apos;re connected when you see:
-            </p>
-            <code className="mt-1 block text-sm text-green-700 dark:text-green-300">
-              ubuntu@vps:~$ <span className="animate-pulse">_</span>
-            </code>
-            <p className="mt-2 text-sm text-green-700 dark:text-green-300">
-              You should see a prompt with your username and &quot;vps&quot; or
-              the server hostname.
-            </p>
-          </div>
-        </div>
-      </Card>
+      <OutputPreview title="You're connected when you see:">
+        <p className="text-[oklch(0.72_0.19_145)]">
+          ubuntu@vps:~$ <span className="animate-pulse">_</span>
+        </p>
+        <p className="mt-2 text-muted-foreground">
+          You should see a prompt with your username and &quot;vps&quot; or
+          the server hostname.
+        </p>
+      </OutputPreview>
 
       {/* Troubleshooting */}
       <div className="space-y-3">

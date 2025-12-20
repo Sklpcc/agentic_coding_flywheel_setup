@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ArrowLeft,
   Terminal,
@@ -269,12 +269,6 @@ function ConnectionDiagram() {
 }
 
 export default function FlywheelPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       {/* Background */}
@@ -319,7 +313,7 @@ export default function FlywheelPage() {
         {/* Hero */}
         <section className="mx-auto max-w-7xl px-6 pt-12 pb-20">
           <div
-            className={`mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+            className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary opacity-0 animate-slide-up"
             style={{ animationDelay: "0.1s", animationFillMode: "forwards" }}
           >
             <Sparkles className="h-4 w-4" />
@@ -327,14 +321,14 @@ export default function FlywheelPage() {
           </div>
 
           <h1
-            className={`mb-6 font-mono text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+            className="mb-6 font-mono text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl opacity-0 animate-slide-up"
             style={{ animationDelay: "0.2s", animationFillMode: "forwards" }}
           >
             <span className="text-gradient-cosmic">The Flywheel</span>
           </h1>
 
           <p
-            className={`max-w-3xl text-lg leading-relaxed text-muted-foreground ${mounted ? "opacity-0 animate-slide-up" : ""}`}
+            className="max-w-3xl text-lg leading-relaxed text-muted-foreground opacity-0 animate-slide-up"
             style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
           >
             Eight interconnected tools that transform how you work with AI coding agents. Each tool enhances the

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { JetBrains_Mono, Instrument_Sans } from "next/font/google";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { ThirdPartyScripts } from "@/components/third-party-scripts";
+import { MotionProvider } from "@/components/motion/motion-provider";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -47,6 +49,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#0a0a12",
   colorScheme: "dark",
+  viewportFit: "cover", // Enable safe area insets for notch/home bar
 };
 
 export default function RootLayout({
@@ -62,7 +65,10 @@ export default function RootLayout({
         {/* Noise texture overlay */}
         <div className="pointer-events-none fixed inset-0 z-50 bg-noise" />
         <Suspense fallback={null}>
-          <AnalyticsProvider>{children}</AnalyticsProvider>
+          <ThirdPartyScripts />
+          <MotionProvider>
+            <AnalyticsProvider>{children}</AnalyticsProvider>
+          </MotionProvider>
         </Suspense>
       </body>
     </html>

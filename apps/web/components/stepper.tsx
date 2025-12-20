@@ -2,12 +2,14 @@
 
 import { useCallback } from "react";
 import { Check, Circle } from "lucide-react";
+import { useDrag } from "@use-gesture/react";
 import { cn } from "@/lib/utils";
 import {
   WIZARD_STEPS,
   useCompletedSteps,
   type WizardStep,
 } from "@/lib/wizardSteps";
+import { motion } from "@/components/motion";
 
 export interface StepperProps {
   /** Current active step (1-indexed) */
