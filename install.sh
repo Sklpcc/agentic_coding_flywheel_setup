@@ -2638,10 +2638,29 @@ Tip: use --print to see upstream install scripts that will be fetched."
         return 0
     fi
 
+    # Build dynamic Tailscale status
+    local tailscale_section=""
+    if command -v tailscale &>/dev/null; then
+        if check_tailscale_auth 2>/dev/null; then
+            local ts_ip
+            ts_ip=$(tailscale ip -4 2>/dev/null || echo "connected")
+            tailscale_section="  ✓ Tailscale: connected ($ts_ip)"
+        else
+            tailscale_section="  🔐 Tailscale (Secure Remote Access):
+     sudo tailscale up
+     → Log in with your Google account
+     → Then access this VPS from anywhere!"
+        fi
+    fi
+
     local summary_content="Version: $ACFS_VERSION
 Mode:    $MODE
 
-Next steps:
+${tailscale_section:+Service Authentication:
+
+$tailscale_section
+
+}Next steps:
 
   1. If you logged in as root, reconnect as ubuntu:
      exit
@@ -2677,6 +2696,22 @@ $summary_content"
             echo -e "Version: ${BLUE}$ACFS_VERSION${NC}"
             echo -e "Mode:    ${BLUE}$MODE${NC}"
             echo ""
+            # Show Tailscale auth section if applicable
+            if [[ -n "$tailscale_section" ]]; then
+                echo -e "${YELLOW}Service Authentication:${NC}"
+                echo ""
+                if command -v tailscale &>/dev/null && check_tailscale_auth 2>/dev/null; then
+                    local ts_ip_display
+                    ts_ip_display=$(tailscale ip -4 2>/dev/null || echo "connected")
+                    echo -e "  ${GREEN}✓${NC} Tailscale: connected (${BLUE}$ts_ip_display${NC})"
+                else
+                    echo -e "  ${YELLOW}🔐${NC} Tailscale (Secure Remote Access):"
+                    echo -e "     ${BLUE}sudo tailscale up${NC}"
+                    echo -e "     ${GRAY}→ Log in with your Google account${NC}"
+                    echo -e "     ${GRAY}→ Then access this VPS from anywhere!${NC}"
+                fi
+                echo ""
+            fi
             echo -e "${YELLOW}Next steps:${NC}"
             echo ""
             echo "  1. If you logged in as root, reconnect as ubuntu:"

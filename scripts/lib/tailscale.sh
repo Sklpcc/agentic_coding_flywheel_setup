@@ -46,6 +46,11 @@ _tailscale_get_codename() {
         codename=$(lsb_release -cs 2>/dev/null)
     fi
 
+    # Map newer Ubuntu codenames to supported Tailscale repos
+    case "$codename" in
+        oracular|plucky) codename="noble" ;;
+    esac
+
     # Default to noble (24.04) if we can't determine
     echo "${codename:-noble}"
 }
