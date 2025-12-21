@@ -90,48 +90,6 @@ acfs_flag_bool() {
     return 0
 }
 
-acfs_should_use_generated_category() {
-    local category="${1:-}"
-    [[ -n "$category" ]] || { echo "0"; return 0; }
-
-    local category_upper
-    category_upper="$(_acfs_upper "$category")"
-
-    local category_var="ACFS_USE_GENERATED_${category_upper}"
-    local category_value
-    category_value="$(acfs_flag_bool "$category_var")"
-    if [[ -n "$category_value" ]]; then
-        echo "$category_value"
-        return 0
-    fi
-
-    local global_value
-    global_value="$(acfs_flag_bool "ACFS_USE_GENERATED")"
-    if [[ -n "$global_value" ]]; then
-        echo "$global_value"
-        return 0
-    fi
-
-    local migrated_categories=()
-    if [[ -n "${ACFS_GENERATED_MIGRATED_CATEGORIES:-}" ]]; then
-        IFS=',' read -ra migrated_categories <<< "${ACFS_GENERATED_MIGRATED_CATEGORIES}"
-    else
-        migrated_categories=("${ACFS_GENERATED_MIGRATED_CATEGORIES_DEFAULT[@]}")
-    fi
-
-    local c=""
-    for c in "${migrated_categories[@]}"; do
-        [[ -n "$c" ]] || continue
-        if [[ "${c,,}" == "${category,,}" ]]; then
-            echo "1"
-            return 0
-        fi
-    done
-
-    echo "0"
-    return 0
-}
-
 # ------------------------------------------------------------
 # Effective selection (computed once after manifest_index)
 # Uses -g for global scope when sourced inside a function
@@ -380,78 +338,130 @@ should_run_module() {
 # ------------------------------------------------------------
 # Feature flags for incremental category rollout (mjt.5.6)
 #
-# Usage:
-#   ACFS_USE_GENERATED=0 ./install.sh ...        # Force legacy for all
-#   ACFS_USE_GENERATED_LANG=0 ./install.sh ...   # Force legacy for lang only
+# Goal: allow safe, reversible migration from legacy install.sh implementations
+# to manifest-driven generated installers, category-by-category.
 #
-# Per-category flags override the global flag.
-# Default: use generated installers for all categories.
+# Global switch:
+#   ACFS_USE_GENERATED=0|1
+#     - 0: force legacy for all categories (except per-category overrides)
+#     - 1: enable generated for categories that are migrated by default
+#
+# Per-category overrides (override global):
+#   ACFS_USE_GENERATED_<CATEGORY>=0|1
+#
+# Default behavior when per-category overrides are unset:
+#   - generated for migrated categories
+#   - legacy for unmigrated categories
+#
+# Configure migrated categories via:
+#   - ACFS_GENERATED_MIGRATED_CATEGORIES="base,lang,agents"   (comma-separated), OR
+#   - ACFS_GENERATED_MIGRATED_CATEGORIES_DEFAULT (array in this file)
 # ------------------------------------------------------------
 
-: "${ACFS_USE_GENERATED:=1}"
+: "${ACFS_USE_GENERATED:=1}" # Default to "enabled", but only affects migrated categories.
 
-# Per-category overrides (unset means use global default)
-# Available categories: base, users, shell, cli, lang, tools, agents, db, cloud, stack, acfs
+_acfs_category_is_migrated() {
+    local category="${1:-}"
+    [[ -n "$category" ]] || return 1
 
-# Check if a category should use generated installers
-# Returns 0 (true) if generated should be used, 1 (false) for legacy
-acfs_use_generated_for_category() {
-    local category="$1"
-    local upper_category
-    upper_category="$(echo "$category" | tr '[:lower:]' '[:upper:]')"
-    local flag_name="ACFS_USE_GENERATED_${upper_category}"
-
-    # Check per-category override first
-    local flag_value="${!flag_name:-}"
-    if [[ -n "$flag_value" ]]; then
-        [[ "$flag_value" == "1" ]]
-        return $?
+    local migrated_categories=()
+    if [[ -n "${ACFS_GENERATED_MIGRATED_CATEGORIES:-}" ]]; then
+        IFS=',' read -ra migrated_categories <<< "${ACFS_GENERATED_MIGRATED_CATEGORIES}"
+    else
+        migrated_categories=("${ACFS_GENERATED_MIGRATED_CATEGORIES_DEFAULT[@]}")
     fi
 
-    # Fall back to global toggle
-    [[ "${ACFS_USE_GENERATED:-1}" == "1" ]]
+    local c=""
+    for c in "${migrated_categories[@]}"; do
+        [[ -n "$c" ]] || continue
+        if [[ "${c,,}" == "${category,,}" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
 }
 
-# Check if a module should use generated installer
-# Determines category from module ID (e.g., "lang.bun" -> "lang")
+# Returns 0 (true) if generated should be used, 1 (false) for legacy.
+acfs_use_generated_for_category() {
+    local category="${1:-}"
+    [[ -n "$category" ]] || return 1
+
+    # 1) Per-category override
+    local category_upper
+    category_upper="$(_acfs_upper "$category")"
+    local category_var="ACFS_USE_GENERATED_${category_upper}"
+    local category_value
+    category_value="$(acfs_flag_bool "$category_var")"
+    if [[ "$category_value" == "1" ]]; then
+        return 0
+    elif [[ "$category_value" == "0" ]]; then
+        return 1
+    fi
+
+    # 2) Global kill switch (0 forces legacy)
+    local global_value
+    global_value="$(acfs_flag_bool "ACFS_USE_GENERATED")"
+    if [[ -z "$global_value" ]]; then
+        global_value="1"
+    fi
+    if [[ "$global_value" == "0" ]]; then
+        return 1
+    fi
+
+    # 3) Default: generated only for migrated categories
+    _acfs_category_is_migrated "$category"
+}
+
+# Determines category from module ID (e.g., "lang.bun" -> "lang").
 acfs_use_generated_for_module() {
-    local module_id="$1"
-    local category
+    local module_id="${1:-}"
+    [[ -n "$module_id" ]] || return 1
 
-    # Extract category from module ID (first segment before dot)
-    category="${module_id%%.*}"
-
+    local category="${module_id%%.*}"
     acfs_use_generated_for_category "$category"
 }
 
-# Get the installer function name for a module
-# Returns generated function if enabled, empty string if legacy should be used
+# Returns generated function name (from manifest_index) if enabled, else empty string.
 acfs_get_module_installer() {
-    local module_id="$1"
+    local module_id="${1:-}"
+    [[ -n "$module_id" ]] || { echo ""; return 0; }
 
     if acfs_use_generated_for_module "$module_id"; then
-        # Use generated function from manifest_index
         echo "${ACFS_MODULE_FUNC[$module_id]:-}"
-    else
-        # Empty means caller should use legacy installer
-        echo ""
+        return 0
     fi
+
+    echo ""
+    return 0
 }
 
-# Log current feature flag state (for debugging)
+# Log current feature flag state (for debugging).
 acfs_log_feature_flags() {
     local categories=("base" "users" "shell" "cli" "lang" "tools" "agents" "db" "cloud" "stack" "acfs")
 
-    log_debug "Feature flags:"
-    log_debug "  ACFS_USE_GENERATED=${ACFS_USE_GENERATED:-1}"
+    if declare -f log_detail >/dev/null 2>&1; then
+        log_detail "Feature flags:"
+        log_detail "  ACFS_USE_GENERATED=${ACFS_USE_GENERATED:-1}"
+        log_detail "  ACFS_GENERATED_MIGRATED_CATEGORIES=${ACFS_GENERATED_MIGRATED_CATEGORIES:-<default>}"
+    else
+        echo "Feature flags:" >&2
+        echo "  ACFS_USE_GENERATED=${ACFS_USE_GENERATED:-1}" >&2
+        echo "  ACFS_GENERATED_MIGRATED_CATEGORIES=${ACFS_GENERATED_MIGRATED_CATEGORIES:-<default>}" >&2
+    fi
 
+    local cat=""
     for cat in "${categories[@]}"; do
         local upper_cat
-        upper_cat="$(echo "$cat" | tr '[:lower:]' '[:upper:]')"
+        upper_cat="$(_acfs_upper "$cat")"
         local flag_name="ACFS_USE_GENERATED_${upper_cat}"
         local flag_value="${!flag_name:-}"
         if [[ -n "$flag_value" ]]; then
-            log_debug "  ${flag_name}=${flag_value}"
+            if declare -f log_detail >/dev/null 2>&1; then
+                log_detail "  ${flag_name}=${flag_value}"
+            else
+                echo "  ${flag_name}=${flag_value}" >&2
+            fi
         fi
     done
 }

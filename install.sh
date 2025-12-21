@@ -657,12 +657,12 @@ source_generated_installers() {
 
     if [[ -z "${ACFS_GENERATED_DIR:-}" ]]; then
         log_warn "ACFS_GENERATED_DIR not set; cannot source generated installers"
-        return 1
+        return 0
     fi
 
     if [[ ! -d "$ACFS_GENERATED_DIR" ]]; then
         log_warn "Generated installers directory not found: $ACFS_GENERATED_DIR"
-        return 1
+        return 0
     fi
 
     local script=""
@@ -1975,6 +1975,13 @@ install_agents() {
     set_phase "install_agents" "Coding Agents" 7
     log_step "7/10" "Installing coding agents..."
 
+    if acfs_use_generated_category "agents"; then
+        log_detail "Using generated installers for agents (phase 7)"
+        acfs_run_generated_category_phase "agents" "7" || return 1
+        log_success "Coding agents installed"
+        return 0
+    fi
+
     # Use target user's bun
     local bun_bin="$TARGET_HOME/.bun/bin/bun"
 
@@ -2009,16 +2016,8 @@ install_agents() {
 # ============================================================
 # Phase 7: Cloud & database tools
 # ============================================================
-install_cloud_db() {
-    set_phase "install_cloud_db" "Cloud & Database Tools" 8
-    log_step "8/10" "Installing cloud & database tools..."
-
-    local codename="noble"
-    if [[ -f /etc/os-release ]]; then
-        # shellcheck disable=SC1091
-        source /etc/os-release
-        codename="${VERSION_CODENAME:-noble}"
-    fi
+install_cloud_db_legacy_db() {
+    local codename="$1"
 
     # PostgreSQL 18 (via PGDG)
     if [[ "$SKIP_POSTGRES" == "true" ]]; then
@@ -2062,6 +2061,10 @@ install_cloud_db() {
             fi
         fi
     fi
+}
+
+install_cloud_db_legacy_tools() {
+    local codename="$1"
 
     # Vault (HashiCorp apt repo)
     if [[ "$SKIP_VAULT" == "true" ]]; then
@@ -2085,7 +2088,9 @@ install_cloud_db() {
             fi
         fi
     fi
+}
 
+install_cloud_db_legacy_cloud() {
     # Cloud CLIs (bun global installs)
     if [[ "$SKIP_CLOUD" == "true" ]]; then
         log_detail "Skipping cloud CLIs (--skip-cloud)"
@@ -2114,6 +2119,51 @@ install_cloud_db() {
             done
         fi
     fi
+}
+
+install_cloud_db() {
+    set_phase "install_cloud_db" "Cloud & Database Tools" 8
+    log_step "8/10" "Installing cloud & database tools..."
+
+    local codename="noble"
+    if [[ -f /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        source /etc/os-release
+        codename="${VERSION_CODENAME:-noble}"
+    fi
+
+    local ran_any=false
+
+    if acfs_use_generated_category "db"; then
+        log_detail "Using generated installers for db (phase 8)"
+        acfs_run_generated_category_phase "db" "8" || return 1
+        ran_any=true
+    else
+        install_cloud_db_legacy_db "$codename" || return 1
+        ran_any=true
+    fi
+
+    if acfs_use_generated_category "tools"; then
+        log_detail "Using generated installers for tools (phase 8)"
+        acfs_run_generated_category_phase "tools" "8" || return 1
+        ran_any=true
+    else
+        install_cloud_db_legacy_tools "$codename" || return 1
+        ran_any=true
+    fi
+
+    if acfs_use_generated_category "cloud"; then
+        log_detail "Using generated installers for cloud (phase 8)"
+        acfs_run_generated_category_phase "cloud" "8" || return 1
+        ran_any=true
+    else
+        install_cloud_db_legacy_cloud || return 1
+        ran_any=true
+    fi
+
+    if [[ "$ran_any" != "true" ]]; then
+        log_warn "No cloud/db/tools modules selected"
+    fi
 
     log_success "Cloud & database tools phase complete"
 }
@@ -2134,6 +2184,13 @@ binary_installed() {
 install_stack() {
     set_phase "install_stack" "Dicklesworthstone Stack" 9
     log_step "9/10" "Installing Dicklesworthstone stack..."
+
+    if acfs_use_generated_category "stack"; then
+        log_detail "Using generated installers for stack (phase 9)"
+        acfs_run_generated_category_phase "stack" "9" || return 1
+        log_success "Dicklesworthstone stack installed"
+        return 0
+    fi
 
     # NTM (Named Tmux Manager)
     if binary_installed "ntm"; then
@@ -2208,6 +2265,13 @@ install_stack() {
 finalize() {
     set_phase "finalize" "Final Wiring" 10
     log_step "10/10" "Finalizing installation..."
+
+    if acfs_use_generated_category "acfs"; then
+        log_detail "Using generated installers for acfs (phase 10)"
+        acfs_run_generated_category_phase "acfs" "10" || return 1
+        log_success "Final wiring complete"
+        return 0
+    fi
 
     # Copy tmux config
     log_detail "Installing tmux config"
