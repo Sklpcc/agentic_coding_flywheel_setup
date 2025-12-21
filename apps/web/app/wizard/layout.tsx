@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Stepper, StepperMobile } from "@/components/stepper";
 import { WIZARD_STEPS, getStepBySlug } from "@/lib/wizardSteps";
 import { detectOS, getUserOS, setUserOS } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 
 export default function WizardLayout({
   children,
@@ -33,8 +34,7 @@ export default function WizardLayout({
 
     const detected = detectOS();
     if (detected) {
-      setUserOS(detected);
-      return true;
+      return setUserOS(detected);
     }
 
     return false;
@@ -54,7 +54,7 @@ export default function WizardLayout({
             return;
           }
         }
-        router.push(`/wizard/${step.slug}`);
+        router.push(withCurrentSearch(`/wizard/${step.slug}`));
       }
     },
     [router, currentStep, ensureOSSelected]

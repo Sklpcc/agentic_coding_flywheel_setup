@@ -18,6 +18,7 @@ import {
   useDetectedOS,
   type OperatingSystem,
 } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 
 interface OSCardProps {
   icon: React.ReactNode;
@@ -139,7 +140,7 @@ export default function OSSelectionPage() {
       markComplete({ selected_os: selectedOS });
       markStepComplete(1);
       setIsNavigating(true);
-      router.push("/wizard/install-terminal");
+      router.push(withCurrentSearch("/wizard/install-terminal"));
     }
   }, [selectedOS, router, markComplete, setStoredOS]);
 

@@ -8,6 +8,7 @@ import { CommandCard } from "@/components/command-card";
 import { OutputPreview } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useVPSIP } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 import {
   SimplerGuide,
   GuideSection,
@@ -35,7 +36,7 @@ export default function ReconnectUbuntuPage() {
   useEffect(() => {
     if (!ready) return;
     if (vpsIP === null) {
-      router.push("/wizard/create-vps");
+      router.push(withCurrentSearch("/wizard/create-vps"));
     }
   }, [ready, vpsIP, router]);
 
@@ -43,14 +44,14 @@ export default function ReconnectUbuntuPage() {
     markComplete();
     markStepComplete(8);
     setIsNavigating(true);
-    router.push("/wizard/status-check");
+    router.push(withCurrentSearch("/wizard/status-check"));
   }, [router, markComplete]);
 
   const handleSkip = useCallback(() => {
     markComplete({ skipped: true });
     markStepComplete(8);
     setIsNavigating(true);
-    router.push("/wizard/status-check");
+    router.push(withCurrentSearch("/wizard/status-check"));
   }, [router, markComplete]);
 
   if (!ready || !vpsIP) {

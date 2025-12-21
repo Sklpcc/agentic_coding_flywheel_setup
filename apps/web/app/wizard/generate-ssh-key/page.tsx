@@ -9,6 +9,7 @@ import { AlertCard, DetailsSection } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { useUserOS } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 import {
   SimplerGuide,
   GuideSection,
@@ -36,7 +37,7 @@ export default function GenerateSSHKeyPage() {
   useEffect(() => {
     if (!ready) return;
     if (os === null) {
-      router.push("/wizard/os-selection");
+      router.push(withCurrentSearch("/wizard/os-selection"));
     }
   }, [ready, os, router]);
 
@@ -44,7 +45,7 @@ export default function GenerateSSHKeyPage() {
     markComplete();
     markStepComplete(3);
     setIsNavigating(true);
-    router.push("/wizard/rent-vps");
+    router.push(withCurrentSearch("/wizard/rent-vps"));
   }, [router, markComplete]);
 
   if (!ready || !os) {

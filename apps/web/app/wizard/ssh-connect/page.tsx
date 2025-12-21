@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { useVPSIP, useUserOS } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 import {
   SimplerGuide,
   GuideSection,
@@ -147,9 +148,9 @@ export default function SSHConnectPage() {
   useEffect(() => {
     if (!ready) return;
     if (vpsIP === null) {
-      router.push("/wizard/create-vps");
+      router.push(withCurrentSearch("/wizard/create-vps"));
     } else if (os === null) {
-      router.push("/wizard/os-selection");
+      router.push(withCurrentSearch("/wizard/os-selection"));
     }
   }, [ready, vpsIP, os, router]);
 
@@ -157,7 +158,7 @@ export default function SSHConnectPage() {
     markComplete();
     markStepComplete(6);
     setIsNavigating(true);
-    router.push("/wizard/run-installer");
+    router.push(withCurrentSearch("/wizard/run-installer"));
   }, [router, markComplete]);
 
   if (!ready || !vpsIP || !os) {

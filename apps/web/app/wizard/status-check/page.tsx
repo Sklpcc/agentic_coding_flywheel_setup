@@ -17,6 +17,7 @@ import {
 } from "@/components/simpler-guide";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { Jargon } from "@/components/jargon";
+import { withCurrentSearch } from "@/lib/utils";
 
 const QUICK_CHECKS = [
   {
@@ -48,7 +49,7 @@ export default function StatusCheckPage() {
     markComplete();
     markStepComplete(9);
     setIsNavigating(true);
-    router.push("/wizard/launch-onboarding");
+    router.push(withCurrentSearch("/wizard/launch-onboarding"));
   }, [router, markComplete]);
 
   return (

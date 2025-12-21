@@ -8,6 +8,7 @@ import { AlertCard } from "@/components/alert-card";
 import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
+import { withCurrentSearch } from "@/lib/utils";
 import {
   SimplerGuide,
   GuideSection,
@@ -166,7 +167,7 @@ export default function RentVPSPage() {
     markComplete({ expanded_provider: expandedProvider });
     markStepComplete(4);
     setIsNavigating(true);
-    router.push("/wizard/create-vps");
+    router.push(withCurrentSearch("/wizard/create-vps"));
   }, [router, markComplete, expandedProvider]);
 
   return (
@@ -271,13 +272,13 @@ export default function RentVPSPage() {
             With a VPS, your AI assistants can work even when you&apos;re asleep!
           </GuideExplain>
 
-          <GuideSection title="Why 48GB RAM?">
+          <GuideSection title="Why 64GB RAM?">
             <div className="rounded-lg border border-[oklch(0.78_0.16_75/0.3)] bg-[oklch(0.78_0.16_75/0.08)] p-4 mb-4">
               <p className="font-medium text-foreground mb-2">⚡ This matters a lot!</p>
               <p className="text-sm text-muted-foreground">
                 Each AI coding agent (like Claude Code) uses about 2GB of RAM when running.
-                To get the full power of this approach, you&apos;ll want to run 10+ agents
-                simultaneously. That&apos;s 20GB+ just for the agents, plus room for your
+                To get the full power of this approach, you&apos;ll want to run 10-20+ agents
+                simultaneously. That&apos;s 20-40GB just for the agents, plus room for your
                 development tools and databases.
               </p>
             </div>
@@ -286,12 +287,21 @@ export default function RentVPSPage() {
                 <strong>32GB RAM:</strong> Absolute minimum. Can run 5-8 agents.
               </li>
               <li>
-                <strong>48GB RAM:</strong> Recommended! Run 10+ agents comfortably. (~$21/month)
+                <strong>48GB RAM:</strong> Good starting point. Run 10+ agents comfortably. (~$21/month)
               </li>
               <li>
-                <strong>64GB+ RAM:</strong> Power user mode. Run 20+ agents with headroom. (~$37/month)
+                <strong>64GB RAM:</strong> Our recommendation. Run 20+ agents with headroom. (~$37/month)
               </li>
             </ul>
+            <div className="mt-4 rounded-lg border border-border/50 bg-card/50 p-3">
+              <p className="text-sm text-muted-foreground">
+                <strong>Don&apos;t bottleneck your investment:</strong> Your VPS is just ~5% of
+                the total cost if you&apos;re running AI subscriptions ($200-600/month), but
+                it&apos;s the foundation that makes everything work. The extra $16/month for
+                64GB vs 48GB is trivial compared to your AI subscription costs—but that extra
+                headroom is critical for running agents reliably and efficiently.
+              </p>
+            </div>
           </GuideSection>
 
           <GuideSection title="The Full Investment (Optional but Recommended)">

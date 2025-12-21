@@ -16,6 +16,7 @@ import { CommandCard } from "@/components/command-card";
 import { AlertCard, OutputPreview, DetailsSection } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
+import { withCurrentSearch } from "@/lib/utils";
 import {
   SimplerGuide,
   GuideSection,
@@ -70,7 +71,7 @@ export default function RunInstallerPage() {
     markComplete();
     markStepComplete(7);
     setIsNavigating(true);
-    router.push("/wizard/reconnect-ubuntu");
+    router.push(withCurrentSearch("/wizard/reconnect-ubuntu"));
   }, [router, markComplete]);
 
   return (

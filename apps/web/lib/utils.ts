@@ -40,6 +40,16 @@ export function safeSetItem(key: string, value: string): boolean {
 }
 
 /**
+ * Append the current URL query string to a path.
+ * Useful for preserving wizard state when localStorage is unavailable.
+ */
+export function withCurrentSearch(path: string): string {
+  if (typeof window === "undefined") return path;
+  const search = window.location.search;
+  return search ? `${path}${search}` : path;
+}
+
+/**
  * Safely remove an item from localStorage.
  */
 export function safeRemoveItem(key: string): boolean {

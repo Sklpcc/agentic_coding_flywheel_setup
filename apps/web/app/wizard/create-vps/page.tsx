@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { useVPSIP, isValidIP } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 import {
   SimplerGuide,
   GuideSection,
@@ -131,7 +132,7 @@ export default function CreateVPSPage() {
       setStoredIP(value.ipAddress);
       markStepComplete(5);
       setIsNavigating(true);
-      router.push("/wizard/ssh-connect");
+      router.push(withCurrentSearch("/wizard/ssh-connect"));
     },
   });
 

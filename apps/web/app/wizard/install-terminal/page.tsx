@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { markStepComplete } from "@/lib/wizardSteps";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { useUserOS } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 import {
   SimplerGuide,
   GuideSection,
@@ -321,7 +322,7 @@ export default function InstallTerminalPage() {
   useEffect(() => {
     if (!ready) return;
     if (os === null) {
-      router.push("/wizard/os-selection");
+      router.push(withCurrentSearch("/wizard/os-selection"));
     }
   }, [ready, os, router]);
 
@@ -329,7 +330,7 @@ export default function InstallTerminalPage() {
     markComplete({ selected_os: os });
     markStepComplete(2);
     setIsNavigating(true);
-    router.push("/wizard/generate-ssh-key");
+    router.push(withCurrentSearch("/wizard/generate-ssh-key"));
   }, [router, os, markComplete]);
 
   // Show loading state while detecting OS or during SSR
