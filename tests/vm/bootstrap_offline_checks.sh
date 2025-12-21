@@ -31,14 +31,22 @@ require_cmd mktemp
 create_archive() {
   local archive_path="$1"
   log "Creating archive: $archive_path"
-  tar -czf "$archive_path" -C "$REPO_ROOT" \
-    --transform 's,^,acfs-offline/,' \
-    scripts/lib \
-    scripts/generated \
-    scripts/preflight.sh \
-    acfs \
-    checksums.yaml \
-    acfs.manifest.yaml
+  # Portable archive creation (GNU tar and BSD tar compatible):
+  # create a staging dir with an explicit top-level folder, then tar it.
+  local stage_dir
+  stage_dir="$(mktemp -d /tmp/acfs-offline-stage.XXXXXX)"
+
+  mkdir -p "$stage_dir/acfs-offline/scripts"
+
+  cp -R "$REPO_ROOT/scripts/lib" "$stage_dir/acfs-offline/scripts/"
+  cp -R "$REPO_ROOT/scripts/generated" "$stage_dir/acfs-offline/scripts/"
+  cp "$REPO_ROOT/scripts/preflight.sh" "$stage_dir/acfs-offline/scripts/preflight.sh"
+
+  cp -R "$REPO_ROOT/acfs" "$stage_dir/acfs-offline/acfs"
+  cp "$REPO_ROOT/checksums.yaml" "$stage_dir/acfs-offline/checksums.yaml"
+  cp "$REPO_ROOT/acfs.manifest.yaml" "$stage_dir/acfs-offline/acfs.manifest.yaml"
+
+  tar -czf "$archive_path" -C "$stage_dir" acfs-offline
 }
 
 create_bad_archive() {
@@ -131,8 +139,17 @@ run_bootstrap() {
     return 0
   fi
 
+  set +e
   local output
   output="$(ACFS_TEST_ARCHIVE="$archive_path" PATH="$stub_dir:$PATH" bash -lc "cat '$REPO_ROOT/install.sh' | bash -s -- --list-modules" 2>&1)"
+  local status=$?
+  set -e
+
+  if [[ $status -ne 0 ]]; then
+    echo "$output" >&2
+    echo "ERROR: bootstrap command failed for $label (exit $status)" >&2
+    exit 1
+  fi
 
   echo "$output" | grep -q "Bootstrap archive ready" || {
     echo "$output" >&2
@@ -153,8 +170,9 @@ main() {
   local good_archive
   local bad_archive
 
-  good_archive="$(mktemp /tmp/acfs-offline-archive.XXXXXX.tar.gz)"
-  bad_archive="$(mktemp /tmp/acfs-offline-archive-bad.XXXXXX.tar.gz)"
+  # mktemp portability: BSD mktemp requires Xs at the end of the template
+  good_archive="$(mktemp /tmp/acfs-offline-archive.XXXXXX)"
+  bad_archive="$(mktemp /tmp/acfs-offline-archive-bad.XXXXXX)"
 
   create_archive "$good_archive"
   run_bootstrap "$good_archive" "happy-path"
