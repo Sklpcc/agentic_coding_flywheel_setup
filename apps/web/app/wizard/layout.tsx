@@ -50,18 +50,27 @@ export default function WizardLayout({
         // immediately redirect back to Step 1.
         if (currentStep === 1 && stepId > 1) {
           if (!ensureOSSelected()) {
-            window.alert("Please choose Mac or Windows to continue.");
+            // Scroll to OS selection buttons and add visual feedback
+            const osButtons = document.querySelector('[data-os-selection]');
+            if (osButtons) {
+              osButtons.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
           }
         }
 
         // Step 5 (Create VPS) requires IP address before proceeding to step 6 (SSH Connect).
         // The SSH Connect page redirects back if no IP is stored, which looks like a page reload.
-        // Block navigation here with a helpful message instead.
+        // Silently block navigation - the page's Continue button has proper validation.
         if (currentStep === 5 && stepId === 6) {
           const storedIP = getVPSIP();
           if (!storedIP) {
-            window.alert("Please enter your VPS IP address and click 'Continue to SSH' to proceed.");
+            // Scroll to the IP input section to draw attention
+            const ipInput = document.querySelector('input[placeholder*="192.168"]');
+            if (ipInput) {
+              ipInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              (ipInput as HTMLElement).focus();
+            }
             return;
           }
         }
@@ -176,7 +185,8 @@ export default function WizardLayout({
                 ) : (
                   <div />
                 )}
-                {nextStep && (
+                {/* Hide Next button on step 5 - page has its own validated Continue button */}
+                {nextStep && currentStep !== 5 && (
                   <Button
                     onClick={() => handleStepClick(nextStep.id)}
                     className="bg-primary text-primary-foreground"
@@ -207,15 +217,20 @@ export default function WizardLayout({
             <ChevronLeft className="mr-1 h-5 w-5" />
             Back
           </Button>
-          <Button
-            size="lg"
-            onClick={() => nextStep && handleStepClick(nextStep.id)}
-            disabled={!nextStep}
-            className="flex-1"
-          >
-            Next
-            <ChevronRight className="ml-1 h-5 w-5" />
-          </Button>
+          {/* Hide Next button on step 5 - page has its own validated Continue button */}
+          {currentStep !== 5 ? (
+            <Button
+              size="lg"
+              onClick={() => nextStep && handleStepClick(nextStep.id)}
+              disabled={!nextStep}
+              className="flex-1"
+            >
+              Next
+              <ChevronRight className="ml-1 h-5 w-5" />
+            </Button>
+          ) : (
+            <div className="flex-1" />
+          )}
         </div>
       </div>
     </div>
