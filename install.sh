@@ -1248,14 +1248,28 @@ run_smoke_test() {
         ((critical_failed += 1))
     fi
 
-    # 3) Passwordless sudo works
-    if _smoke_run_as_target "sudo -n true" &>/dev/null; then
-        echo "✅ Sudo: passwordless" >&2
-        ((critical_passed += 1))
+    # 3) Sudo configuration
+    # - vibe mode: passwordless sudo is required
+    # - safe mode: sudo must exist, but may require a password
+    if [[ "$MODE" == "vibe" ]]; then
+        if _smoke_run_as_target "sudo -n true" &>/dev/null; then
+            echo "✅ Sudo: passwordless (vibe mode)" >&2
+            ((critical_passed += 1))
+        else
+            echo "✖ Sudo: passwordless (vibe mode)" >&2
+            echo "    Fix: re-run installer with --mode vibe (or configure NOPASSWD for $TARGET_USER)" >&2
+            ((critical_failed += 1))
+        fi
     else
-        echo "✖ Sudo: passwordless" >&2
-        echo "    Fix: re-run installer with --mode vibe (or configure NOPASSWD for $TARGET_USER)" >&2
-        ((critical_failed += 1))
+        if _smoke_run_as_target "command -v sudo >/dev/null" &>/dev/null && \
+            _smoke_run_as_target "id -nG | grep -qw sudo" &>/dev/null; then
+            echo "✅ Sudo: available (safe mode)" >&2
+            ((critical_passed += 1))
+        else
+            echo "✖ Sudo: available (safe mode)" >&2
+            echo "    Fix: ensure sudo is installed and $TARGET_USER is in the sudo group" >&2
+            ((critical_failed += 1))
+        fi
     fi
 
     # 4) /data/projects exists

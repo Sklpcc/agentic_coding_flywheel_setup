@@ -54,6 +54,17 @@ elif [[ -f "$SCRIPT_DIR/../../VERSION" ]]; then
     ACFS_VERSION="$(cat "$SCRIPT_DIR/../../VERSION" 2>/dev/null || echo "$ACFS_VERSION")"
 fi
 
+# Prefer the installed state file for mode (vibe/safe) when available.
+if [[ -z "${ACFS_MODE:-}" ]] && [[ -f "$HOME/.acfs/state.json" ]]; then
+    if command -v jq &>/dev/null; then
+        ACFS_MODE="$(jq -r '.mode // empty' "$HOME/.acfs/state.json" 2>/dev/null || true)"
+    fi
+    if [[ -z "${ACFS_MODE:-}" ]]; then
+        ACFS_MODE="$(sed -n 's/.*"mode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$HOME/.acfs/state.json" | head -n 1)"
+    fi
+    [[ -n "${ACFS_MODE:-}" ]] && export ACFS_MODE
+fi
+
 if [[ -f "$SCRIPT_DIR/gum_ui.sh" ]]; then
     source "$SCRIPT_DIR/gum_ui.sh"
 elif [[ -f "$HOME/.acfs/scripts/lib/gum_ui.sh" ]]; then
@@ -265,11 +276,19 @@ check_identity() {
         check "identity.user_is_ubuntu" "Logged in as ubuntu (currently: $user)" "warn" "whoami=$user" "ssh ubuntu@YOUR_SERVER"
     fi
 
-    # Check passwordless sudo
-    if sudo -n true 2>/dev/null; then
-        check "identity.passwordless_sudo" "Passwordless sudo" "pass"
+    # Check sudo configuration (passwordless only required in vibe mode)
+    if [[ "${ACFS_MODE:-vibe}" == "vibe" ]]; then
+        if sudo -n true 2>/dev/null; then
+            check "identity.passwordless_sudo" "Passwordless sudo (vibe mode)" "pass"
+        else
+            check "identity.passwordless_sudo" "Passwordless sudo (vibe mode)" "fail" "requires password" "Re-run ACFS installer with --mode vibe"
+        fi
     else
-        check "identity.passwordless_sudo" "Passwordless sudo" "fail" "requires password" "Re-run ACFS installer with --mode vibe"
+        if command -v sudo &>/dev/null && id -nG 2>/dev/null | grep -qw sudo; then
+            check "identity.sudo" "Sudo available (safe mode)" "pass"
+        else
+            check "identity.sudo" "Sudo available (safe mode)" "fail" "sudo unavailable" "Ensure ubuntu is in the sudo group and sudo is installed"
+        fi
     fi
 
     blank_line

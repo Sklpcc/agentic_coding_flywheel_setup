@@ -9,6 +9,7 @@
 #   ./tests/vm/test_install_ubuntu.sh              # defaults to 24.04
 #   ./tests/vm/test_install_ubuntu.sh --all        # run 24.04 + 25.04
 #   ./tests/vm/test_install_ubuntu.sh --ubuntu 25.04
+#   ./tests/vm/test_install_ubuntu.sh --mode safe
 #
 # Requirements:
 #   - docker (or compatible runtime that supports `docker run`)
@@ -26,12 +27,14 @@ Usage:
 Options:
   --ubuntu <version>   Ubuntu tag (e.g. 24.04, 25.04). Repeatable.
   --all                Run on 24.04 and 25.04.
+  --mode <mode>        Install mode: vibe or safe (default: vibe).
   --help               Show help.
 
 Examples:
   ./tests/vm/test_install_ubuntu.sh
   ./tests/vm/test_install_ubuntu.sh --all
   ./tests/vm/test_install_ubuntu.sh --ubuntu 25.04
+  ./tests/vm/test_install_ubuntu.sh --mode safe
 EOF
 }
 
@@ -49,6 +52,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 declare -a ubuntus=()
+MODE="vibe"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ubuntu)
@@ -58,6 +62,17 @@ while [[ $# -gt 0 ]]; do
     --all)
       ubuntus=("24.04" "25.04")
       shift
+      ;;
+    --mode)
+      MODE="${2:-}"
+      case "$MODE" in
+        vibe|safe) ;;
+        *)
+          echo "ERROR: --mode must be vibe or safe (got: '$MODE')" >&2
+          exit 1
+          ;;
+      esac
+      shift 2
       ;;
     --help)
       usage
@@ -81,13 +96,14 @@ run_one() {
 
   echo "" >&2
   echo "============================================================" >&2
-  echo "[ACFS Test] Ubuntu ${ubuntu_version}" >&2
+  echo "[ACFS Test] Ubuntu ${ubuntu_version} (mode=${MODE})" >&2
   echo "============================================================" >&2
 
   docker pull "$image" >/dev/null
 
   docker run --rm -t \
     -e DEBIAN_FRONTEND=noninteractive \
+    -e ACFS_TEST_MODE="$MODE" \
     -v "${REPO_ROOT}:/repo:ro" \
     "$image" bash -lc '
       set -euo pipefail
@@ -96,7 +112,7 @@ run_one() {
       apt-get install -y sudo curl git ca-certificates jq unzip tar xz-utils gnupg
 
       cd /repo
-      bash install.sh --yes --mode vibe
+      bash install.sh --yes --mode "${ACFS_TEST_MODE}"
 
       su - ubuntu -c "zsh -ic '\''acfs doctor'\''"
       su - ubuntu -c "zsh -ic '\''test -f ~/.acfs/VERSION'\''"
