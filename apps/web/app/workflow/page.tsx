@@ -169,6 +169,7 @@ function CodeBlock({ code, language = "bash" }: { code: string; language?: strin
       <div className="flex items-center justify-between px-4 py-2 bg-[oklch(0.11_0.02_260)] border-b border-border/30">
         <span className="text-xs text-muted-foreground font-mono">{language}</span>
         <motion.button
+          type="button"
           onClick={handleCopy}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-white/5"
           whileHover={{ scale: 1.02 }}
@@ -278,6 +279,7 @@ function PromptCard({
             <div className="border-t border-border/50 p-4">
               <div className="flex justify-end mb-3">
                 <motion.button
+                  type="button"
                   onClick={handleCopy}
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md bg-muted/50 hover:bg-muted"
                   whileHover={{ scale: 1.02 }}
@@ -313,19 +315,23 @@ function PhaseIndicator({ number, title, color }: { number: number; title: strin
   );
 }
 
-// Tool badge component
-function ToolBadge({ name, icon: Icon, color }: { name: string; icon?: React.ElementType; color: string }) {
+// Tool badge component for tech stack display
+function ToolBadge({ name, desc, icon: Icon }: { name: string; desc: string; icon?: React.ElementType }) {
   return (
     <motion.div
-      className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-card/50",
-        "hover:border-primary/30 transition-colors"
-      )}
+      className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card/50 hover:border-primary/30 transition-colors"
       whileHover={{ scale: 1.02, y: -2 }}
       transition={springs.snappy}
     >
-      {Icon && <Icon className={cn("h-4 w-4", color)} />}
-      <span className="text-sm font-medium">{name}</span>
+      {Icon && (
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <Icon className="h-4 w-4 text-primary" />
+        </div>
+      )}
+      <div className="min-w-0">
+        <span className="text-sm font-medium block">{name}</span>
+        <span className="text-xs text-muted-foreground truncate block">{desc}</span>
+      </div>
     </motion.div>
   );
 }
@@ -365,14 +371,14 @@ function WorkflowStep({
 
 // Constants
 const TECH_STACK = [
-  { name: "Next.js 16", desc: "App Router with React 19", category: "Framework", icon: Layers },
-  { name: "TypeScript", desc: "Strict mode enabled", category: "Language", icon: FileCode },
-  { name: "Supabase", desc: "Postgres + Auth + Storage", category: "Backend", icon: Database },
-  { name: "Drizzle ORM", desc: "Type-safe database access", category: "Database", icon: Database },
-  { name: "Vercel AI SDK", desc: "For AI integrations", category: "AI", icon: Cpu },
-  { name: "Tailwind CSS", desc: "Utility-first styling", category: "Styling", icon: Sparkles },
-  { name: "Framer Motion", desc: "Smooth animations", category: "Animation", icon: Play },
-  { name: "TanStack", desc: "Query, Router, Table, Form", category: "State", icon: GitBranch },
+  { name: "Next.js 16", desc: "App Router with React 19", icon: Layers },
+  { name: "TypeScript", desc: "Strict mode enabled", icon: FileCode },
+  { name: "Supabase", desc: "Postgres + Auth + Storage", icon: Database },
+  { name: "Drizzle ORM", desc: "Type-safe database access", icon: Database },
+  { name: "Vercel AI SDK", desc: "For AI integrations", icon: Cpu },
+  { name: "Tailwind CSS", desc: "Utility-first styling", icon: Sparkles },
+  { name: "Framer Motion", desc: "Smooth animations", icon: Play },
+  { name: "TanStack", desc: "Query, Router, Table, Form", icon: GitBranch },
 ];
 
 const CLOUD_SERVICES = [
@@ -390,6 +396,7 @@ const FLYWHEEL_CYCLE = [
   { name: "UBS", desc: "Bug scan", color: "from-rose-400 to-red-500", icon: Bug },
   { name: "CM", desc: "Remembers", color: "from-pink-400 to-fuchsia-500", icon: Brain },
   { name: "CASS", desc: "Searches", color: "from-cyan-400 to-sky-500", icon: Search },
+  { name: "CAAM", desc: "Auth switch", color: "from-slate-400 to-zinc-500", icon: Users },
 ];
 
 // Prompts
@@ -1056,6 +1063,22 @@ export default function WorkflowPage() {
                 </li>
               </ul>
             </GuideSection>
+            <GuideSection title="Quick Daily Routine">
+              <div className="space-y-4 mt-3">
+                <GuideStep number={1} title="Start your machines">
+                  Launch your VPS instances and open your agent terminals with NTM.
+                  Run <code className="bg-muted px-1 rounded text-xs">ntm attach myproject</code> to reconnect.
+                </GuideStep>
+                <GuideStep number={2} title="Send autopilot prompts">
+                  Use the command palette to send &quot;randomly_inspect&quot; or &quot;check_other_agents&quot;
+                  prompts to each agent. One button press per agent.
+                </GuideStep>
+                <GuideStep number={3} title="Let agents work">
+                  Come back in 3+ hours. Agents will have made progress on all your projects
+                  while you focused on other work.
+                </GuideStep>
+              </div>
+            </GuideSection>
             <GuideCaution>
               <strong>Test coverage is your safety net.</strong> This autopilot approach only
               works safely with comprehensive unit tests and e2e integration tests acting as guardrails.
@@ -1288,6 +1311,46 @@ export default function WorkflowPage() {
           </SimplerGuide>
         </CollapsibleSection>
 
+        {/* Recommended Tech Stack */}
+        <CollapsibleSection
+          title="Recommended Project Stack"
+          icon={Layers}
+          gradient="bg-gradient-to-br from-blue-500 to-indigo-600"
+        >
+          <p className="text-muted-foreground mb-6">
+            When starting new projects with your agent swarm, this battle-tested tech stack provides
+            the best developer experience and AI compatibility. Each tool is designed for modern,
+            type-safe development.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {TECH_STACK.map((tool, i) => (
+              <motion.div
+                key={tool.name}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ ...springs.smooth, delay: staggerDelay(i, 0.05) }}
+              >
+                <ToolBadge name={tool.name} desc={tool.desc} icon={tool.icon} />
+              </motion.div>
+            ))}
+          </div>
+
+          <SimplerGuide>
+            <GuideTip>
+              <strong>Why this stack?</strong> These tools have excellent TypeScript support, which
+              AI coding agents leverage for better code generation. Type inference means fewer errors
+              and more reliable autonomous development.
+            </GuideTip>
+            <GuideExplain term="AI-friendly tooling">
+              TanStack and Drizzle ORM both provide strong typing that helps agents understand
+              your data structures. Framer Motion has declarative APIs that agents can reason about
+              easily. Vercel AI SDK provides built-in streaming and tool calling.
+            </GuideExplain>
+          </SimplerGuide>
+        </CollapsibleSection>
+
         {/* Summary */}
         <motion.div
           initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
@@ -1300,7 +1363,13 @@ export default function WorkflowPage() {
               <Zap className="h-5 w-5 text-[oklch(0.72_0.19_145)]" />
               Summary: The Complete Workflow
             </h2>
-            <ol className="space-y-4 text-sm">
+            <motion.ol
+              className="space-y-4 text-sm"
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
               {[
                 { color: "from-amber-500 to-orange-600", text: "Plan with 3 AI models — GPT Pro, Opus 4.5, Gemini → synthesize best ideas" },
                 { color: "from-amber-500 to-orange-600", text: "Generate feature ideas — Use the \"100 ideas, show me 10\" technique" },
@@ -1313,10 +1382,7 @@ export default function WorkflowPage() {
                 <motion.li
                   key={i}
                   className="flex gap-4"
-                  initial={prefersReducedMotion ? {} : { opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ ...springs.smooth, delay: staggerDelay(i, 0.05) }}
+                  variants={fadeUp}
                 >
                   <span className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white bg-gradient-to-br",
@@ -1327,7 +1393,7 @@ export default function WorkflowPage() {
                   <span className="pt-0.5">{step.text}</span>
                 </motion.li>
               ))}
-            </ol>
+            </motion.ol>
           </Card>
         </motion.div>
 
