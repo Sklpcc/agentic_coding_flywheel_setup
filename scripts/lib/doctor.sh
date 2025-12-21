@@ -215,7 +215,7 @@ check_shell() {
     if [[ -d "$HOME/.oh-my-zsh" ]]; then
         check "shell.ohmyzsh" "Oh My Zsh" "pass"
     else
-        check "shell.ohmyzsh" "Oh My Zsh" "fail" "not installed" "sh -c \"\$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\""
+        check "shell.ohmyzsh" "Oh My Zsh" "fail" "not installed" "Re-run the ACFS installer (shell setup phase)"
     fi
 
     local p10k_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
@@ -248,7 +248,7 @@ check_shell() {
         check "shell.lsd_or_eza" "lsd/eza" "warn" "neither installed" "sudo apt install lsd"
     fi
 
-    check_command "shell.atuin" "Atuin" "atuin" "curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh"
+    check_command "shell.atuin" "Atuin" "atuin" "Re-run the ACFS installer (language runtimes phase)"
     check_command "shell.fzf" "fzf" "fzf" "sudo apt install fzf"
     check_command "shell.zoxide" "zoxide" "zoxide"
     check_command "shell.direnv" "direnv" "direnv" "sudo apt install direnv"
@@ -260,9 +260,9 @@ check_shell() {
 check_core_tools() {
     section "Core tools"
 
-    check_command "tool.bun" "Bun" "bun" "curl -fsSL https://bun.sh/install | bash"
-    check_command "tool.uv" "uv" "uv" "curl -LsSf https://astral.sh/uv/install.sh | sh"
-    check_command "tool.cargo" "Cargo (Rust)" "cargo" "curl https://sh.rustup.rs -sSf | sh"
+    check_command "tool.bun" "Bun" "bun" "Re-run the ACFS installer (language runtimes phase)"
+    check_command "tool.uv" "uv" "uv" "Re-run the ACFS installer (language runtimes phase)"
+    check_command "tool.cargo" "Cargo (Rust)" "cargo" "Re-run the ACFS installer (language runtimes phase)"
     check_command "tool.go" "Go" "go" "sudo apt install golang-go"
     check_command "tool.tmux" "tmux" "tmux" "sudo apt install tmux"
     check_command "tool.rg" "ripgrep" "rg" "sudo apt install ripgrep"

@@ -21,6 +21,8 @@ fi
 # Ensure SUDO is set
 : "${SUDO:=sudo}"
 
+ZSH_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Oh My Zsh installation URL
 OMZ_INSTALL_URL="https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
 
@@ -30,6 +32,30 @@ P10K_REPO="https://github.com/romkatv/powerlevel10k.git"
 # Plugin repositories
 ZSH_AUTOSUGGESTIONS_REPO="https://github.com/zsh-users/zsh-autosuggestions"
 ZSH_SYNTAX_HIGHLIGHTING_REPO="https://github.com/zsh-users/zsh-syntax-highlighting.git"
+
+# Load security helpers + checksums.yaml (fail closed if unavailable).
+ZSH_SECURITY_READY=false
+_zsh_require_security() {
+    if [[ "${ZSH_SECURITY_READY}" == "true" ]]; then
+        return 0
+    fi
+
+    if [[ ! -f "$ZSH_LIB_DIR/security.sh" ]]; then
+        log_error "Security library not found ($ZSH_LIB_DIR/security.sh); refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    # shellcheck source=security.sh
+    # shellcheck disable=SC1091  # runtime relative source
+    source "$ZSH_LIB_DIR/security.sh"
+    if ! load_checksums; then
+        log_error "checksums.yaml not available; refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    ZSH_SECURITY_READY=true
+    return 0
+}
 
 # Install zsh package
 install_zsh() {
@@ -60,8 +86,22 @@ install_ohmyzsh() {
 
     log_detail "Installing Oh My Zsh..."
 
-    # Install non-interactively without changing shell
-    sh -c "$(curl -fsSL $OMZ_INSTALL_URL)" "" --unattended --keep-zshrc
+    if ! _zsh_require_security; then
+        return 1
+    fi
+
+    local expected_sha256
+    expected_sha256="$(get_checksum ohmyzsh)"
+    if [[ -z "$expected_sha256" ]]; then
+        log_error "No checksum recorded for ohmyzsh; refusing to run unverified installer"
+        return 1
+    fi
+
+    # Install non-interactively without changing shell.
+    (
+        set -o pipefail
+        verify_checksum "$OMZ_INSTALL_URL" "$expected_sha256" "ohmyzsh" | sh -s -- --unattended --keep-zshrc
+    )
 
     if [[ ! -d "$omz_dir" ]]; then
         log_error "Failed to install Oh My Zsh"

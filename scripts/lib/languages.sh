@@ -5,9 +5,10 @@
 # Installs Bun, uv (Python), Rust, and Go
 # ============================================================
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Ensure we have logging functions available
 if [[ -z "${ACFS_BLUE:-}" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=logging.sh
     source "$SCRIPT_DIR/logging.sh"
 fi
@@ -68,6 +69,29 @@ _lang_run_as_user() {
     su - "$target_user" -c "bash -c $(printf %q "$wrapped_cmd")"
 }
 
+# Load security helpers + checksums.yaml (fail closed if unavailable).
+LANG_SECURITY_READY=false
+_lang_require_security() {
+    if [[ "${LANG_SECURITY_READY}" == "true" ]]; then
+        return 0
+    fi
+
+    if [[ ! -f "$SCRIPT_DIR/security.sh" ]]; then
+        log_warn "Security library not found ($SCRIPT_DIR/security.sh); refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    # shellcheck source=security.sh
+    source "$SCRIPT_DIR/security.sh"
+    if ! load_checksums; then
+        log_warn "checksums.yaml not available; refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    LANG_SECURITY_READY=true
+    return 0
+}
+
 # Ensure ~/.local/bin exists for target user
 _lang_ensure_local_bin() {
     local target_user="${TARGET_USER:-ubuntu}"
@@ -101,7 +125,19 @@ install_bun() {
     log_detail "Installing Bun for $target_user..."
 
     # Run Bun installer as target user
-    if ! _lang_run_as_user 'curl -fsSL https://bun.sh/install | bash'; then
+    if ! _lang_require_security; then
+        return 1
+    fi
+
+    local url="${KNOWN_INSTALLERS[bun]}"
+    local expected_sha256
+    expected_sha256="$(get_checksum bun)"
+    if [[ -z "$expected_sha256" ]]; then
+        log_warn "No checksum recorded for bun; refusing to run unverified installer"
+        return 1
+    fi
+
+    if ! _lang_run_as_user "source '$SCRIPT_DIR/security.sh'; verify_checksum '$url' '$expected_sha256' 'bun' | bash"; then
         log_warn "Bun installation failed"
         return 1
     fi
@@ -157,7 +193,19 @@ install_uv() {
     _lang_ensure_local_bin
 
     # Run uv installer as target user
-    if ! _lang_run_as_user 'curl -LsSf https://astral.sh/uv/install.sh | sh'; then
+    if ! _lang_require_security; then
+        return 1
+    fi
+
+    local url="${KNOWN_INSTALLERS[uv]}"
+    local expected_sha256
+    expected_sha256="$(get_checksum uv)"
+    if [[ -z "$expected_sha256" ]]; then
+        log_warn "No checksum recorded for uv; refusing to run unverified installer"
+        return 1
+    fi
+
+    if ! _lang_run_as_user "source '$SCRIPT_DIR/security.sh'; verify_checksum '$url' '$expected_sha256' 'uv' | sh"; then
         log_warn "uv installation failed"
         return 1
     fi
@@ -220,7 +268,19 @@ install_rust() {
     log_detail "Installing Rust for $target_user..."
 
     # Run rustup installer as target user (-y for non-interactive)
-    if ! _lang_run_as_user 'curl https://sh.rustup.rs -sSf | sh -s -- -y'; then
+    if ! _lang_require_security; then
+        return 1
+    fi
+
+    local url="${KNOWN_INSTALLERS[rust]}"
+    local expected_sha256
+    expected_sha256="$(get_checksum rust)"
+    if [[ -z "$expected_sha256" ]]; then
+        log_warn "No checksum recorded for rust; refusing to run unverified installer"
+        return 1
+    fi
+
+    if ! _lang_run_as_user "source '$SCRIPT_DIR/security.sh'; verify_checksum '$url' '$expected_sha256' 'rust' | sh -s -- -y"; then
         log_warn "Rust installation failed"
         return 1
     fi

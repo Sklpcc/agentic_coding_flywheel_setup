@@ -8,6 +8,8 @@ set -euo pipefail
 
 ACFS_VERSION="${ACFS_VERSION:-0.1.0}"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -71,16 +73,17 @@ log_item() {
 run_cmd() {
     local desc="$1"
     shift
-    local cmd="$*"
+    local cmd_display=""
+    cmd_display=$(printf '%q ' "$@")
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_item "skip" "$desc" "dry-run: $cmd"
+        log_item "skip" "$desc" "dry-run: $cmd_display"
         return 0
     fi
 
     log_item "run" "$desc"
 
-    if eval "$cmd" >/dev/null 2>&1; then
+    if "$@" >/dev/null 2>&1; then
         # Move cursor up and overwrite
         echo -e "\033[1A\033[2K  ${GREEN}[ok]${NC} $desc"
         ((SUCCESS_COUNT += 1))
@@ -108,6 +111,64 @@ get_sudo() {
     fi
 }
 
+run_cmd_sudo() {
+    local desc="$1"
+    shift
+
+    local sudo_cmd
+    sudo_cmd=$(get_sudo)
+    if [[ -n "$sudo_cmd" ]]; then
+        run_cmd "$desc" "$sudo_cmd" "$@"
+        return 0
+    fi
+    run_cmd "$desc" "$@"
+}
+
+# ============================================================
+# Upstream installer verification (checksums.yaml)
+# ============================================================
+
+UPDATE_SECURITY_READY=false
+update_require_security() {
+    if [[ "${UPDATE_SECURITY_READY}" == "true" ]]; then
+        return 0
+    fi
+
+    if [[ ! -f "$SCRIPT_DIR/security.sh" ]]; then
+        return 1
+    fi
+
+    # shellcheck source=security.sh
+    # shellcheck disable=SC1091  # runtime relative source
+    source "$SCRIPT_DIR/security.sh"
+    load_checksums || return 1
+
+    UPDATE_SECURITY_READY=true
+    return 0
+}
+
+# shellcheck disable=SC2329  # invoked indirectly via run_cmd()
+update_run_verified_installer() {
+    local tool="$1"
+    shift || true
+
+    if ! update_require_security; then
+        echo "Security verification unavailable (missing $SCRIPT_DIR/security.sh or checksums.yaml)" >&2
+        return 1
+    fi
+
+    local url="${KNOWN_INSTALLERS[$tool]:-}"
+    local expected_sha256
+    expected_sha256="$(get_checksum "$tool")"
+
+    if [[ -z "$url" ]] || [[ -z "$expected_sha256" ]]; then
+        echo "Missing checksum entry for $tool" >&2
+        return 1
+    fi
+
+    verify_checksum "$url" "$expected_sha256" "$tool" | bash -s -- "$@"
+}
+
 # ============================================================
 # Update Functions
 # ============================================================
@@ -120,12 +181,9 @@ update_apt() {
         return 0
     fi
 
-    local sudo_cmd
-    sudo_cmd=$(get_sudo)
-
-    run_cmd "apt update" "$sudo_cmd apt-get update -y"
-    run_cmd "apt upgrade" "$sudo_cmd apt-get upgrade -y"
-    run_cmd "apt autoremove" "$sudo_cmd apt-get autoremove -y"
+    run_cmd_sudo "apt update" apt-get update -y
+    run_cmd_sudo "apt upgrade" apt-get upgrade -y
+    run_cmd_sudo "apt autoremove" apt-get autoremove -y
 }
 
 update_bun() {
@@ -138,7 +196,7 @@ update_bun() {
         return 0
     fi
 
-    run_cmd "Bun self-upgrade" "$bun_bin upgrade"
+    run_cmd "Bun self-upgrade" "$bun_bin" upgrade
 }
 
 update_agents() {
@@ -158,21 +216,21 @@ update_agents() {
 
     # Claude Code has its own update command
     if cmd_exists claude; then
-        run_cmd "Claude Code" "claude update"
+        run_cmd "Claude Code" claude update
     else
         log_item "skip" "Claude Code" "not installed"
     fi
 
     # Codex CLI via bun
     if cmd_exists codex || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Codex CLI" "$bun_bin install -g @openai/codex@latest"
+        run_cmd "Codex CLI" "$bun_bin" install -g @openai/codex@latest
     else
         log_item "skip" "Codex CLI" "not installed (use --force to install)"
     fi
 
     # Gemini CLI via bun
     if cmd_exists gemini || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Gemini CLI" "$bun_bin install -g @google/gemini-cli@latest"
+        run_cmd "Gemini CLI" "$bun_bin" install -g @google/gemini-cli@latest
     else
         log_item "skip" "Gemini CLI" "not installed (use --force to install)"
     fi
@@ -195,21 +253,21 @@ update_cloud() {
 
     # Wrangler
     if cmd_exists wrangler || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Wrangler (Cloudflare)" "$bun_bin install -g wrangler@latest"
+        run_cmd "Wrangler (Cloudflare)" "$bun_bin" install -g wrangler@latest
     else
         log_item "skip" "Wrangler" "not installed"
     fi
 
     # Supabase
     if cmd_exists supabase || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Supabase CLI" "$bun_bin install -g supabase@latest"
+        run_cmd "Supabase CLI" "$bun_bin" install -g supabase@latest
     else
         log_item "skip" "Supabase CLI" "not installed"
     fi
 
     # Vercel
     if cmd_exists vercel || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Vercel CLI" "$bun_bin install -g vercel@latest"
+        run_cmd "Vercel CLI" "$bun_bin" install -g vercel@latest
     else
         log_item "skip" "Vercel CLI" "not installed"
     fi
@@ -225,7 +283,7 @@ update_rust() {
         return 0
     fi
 
-    run_cmd "Rust stable" "$rustup_bin update stable"
+    run_cmd "Rust stable" "$rustup_bin" update stable
 }
 
 update_uv() {
@@ -238,7 +296,7 @@ update_uv() {
         return 0
     fi
 
-    run_cmd "uv self-update" "$uv_bin self update"
+    run_cmd "uv self-update" "$uv_bin" self update
 }
 
 update_stack() {
@@ -249,44 +307,49 @@ update_stack() {
         return 0
     fi
 
+    if ! update_require_security; then
+        log_item "fail" "stack updates" "security verification unavailable (missing security.sh/checksums.yaml)"
+        return 0
+    fi
+
     # NTM
     if cmd_exists ntm; then
-        run_cmd "NTM" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash"
+        run_cmd "NTM" update_run_verified_installer ntm
     fi
 
     # MCP Agent Mail
     if [[ -d "$HOME/mcp_agent_mail" ]] || cmd_exists am; then
-        run_cmd "MCP Agent Mail" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh | bash -s -- --yes"
+        run_cmd "MCP Agent Mail" update_run_verified_installer mcp_agent_mail --yes
     fi
 
     # UBS
     if cmd_exists ubs; then
-        run_cmd "Ultimate Bug Scanner" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh | bash -s -- --easy-mode"
+        run_cmd "Ultimate Bug Scanner" update_run_verified_installer ubs --easy-mode
     fi
 
     # Beads Viewer
     if cmd_exists bv; then
-        run_cmd "Beads Viewer" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh | bash"
+        run_cmd "Beads Viewer" update_run_verified_installer bv
     fi
 
     # CASS
     if cmd_exists cass; then
-        run_cmd "CASS" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh | bash -s -- --easy-mode --verify"
+        run_cmd "CASS" update_run_verified_installer cass --easy-mode --verify
     fi
 
     # CASS Memory
     if cmd_exists cm; then
-        run_cmd "CASS Memory" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh | bash -s -- --easy-mode --verify"
+        run_cmd "CASS Memory" update_run_verified_installer cm --easy-mode --verify
     fi
 
     # CAAM
     if cmd_exists caam; then
-        run_cmd "CAAM" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_account_manager/main/install.sh | bash"
+        run_cmd "CAAM" update_run_verified_installer caam
     fi
 
     # SLB
     if cmd_exists slb; then
-        run_cmd "SLB" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/simultaneous_launch_button/main/scripts/install.sh | bash"
+        run_cmd "SLB" update_run_verified_installer slb
     fi
 }
 

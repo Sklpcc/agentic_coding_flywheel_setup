@@ -82,7 +82,7 @@ _agent_check_bun() {
 
     if [[ ! -x "$bun_bin" ]]; then
         log_warn "Bun not found at $bun_bin"
-        log_warn "Install bun first: curl -fsSL https://bun.sh/install | bash"
+        log_warn "Install bun first by re-running the ACFS installer (language runtimes phase)"
         return 1
     fi
     return 0

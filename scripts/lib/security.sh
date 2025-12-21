@@ -3,16 +3,18 @@
 # ============================================================
 # ACFS Installer - Security Verification Library
 # Provides checksum verification and HTTPS enforcement
+#
+# NOTE: This file is intended to be *sourced* by other scripts. Do not enable
+# global strict mode here, since it would leak `set -euo pipefail` into callers.
+# When executed directly, strict mode is enabled in the entrypoint below.
 # ============================================================
 
-set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SECURITY_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Ensure we have logging functions available
 if [[ -z "${ACFS_BLUE:-}" ]]; then
     # shellcheck source=logging.sh
-    source "$SCRIPT_DIR/logging.sh" 2>/dev/null || true
+    source "$SECURITY_SCRIPT_DIR/logging.sh" 2>/dev/null || true
 fi
 
 # ============================================================
@@ -21,7 +23,7 @@ fi
 
 # Checksums file location.
 # Prefer the repo-root checksums.yaml based on this script's location.
-DEFAULT_CHECKSUMS_FILE="$SCRIPT_DIR/../../checksums.yaml"
+DEFAULT_CHECKSUMS_FILE="$SECURITY_SCRIPT_DIR/../../checksums.yaml"
 if [[ -r "$DEFAULT_CHECKSUMS_FILE" ]]; then
     CHECKSUMS_FILE="${CHECKSUMS_FILE:-$DEFAULT_CHECKSUMS_FILE}"
 else
@@ -196,7 +198,10 @@ fetch_and_run() {
         return 1
     fi
 
-    verify_checksum "$url" "$expected_sha256" "$name" | bash -s -- "${args[@]}"
+    (
+        set -o pipefail
+        verify_checksum "$url" "$expected_sha256" "$name" | bash -s -- "${args[@]}"
+    )
 }
 
 # ============================================================
@@ -419,5 +424,6 @@ main() {
 
 # Run if executed directly
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -euo pipefail
     main "$@"
 fi

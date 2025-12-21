@@ -206,7 +206,7 @@ _check_ntm() {
         _smoke_pass "NTM: installed"
         return 0
     else
-        _smoke_fail "NTM: not found" "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash"
+        _smoke_fail "NTM: not found" "Re-run the ACFS installer (stack phase)"
         return 1
     fi
 }

@@ -5,9 +5,10 @@
 # Installs all 8 Dicklesworthstone tools
 # ============================================================
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Ensure we have logging functions available
 if [[ -z "${ACFS_BLUE:-}" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=logging.sh
     source "$SCRIPT_DIR/logging.sh"
 fi
@@ -94,18 +95,53 @@ _stack_run_as_user() {
     su - "$target_user" -c "bash -c $(printf %q "$wrapped_cmd")"
 }
 
-# Run an installer script from URL as target user
-_stack_run_installer() {
-    local url="$1"
-    local args="${2:-}"
-    local cache_bust="${3:-false}"
-
-    # Add cache busting timestamp if requested
-    if [[ "$cache_bust" == "true" ]]; then
-        url="${url}?$(date +%s)"
+# Load security helpers + checksums.yaml (fail closed if unavailable).
+STACK_SECURITY_READY=false
+_stack_require_security() {
+    if [[ "${STACK_SECURITY_READY}" == "true" ]]; then
+        return 0
     fi
 
-    _stack_run_as_user "curl -fsSL '$url' 2>/dev/null | bash -s -- $args"
+    if [[ ! -f "$SCRIPT_DIR/security.sh" ]]; then
+        log_warn "Security library not found ($SCRIPT_DIR/security.sh); refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    # shellcheck source=security.sh
+    source "$SCRIPT_DIR/security.sh"
+    if ! load_checksums; then
+        log_warn "checksums.yaml not available; refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    STACK_SECURITY_READY=true
+    return 0
+}
+
+# Run an installer script as target user with checksum verification.
+_stack_run_installer() {
+    local tool="$1"
+    shift || true
+    local args="${*:-}"
+
+    if ! _stack_require_security; then
+        return 1
+    fi
+
+    local url="${STACK_URLS[$tool]:-}"
+    local expected_sha256
+    expected_sha256="$(get_checksum "$tool")"
+
+    if [[ -z "$url" ]]; then
+        log_warn "No installer URL configured for $tool"
+        return 1
+    fi
+    if [[ -z "$expected_sha256" ]]; then
+        log_warn "No checksum recorded for $tool; refusing to run unverified installer"
+        return 1
+    fi
+
+    _stack_run_as_user "source '$SCRIPT_DIR/security.sh'; verify_checksum '$url' '$expected_sha256' '$tool' | bash -s -- $args"
 }
 
 # Check if a stack tool is installed
@@ -155,7 +191,7 @@ install_ntm() {
 
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
-    if _stack_run_installer "${STACK_URLS[$tool]}"; then
+    if _stack_run_installer "$tool"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -179,7 +215,7 @@ install_mcp_agent_mail() {
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
     # MCP Agent Mail uses --yes for non-interactive install
-    if _stack_run_installer "${STACK_URLS[$tool]}" "--yes" "true"; then
+    if _stack_run_installer "$tool" "--yes"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -203,7 +239,7 @@ install_ubs() {
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
     # UBS uses --easy-mode for simplified setup
-    if _stack_run_installer "${STACK_URLS[$tool]}" "--easy-mode" "true"; then
+    if _stack_run_installer "$tool" "--easy-mode"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -226,7 +262,7 @@ install_bv() {
 
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
-    if _stack_run_installer "${STACK_URLS[$tool]}" "" "true"; then
+    if _stack_run_installer "$tool"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -250,7 +286,7 @@ install_cass() {
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
     # CASS uses --easy-mode --verify for simplified setup with verification
-    if _stack_run_installer "${STACK_URLS[$tool]}" "--easy-mode --verify"; then
+    if _stack_run_installer "$tool" "--easy-mode --verify"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -274,7 +310,7 @@ install_cm() {
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
     # CM uses --easy-mode --verify for simplified setup with verification
-    if _stack_run_installer "${STACK_URLS[$tool]}" "--easy-mode --verify"; then
+    if _stack_run_installer "$tool" "--easy-mode --verify"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -297,7 +333,7 @@ install_caam() {
 
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
-    if _stack_run_installer "${STACK_URLS[$tool]}" "" "true"; then
+    if _stack_run_installer "$tool"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -320,7 +356,7 @@ install_slb() {
 
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
-    if _stack_run_installer "${STACK_URLS[$tool]}"; then
+    if _stack_run_installer "$tool"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0

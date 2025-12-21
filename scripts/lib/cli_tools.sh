@@ -5,9 +5,10 @@
 # Installs modern CLI replacements that acfs.zshrc depends on
 # ============================================================
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Ensure we have logging functions available
 if [[ -z "${ACFS_BLUE:-}" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # shellcheck source=logging.sh
     source "$SCRIPT_DIR/logging.sh"
 fi
@@ -86,6 +87,29 @@ _cli_run_as_user() {
     su - "$target_user" -c "bash -c $(printf %q "$wrapped_cmd")"
 }
 
+# Load security helpers + checksums.yaml (fail closed if unavailable).
+CLI_SECURITY_READY=false
+_cli_require_security() {
+    if [[ "${CLI_SECURITY_READY}" == "true" ]]; then
+        return 0
+    fi
+
+    if [[ ! -f "$SCRIPT_DIR/security.sh" ]]; then
+        log_warn "Security library not found ($SCRIPT_DIR/security.sh); refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    # shellcheck source=security.sh
+    source "$SCRIPT_DIR/security.sh"
+    if ! load_checksums; then
+        log_warn "checksums.yaml not available; refusing to run upstream installer scripts"
+        return 1
+    fi
+
+    CLI_SECURITY_READY=true
+    return 0
+}
+
 # ============================================================
 # APT-based CLI Tools
 # ============================================================
@@ -155,7 +179,16 @@ install_cargo_cli_tools() {
         _cli_run_as_user "$cargo_bin install zoxide --locked 2>/dev/null" || {
             # Fallback: try the official installer
             log_detail "Trying zoxide official installer..."
-            _cli_run_as_user 'curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh' || true
+            if _cli_require_security; then
+                local url="${KNOWN_INSTALLERS[zoxide]}"
+                local expected_sha256
+                expected_sha256="$(get_checksum zoxide)"
+                if [[ -n "$expected_sha256" ]]; then
+                    _cli_run_as_user "source '$SCRIPT_DIR/security.sh'; verify_checksum '$url' '$expected_sha256' 'zoxide' | sh" || true
+                else
+                    log_warn "No checksum recorded for zoxide; skipping unverified installer fallback"
+                fi
+            fi
         }
     fi
 
@@ -307,7 +340,19 @@ install_atuin() {
     fi
 
     log_detail "Installing atuin..."
-    if ! _cli_run_as_user 'curl --proto "=https" --tlsv1.2 -LsSf https://setup.atuin.sh | sh'; then
+    if ! _cli_require_security; then
+        return 1
+    fi
+
+    local url="${KNOWN_INSTALLERS[atuin]}"
+    local expected_sha256
+    expected_sha256="$(get_checksum atuin)"
+    if [[ -z "$expected_sha256" ]]; then
+        log_warn "No checksum recorded for atuin; refusing to run unverified installer"
+        return 1
+    fi
+
+    if ! _cli_run_as_user "source '$SCRIPT_DIR/security.sh'; verify_checksum '$url' '$expected_sha256' 'atuin' | sh"; then
         log_warn "Could not install atuin"
     fi
 
