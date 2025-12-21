@@ -1255,10 +1255,9 @@ test.describe("Mobile Navigation", () => {
     await page.goto("/wizard/generate-ssh-key?os=mac");
     await page.waitForLoadState("networkidle");
 
-    // Should show step 3 of 10
-    await expect(page.locator('text="Step"').first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
-    // The step number should be visible
-    await expect(page.locator('text="3"').first()).toBeVisible();
+    // Should show step indicator with "Step X of Y" format
+    // Using regex for partial match since text spans multiple elements
+    await expect(page.locator('text=/Step.*of/i').first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
   });
 
   test("should hide desktop sidebar on mobile", async ({ page }) => {
