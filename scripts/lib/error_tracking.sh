@@ -396,3 +396,217 @@ should_skip_phase() {
 
     return 1  # Default: don't skip
 }
+
+# ============================================================
+# Automatic Retry for Transient Network Errors
+# ============================================================
+# Related bead: agentic_coding_flywheel_setup-nna
+
+# Retry delays: Immediate, then 5s, then 15s (total max wait: 20s)
+# Rationale:
+# - Immediate (0s): Many transient errors clear instantly (TCP reset, DNS hiccup)
+# - 5s wait: Enough for most CDN/routing issues
+# - 15s wait: Handles rate limiting, brief outages
+RETRY_DELAYS=(0 5 15)
+
+# Check if an error is a retryable network error
+# Usage: is_retryable_error <exit_code> [stderr_output]
+# Returns: 0 if retryable (should retry), 1 if not retryable
+#
+# Retryable curl exit codes:
+#   6  - Could not resolve host (DNS failure)
+#   7  - Failed to connect (server down, network issue)
+#   28 - Operation timeout
+#   35 - SSL connect error
+#   52 - Empty reply from server
+#   56 - Network receive error
+#
+# Non-retryable:
+#   - HTTP 4xx errors (not network issues)
+#   - Checksum mismatches (content verification failed)
+#   - Script execution errors
+#
+is_retryable_error() {
+    local exit_code="$1"
+    local stderr="${2:-}"
+
+    # Curl exit codes for transient network issues
+    case "$exit_code" in
+        6)  return 0 ;;  # Could not resolve host
+        7)  return 0 ;;  # Failed to connect to host
+        28) return 0 ;;  # Operation timeout
+        35) return 0 ;;  # SSL connect error
+        52) return 0 ;;  # Empty reply from server
+        56) return 0 ;;  # Network receive error
+    esac
+
+    # Check stderr for common transient messages
+    if [[ -n "$stderr" ]]; then
+        # Lowercase comparison
+        local stderr_lower="${stderr,,}"
+        if [[ "$stderr_lower" =~ (timeout|timed.out|connection.refused|temporarily.unavailable|network.unreachable|no.route.to.host|reset.by.peer) ]]; then
+            return 0
+        fi
+    fi
+
+    return 1  # Not retryable
+}
+
+# Execute a command with exponential backoff retry for transient errors
+# Usage: retry_with_backoff "description" command [args...]
+# Returns: 0 on success, last exit code on failure after all retries
+#
+# Features:
+# - Only retries if is_retryable_error() returns true
+# - Uses RETRY_DELAYS array for backoff timing
+# - Captures stderr to determine if error is retryable
+# - Clear logging of retry attempts
+#
+# Example:
+#   retry_with_backoff "Fetching installer script" curl -fsSL https://example.com/install.sh
+#
+retry_with_backoff() {
+    local description="$1"
+    shift
+
+    local max_attempts=${#RETRY_DELAYS[@]}
+    local exit_code=0
+    local stderr_file
+    local stdout_file
+
+    stderr_file=$(mktemp) || stderr_file="/tmp/acfs_retry_stderr.$$"
+    stdout_file=$(mktemp) || stdout_file="/tmp/acfs_retry_stdout.$$"
+
+    for ((attempt=0; attempt < max_attempts; attempt++)); do
+        local delay=${RETRY_DELAYS[$attempt]}
+
+        # Wait before retry (except first attempt)
+        if ((attempt > 0)); then
+            if type -t log_info &>/dev/null; then
+                log_info "Retry $attempt/$((max_attempts-1)) for $description (waited ${delay}s)..."
+            else
+                echo "  [retry] Attempt $((attempt+1))/$max_attempts for $description (waited ${delay}s)..." >&2
+            fi
+            sleep "$delay"
+        fi
+
+        # Execute command, capturing stdout and stderr separately
+        "$@" > "$stdout_file" 2> "$stderr_file"
+        exit_code=$?
+
+        if [[ $exit_code -eq 0 ]]; then
+            # Success
+            if ((attempt > 0)); then
+                if type -t log_info &>/dev/null; then
+                    log_info "$description succeeded on retry $attempt"
+                else
+                    echo "  [retry] $description succeeded on retry $attempt" >&2
+                fi
+            fi
+            # Output the captured stdout
+            cat "$stdout_file"
+            rm -f "$stderr_file" "$stdout_file" 2>/dev/null
+            return 0
+        fi
+
+        # Check if error is retryable
+        local stderr_content
+        stderr_content=$(cat "$stderr_file" 2>/dev/null || echo "")
+
+        if ! is_retryable_error "$exit_code" "$stderr_content"; then
+            # Not a transient network error - don't retry
+            if type -t log_warn &>/dev/null; then
+                log_warn "$description failed with non-retryable error (exit $exit_code)"
+            else
+                echo "  [retry] $description failed with non-retryable error (exit $exit_code)" >&2
+            fi
+            # Output stderr for debugging
+            if [[ -n "$stderr_content" ]]; then
+                echo "$stderr_content" >&2
+            fi
+            rm -f "$stderr_file" "$stdout_file" 2>/dev/null
+            return $exit_code
+        fi
+
+        # Retryable error - will loop and retry (unless this was last attempt)
+        if ((attempt == max_attempts - 1)); then
+            # Last attempt failed
+            if type -t log_warn &>/dev/null; then
+                log_warn "$description failed on final attempt (exit $exit_code)"
+            fi
+        fi
+    done
+
+    # All attempts exhausted
+    if type -t log_error &>/dev/null; then
+        log_error "$description failed after $max_attempts attempts (exit $exit_code)"
+    else
+        echo "  [retry] $description failed after $max_attempts attempts (exit $exit_code)" >&2
+    fi
+
+    # Set error context
+    LAST_ERROR="$description failed after $max_attempts retry attempts"
+    LAST_ERROR_CODE=$exit_code
+    LAST_ERROR_TIME=$(date -Iseconds)
+    LAST_ERROR_OUTPUT=$(cat "$stderr_file" 2>/dev/null | head -c "$ERROR_OUTPUT_MAX_LENGTH" || echo "")
+
+    rm -f "$stderr_file" "$stdout_file" 2>/dev/null
+    return $exit_code
+}
+
+# Wrapper that combines retry with step tracking
+# Usage: try_step_with_backoff "description" command [args...]
+# Returns: 0 on success, exit code on failure
+#
+# This is like try_step but uses retry_with_backoff for transient errors
+#
+try_step_with_backoff() {
+    local description="$1"
+    shift
+
+    # Update step context
+    CURRENT_STEP="$description"
+
+    if type -t state_step_update &>/dev/null; then
+        state_step_update "$description"
+    fi
+
+    if type -t log_detail &>/dev/null; then
+        log_detail "$description..."
+    fi
+
+    # Use retry_with_backoff
+    local exit_code=0
+    local output
+    output=$(retry_with_backoff "$description" "$@" 2>&1) || exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        # Success
+        LAST_ERROR=""
+        LAST_ERROR_CODE=0
+        LAST_ERROR_OUTPUT=""
+        return 0
+    fi
+
+    # Failure - error context already set by retry_with_backoff
+    if type -t state_phase_fail &>/dev/null; then
+        state_phase_fail "$CURRENT_PHASE" "$description" "$LAST_ERROR"
+    fi
+
+    return $exit_code
+}
+
+# Fetch URL with automatic retry for transient errors
+# Usage: fetch_with_retry <url> [curl_options...]
+# Returns: 0 on success (outputs content to stdout), exit code on failure
+#
+# Example:
+#   script_content=$(fetch_with_retry "https://example.com/install.sh") || exit 1
+#   echo "$script_content" | bash
+#
+fetch_with_retry() {
+    local url="$1"
+    shift
+
+    retry_with_backoff "Fetching $url" curl -fsSL "$@" "$url"
+}
