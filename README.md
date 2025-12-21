@@ -119,6 +119,74 @@ ACFS provides a **reproducible, idempotent** setup that ensures every team membe
 
 ACFS is built around a **single source of truth**: the manifest file. Everything else—the installer scripts, doctor checks, website content—derives from this central definition. This architecture ensures consistency and makes the system easy to extend.
 
+### One-Page System Data Flow
+
+```mermaid
+flowchart TB
+  %% User and website
+  subgraph U["User (local machine)"]
+    Browser["Browser"]
+    Terminal["Terminal / SSH client"]
+  end
+
+  subgraph W["Wizard Website (Next.js 16) — apps/web"]
+    Wizard["Wizard UI (/wizard/*)"]
+    InstallRoute["GET /install (302 redirect to raw install.sh)"]
+    WebState["State: URL params + localStorage"]
+  end
+
+  %% Repo sources
+  subgraph R["Repo (source)"]
+    Manifest["acfs.manifest.yaml<br/>Modules + install + verify + deps"]
+    Generator["packages/manifest<br/>Parser (Zod) + generate.ts"]
+    Generated["scripts/generated/* (reference)<br/>category installers + doctor_checks.sh"]
+    Installer["install.sh (production one-liner)"]
+    Lib["scripts/lib/*<br/>security / doctor / update / services-setup"]
+    Configs["acfs/*<br/>zshrc + tmux.conf + onboard lessons"]
+    Checksums["checksums.yaml<br/>sha256 for upstream installers"]
+    Tests["tests/vm/test_install_ubuntu.sh<br/>Docker integration test"]
+  end
+
+  %% Target VPS
+  subgraph V["Target VPS (Ubuntu 24.04+ / 25.x)"]
+    Run["Run install.sh"]
+    Verify["Verified upstream installers<br/>(security.sh + checksums.yaml)"]
+    AcfsHome["~/.acfs/<br/>configs + scripts + state.json"]
+    Commands["Commands<br/>acfs doctor / acfs update / acfs services-setup / onboard"]
+    Tools["Installed tools<br/>bun/uv/rust/go + tmux/rg/gh + ..."]
+    Agents["Agent CLIs<br/>claude / codex / gemini"]
+    Stack["Stack tools<br/>ntm / mcp_agent_mail / ubs / bv / cass / cm / caam / slb"]
+  end
+
+  %% Website guidance flow
+  Browser --> Wizard
+  Wizard --> WebState
+  Wizard --> InstallRoute
+  InstallRoute -->|redirects to| Installer
+
+  %% How users fetch/run the installer
+  Terminal -->|curl / bash| Installer
+  Terminal -->|SSH| Run
+
+  %% Manifest-driven generation (reference today)
+  Manifest --> Generator --> Generated
+  Generated -.->|planned: install.sh calls generated install_all.sh| Installer
+
+  %% Installer composition
+  Lib --> Installer
+  Configs --> Installer
+  Checksums --> Installer
+  Tests -->|validates| Installer
+
+  %% VPS install results
+  Installer --> Run
+  Run --> Verify
+  Verify --> Tools
+  Verify --> Agents
+  Verify --> Stack
+  Run --> AcfsHome --> Commands
+```
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            SOURCE OF TRUTH                                   │
