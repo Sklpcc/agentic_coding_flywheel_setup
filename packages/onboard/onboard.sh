@@ -29,7 +29,7 @@ for candidate in \
     "$SCRIPT_DIR/../../scripts/lib/gum_ui.sh" \
     "$HOME/.acfs/scripts/lib/gum_ui.sh"; do
     if [[ -f "$candidate" ]]; then
-        # shellcheck disable=SC1091
+        # shellcheck disable=SC1090,SC1091
         source "$candidate"
         break
     fi
@@ -63,7 +63,6 @@ declare -a LESSON_FILES=(
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'

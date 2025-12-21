@@ -319,7 +319,9 @@ function generateDoctorChecks(manifest: Manifest): string {
   lines.push('        # Use tab as delimiter (safe - won\'t appear in commands)');
   lines.push('        IFS=$\'\\t\' read -r id desc cmd optional <<< "$check"');
   lines.push('        ');
-  lines.push('        if eval "$cmd" &>/dev/null; then');
+  // Run checks in a subshell to avoid leaking side effects into this script.
+  // Enable pipefail so pipeline-based checks behave as expected.
+  lines.push('        if bash -c "set -o pipefail; $cmd" &>/dev/null; then');
   lines.push('            echo -e "\\033[0;32m[ok]\\033[0m $id - $desc"');
   lines.push('            ((passed += 1))');
   lines.push('        elif [[ "$optional" == "optional" ]]; then');
