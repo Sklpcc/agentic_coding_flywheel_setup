@@ -2,14 +2,14 @@
 // AGENTIC CODING FLYWHEEL - The Complete Multi-Agent Ecosystem
 // ============================================================
 //
-// This isn't just a collection of tools. It's a self-reinforcing
-// system that enables unheard-of velocity in complex software
-// development. Multiple AI agents working in parallel across 7+
-// projects, reviewing each other's work, creating and executing
-// tasks, and making incredible autonomous progress.
+// A self-reinforcing system that enables remarkable velocity in
+// complex software development. Multiple AI agents working in
+// parallel across 7+ projects, reviewing each other's work,
+// creating and executing tasks, making incredible autonomous
+// progress.
 //
-// The magic isn't in any single tool - it's in how they work
-// together. Using three tools is 10x better than using one.
+// The power comes from composition: three tools used together
+// deliver 10x what any single tool can achieve alone.
 // ============================================================
 
 export type FlywheelTool = {
