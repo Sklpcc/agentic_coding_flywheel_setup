@@ -413,6 +413,15 @@ export const jargonDictionary: Record<string, JargonTerm> = {
     related: ["agentic", "ai-agents"],
   },
 
+  beads: {
+    term: "Beads",
+    short: "A git-native issue tracker designed specifically for AI coding agents",
+    long: "Beads is a structured task management system created by Steve Yegge that solves a critical problem: AI agents lose context between sessions. Instead of messy markdown notes or mental tracking, Beads stores tasks as a dependency-aware graph in your git repository (in a .beads/ folder). Each task has a hash-based ID (like bd-a1b2) that prevents merge conflicts when multiple agents work in parallel. Beads tracks dependencies between tasks, automatically identifies what's ready to work on, and compresses completed work to save context window space. It's the 'memory upgrade' that lets agents handle complex, multi-step projects across many sessions.",
+    analogy: "Imagine a project manager who never forgets anything, automatically knows which tasks are blocked, and can instantly show any agent exactly what to work on next. That's Beads. It's like giving your AI agents a shared brain for task tracking that persists in git forever.",
+    why: "Beads is the lynchpin of the agentic workflow. Without it, you'd lose track of what's done, what's blocked, and what's ready. With Beads, you write a detailed plan in markdown, convert it to structured tasks (bd create), track dependencies (bd dep add), and agents always know exactly what to tackle next (bd ready). The entire 'planning with GPT Pro Extended Thinking → execution with Claude Code' loop depends on Beads to bridge planning and execution. Commands: 'bd create' (add task), 'bd ready' (show available work), 'bd close' (mark done), 'bd show' (inspect task), 'bv' (visual TUI browser).",
+    related: ["ai-agents", "ntm", "agent-mail", "git"],
+  },
+
   "open-source": {
     term: "Open-source",
     short: "Software with publicly available code that anyone can inspect, modify, and share",

@@ -284,22 +284,21 @@ export default function RentVPSPage() {
             </div>
             <ul className="space-y-2 text-sm">
               <li>
-                <strong>32GB RAM:</strong> Absolute minimum. Can run 5-8 agents.
+                <strong>32GB RAM:</strong> Absolute minimum. Can run 5-8 agents. Not recommended.
               </li>
               <li>
-                <strong>48GB RAM:</strong> Good starting point. Run 10+ agents comfortably. (~$36/month US)
+                <strong>48GB RAM:</strong> Workable but tight. Run 10+ agents. (~$26-36/month)
               </li>
               <li>
-                <strong>64GB RAM:</strong> Our recommendation. Run 20+ agents with headroom. (~$56/month US)
+                <strong>64GB RAM:</strong> Just get this. Run 20+ agents with headroom. (~$40-56/month)
               </li>
             </ul>
-            <div className="mt-4 rounded-lg border border-border/50 bg-card/50 p-3">
+            <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
               <p className="text-sm text-muted-foreground">
-                <strong>Don&apos;t bottleneck your investment:</strong> Your VPS is only ~6-13%
-                of the total cost (AI subscriptions are $400-600/month), but
-                it&apos;s the foundation that makes everything work. The extra $14-20/month for
-                64GB vs 48GB is trivial compared to your AI subscription costs—but that extra
-                headroom is critical for running agents reliably and efficiently.
+                <strong>Just get 64GB.</strong> You&apos;re spending $400+/month on AI subscriptions—the
+                extra $14-20/month for 64GB vs 48GB is noise. Don&apos;t bottleneck a $400+/month
+                investment to save $20. The headroom matters when you&apos;re running 15+ agents
+                plus databases, build tools, and language servers.
               </p>
             </div>
           </GuideSection>
@@ -324,7 +323,7 @@ export default function RentVPSPage() {
                   <strong> the key to making this approach work</strong>: you use it to write,
                   revise, and iterate on comprehensive plan documents in markdown. Everything
                   depends on having an extremely detailed, granular plan—which you then convert
-                  into trackable tasks (beads). The extended thinking capability is unmatched
+                  into trackable tasks using <Jargon term="beads">Beads</Jargon>. The extended thinking capability is unmatched
                   for this kind of strategic planning work.
                 </p>
               </div>
@@ -448,8 +447,9 @@ export default function RentVPSPage() {
           </GuideSection>
 
           <GuideTip>
-            If you&apos;re not sure what to pick, get the <strong>Cloud VPS 50</strong> (64GB RAM, 16 vCPU, ~$56/month US)
-            from Contabo - best value for serious multi-agent work. Both providers activate quickly.
+            <strong>TL;DR:</strong> Get Contabo <strong>Cloud VPS 50</strong> (64GB RAM, 16 vCPU, ~$56/month US).
+            Don&apos;t overthink it—64GB is the right choice when you&apos;re investing $400+/month in AI subscriptions.
+            Contabo can take up to an hour to provision (usually minutes); OVH is typically faster.
           </GuideTip>
 
           <GuideCaution>
