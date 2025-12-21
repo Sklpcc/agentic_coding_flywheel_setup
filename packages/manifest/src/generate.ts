@@ -499,28 +499,28 @@ function generateManifestIndex(manifest: Manifest, manifestSha256: string): stri
   lines.push(')');
   lines.push('');
 
-  lines.push('declare -A ACFS_MODULE_PHASE=(');
+  lines.push('declare -gA ACFS_MODULE_PHASE=(');
   for (const module of orderedModules) {
     lines.push(`  ["${module.id}"]="${getModulePhase(module)}"`);
   }
   lines.push(')');
   lines.push('');
 
-  lines.push('declare -A ACFS_MODULE_DEPS=(');
+  lines.push('declare -gA ACFS_MODULE_DEPS=(');
   for (const module of orderedModules) {
     lines.push(`  ["${module.id}"]="${escapeBash(joinList(module.dependencies))}"`);
   }
   lines.push(')');
   lines.push('');
 
-  lines.push('declare -A ACFS_MODULE_FUNC=(');
+  lines.push('declare -gA ACFS_MODULE_FUNC=(');
   for (const module of orderedModules) {
     lines.push(`  ["${module.id}"]="${toFunctionName(module.id)}"`);
   }
   lines.push(')');
   lines.push('');
 
-  lines.push('declare -A ACFS_MODULE_CATEGORY=(');
+  lines.push('declare -gA ACFS_MODULE_CATEGORY=(');
   for (const module of orderedModules) {
     const category = module.category ?? getModuleCategory(module.id);
     lines.push(`  ["${module.id}"]="${escapeBash(category)}"`);
@@ -528,14 +528,14 @@ function generateManifestIndex(manifest: Manifest, manifestSha256: string): stri
   lines.push(')');
   lines.push('');
 
-  lines.push('declare -A ACFS_MODULE_TAGS=(');
+  lines.push('declare -gA ACFS_MODULE_TAGS=(');
   for (const module of orderedModules) {
     lines.push(`  ["${module.id}"]="${escapeBash(joinList(module.tags))}"`);
   }
   lines.push(')');
   lines.push('');
 
-  lines.push('declare -A ACFS_MODULE_DEFAULT=(');
+  lines.push('declare -gA ACFS_MODULE_DEFAULT=(');
   for (const module of orderedModules) {
     lines.push(`  ["${module.id}"]="${module.enabled_by_default ? '1' : '0'}"`);
   }

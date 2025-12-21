@@ -41,7 +41,7 @@ ACFS_MODULES_IN_ORDER=(
   "acfs.doctor"
 )
 
-declare -A ACFS_MODULE_PHASE=(
+declare -gA ACFS_MODULE_PHASE=(
   ["base.system"]="1"
   ["users.ubuntu"]="2"
   ["base.filesystem"]="3"
@@ -74,7 +74,7 @@ declare -A ACFS_MODULE_PHASE=(
   ["acfs.doctor"]="10"
 )
 
-declare -A ACFS_MODULE_DEPS=(
+declare -gA ACFS_MODULE_DEPS=(
   ["base.system"]=""
   ["users.ubuntu"]=""
   ["base.filesystem"]="users.ubuntu"
@@ -107,7 +107,7 @@ declare -A ACFS_MODULE_DEPS=(
   ["acfs.doctor"]=""
 )
 
-declare -A ACFS_MODULE_FUNC=(
+declare -gA ACFS_MODULE_FUNC=(
   ["base.system"]="install_base_system"
   ["users.ubuntu"]="install_users_ubuntu"
   ["base.filesystem"]="install_base_filesystem"
@@ -140,7 +140,7 @@ declare -A ACFS_MODULE_FUNC=(
   ["acfs.doctor"]="install_acfs_doctor"
 )
 
-declare -A ACFS_MODULE_CATEGORY=(
+declare -gA ACFS_MODULE_CATEGORY=(
   ["base.system"]="base"
   ["users.ubuntu"]="users"
   ["base.filesystem"]="base"
@@ -173,7 +173,7 @@ declare -A ACFS_MODULE_CATEGORY=(
   ["acfs.doctor"]="acfs"
 )
 
-declare -A ACFS_MODULE_TAGS=(
+declare -gA ACFS_MODULE_TAGS=(
   ["base.system"]="critical"
   ["users.ubuntu"]="orchestration,critical"
   ["base.filesystem"]="critical"
@@ -206,7 +206,7 @@ declare -A ACFS_MODULE_TAGS=(
   ["acfs.doctor"]="orchestration"
 )
 
-declare -A ACFS_MODULE_DEFAULT=(
+declare -gA ACFS_MODULE_DEFAULT=(
   ["base.system"]="1"
   ["users.ubuntu"]="1"
   ["base.filesystem"]="1"
