@@ -233,6 +233,249 @@ reset_progress() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Authentication Check Functions
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Check if a service is authenticated
+# Returns: 0 = authenticated, 1 = not authenticated, 2 = not installed
+check_auth_status() {
+    local service=$1
+
+    case "$service" in
+        tailscale)
+            if ! command -v tailscale &>/dev/null; then
+                return 2
+            fi
+            local status
+            status=$(tailscale status --json 2>/dev/null | jq -r '.BackendState // "unknown"' 2>/dev/null || echo "unknown")
+            [[ "$status" == "Running" ]] && return 0 || return 1
+            ;;
+        claude)
+            if ! command -v claude &>/dev/null; then
+                return 2
+            fi
+            # Check for claude config
+            [[ -d "$HOME/.claude" ]] && return 0 || return 1
+            ;;
+        codex)
+            if ! command -v codex &>/dev/null; then
+                return 2
+            fi
+            # Codex stores auth in ~/.codex
+            [[ -f "$HOME/.codex/auth.json" ]] && return 0 || return 1
+            ;;
+        gemini)
+            if ! command -v gemini &>/dev/null; then
+                return 2
+            fi
+            # Gemini uses gcloud/google auth
+            [[ -d "$HOME/.config/gemini" ]] && return 0 || return 1
+            ;;
+        github)
+            if ! command -v gh &>/dev/null; then
+                return 2
+            fi
+            gh auth status &>/dev/null && return 0 || return 1
+            ;;
+        vercel)
+            if ! command -v vercel &>/dev/null; then
+                return 2
+            fi
+            [[ -f "$HOME/.config/vercel/auth.json" ]] && return 0 || return 1
+            ;;
+        supabase)
+            if ! command -v supabase &>/dev/null; then
+                return 2
+            fi
+            [[ -f "$HOME/.config/supabase/access-token" ]] && return 0 || return 1
+            ;;
+        cloudflare)
+            if ! command -v wrangler &>/dev/null; then
+                return 2
+            fi
+            [[ -f "$HOME/.config/.wrangler/config/default.toml" ]] && return 0 || return 1
+            ;;
+        *)
+            return 2
+            ;;
+    esac
+}
+
+# Get auth status display for a service
+get_auth_status_display() {
+    local service=$1
+    check_auth_status "$service"
+    local status=$?
+
+    case $status in
+        0) echo -e "${GREEN}✓${NC}" ;;
+        1) echo -e "${YELLOW}○${NC}" ;;
+        2) echo -e "${DIM}—${NC}" ;;
+    esac
+}
+
+# Show authentication flow
+show_auth_flow() {
+    clear 2>/dev/null || true
+
+    if has_gum; then
+        gum style \
+            --border rounded \
+            --border-foreground "$ACFS_ACCENT" \
+            --padding "1 4" \
+            --margin "1" \
+            "$(gum style --foreground "$ACFS_PINK" --bold '🔐 Service Authentication')" \
+            "$(gum style --foreground "$ACFS_MUTED" --italic "Connect your services for the full experience")"
+    else
+        echo ""
+        echo -e "${BOLD}${MAGENTA}╭─────────────────────────────────────────╮${NC}"
+        echo -e "${BOLD}${MAGENTA}│     🔐 Service Authentication          │${NC}"
+        echo -e "${BOLD}${MAGENTA}│  Connect your services                  │${NC}"
+        echo -e "${BOLD}${MAGENTA}╰─────────────────────────────────────────╯${NC}"
+        echo ""
+    fi
+
+    echo ""
+    echo -e "${BOLD}Service Status:${NC}"
+    echo ""
+
+    local authed=0
+    local total=0
+
+    for service in "${AUTH_SERVICES[@]}"; do
+        local name="${AUTH_SERVICE_NAMES[$service]}"
+        local desc="${AUTH_SERVICE_DESCRIPTIONS[$service]}"
+        local status_icon
+        status_icon=$(get_auth_status_display "$service")
+
+        check_auth_status "$service"
+        local status=$?
+
+        if [[ $status -ne 2 ]]; then
+            ((total++))
+            [[ $status -eq 0 ]] && ((authed++))
+        fi
+
+        printf "  %s  %-15s %s\n" "$status_icon" "$name" "${DIM}$desc${NC}"
+    done
+
+    echo ""
+    echo -e "${DIM}Legend: ${GREEN}✓${NC} authenticated  ${YELLOW}○${NC} needs auth  ${DIM}—${NC} not installed${NC}"
+    echo ""
+
+    if [[ $total -gt 0 ]]; then
+        echo -e "${CYAN}Progress: $authed/$total services authenticated${NC}"
+    fi
+
+    echo ""
+    echo -e "${DIM}─────────────────────────────────────────${NC}"
+
+    # Show menu options
+    if has_gum; then
+        local -a items=()
+        for service in "${AUTH_SERVICES[@]}"; do
+            check_auth_status "$service"
+            local status=$?
+            if [[ $status -eq 1 ]]; then
+                items+=("🔑 Authenticate ${AUTH_SERVICE_NAMES[$service]}")
+            fi
+        done
+        items+=("─────────────────────────────────")
+        items+=("📋 [m] Back to menu")
+        items+=("🔄 [r] Refresh status")
+
+        local choice
+        choice=$(printf '%s\n' "${items[@]}" | gum choose \
+            --cursor.foreground "$ACFS_ACCENT" \
+            --selected.foreground "$ACFS_SUCCESS")
+
+        case "$choice" in
+            *"[m]"*) return 0 ;;
+            *"[r]"*) show_auth_flow; return $? ;;
+            *"Authenticate"*)
+                # Extract service name from choice
+                for service in "${AUTH_SERVICES[@]}"; do
+                    if [[ "$choice" == *"${AUTH_SERVICE_NAMES[$service]}"* ]]; then
+                        show_auth_service "$service"
+                        show_auth_flow
+                        return $?
+                    fi
+                done
+                ;;
+        esac
+    else
+        echo "Options:"
+        echo "  [1-8] Authenticate a service"
+        echo "  [m]   Back to menu"
+        echo "  [r]   Refresh status"
+        echo ""
+
+        local idx=1
+        for service in "${AUTH_SERVICES[@]}"; do
+            check_auth_status "$service"
+            if [[ $? -eq 1 ]]; then
+                echo "  [$idx] ${AUTH_SERVICE_NAMES[$service]}"
+            fi
+            ((idx++))
+        done
+
+        read -rp "$(echo -e "${CYAN}Choose:${NC} ")" choice
+
+        case "$choice" in
+            m|M) return 0 ;;
+            r|R) show_auth_flow; return $? ;;
+            [1-8])
+                local idx=$((choice - 1))
+                if [[ $idx -lt ${#AUTH_SERVICES[@]} ]]; then
+                    show_auth_service "${AUTH_SERVICES[$idx]}"
+                    show_auth_flow
+                    return $?
+                fi
+                ;;
+        esac
+    fi
+}
+
+# Show auth instructions for a specific service
+show_auth_service() {
+    local service=$1
+    local name="${AUTH_SERVICE_NAMES[$service]}"
+    local cmd="${AUTH_SERVICE_COMMANDS[$service]}"
+
+    clear 2>/dev/null || true
+
+    if has_gum; then
+        gum style \
+            --border rounded \
+            --border-foreground "$ACFS_PRIMARY" \
+            --padding "1 2" \
+            "$(gum style --foreground "$ACFS_ACCENT" "🔑 Authenticate $name")"
+
+        echo ""
+        echo "To authenticate $name, run this command:"
+        echo ""
+        gum style --foreground "$ACFS_TEAL" --bold "  $cmd"
+        echo ""
+        echo "This will open a browser or show an auth URL."
+        echo "Follow the prompts to complete authentication."
+        echo ""
+
+        gum confirm --affirmative "I've authenticated" --negative "Skip for now" || true
+    else
+        echo ""
+        echo -e "${BOLD}${CYAN}Authenticate $name${NC}"
+        echo ""
+        echo "Run this command:"
+        echo ""
+        echo -e "  ${GREEN}$cmd${NC}"
+        echo ""
+        echo "Follow the prompts to complete authentication."
+        echo ""
+        read -rp "Press Enter when done (or 's' to skip)... " _
+    fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Display Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -295,6 +538,7 @@ show_menu_gum() {
         items+=("${status} [$((i + 1))] ${LESSON_TITLES[$i]}")
     done
     items+=("─────────────────────────────────")
+    items+=("🔐 [a] Authenticate Services")
     items+=("↺ [r] Restart from beginning")
     items+=("📊 [s] Show status")
     items+=("👋 [q] Quit")
@@ -310,6 +554,8 @@ show_menu_gum() {
     # Parse choice
     if [[ "$choice" =~ \[([0-9])\] ]]; then
         echo "${BASH_REMATCH[1]}"
+    elif [[ "$choice" =~ \[a\] ]]; then
+        echo "a"
     elif [[ "$choice" =~ \[r\] ]]; then
         echo "r"
     elif [[ "$choice" =~ \[s\] ]]; then
@@ -329,15 +575,17 @@ show_menu_basic() {
     done
 
     echo ""
+    echo -e "  ${DIM}[a] Authenticate Services${NC}"
     echo -e "  ${DIM}[r] Restart from beginning${NC}"
     echo -e "  ${DIM}[s] Show status${NC}"
     echo -e "  ${DIM}[q] Quit${NC}"
     echo ""
 
-    read -rp "$(echo -e "${CYAN}Choose [1-8, r, s, q]:${NC} ")" choice
+    read -rp "$(echo -e "${CYAN}Choose [1-8, a, r, s, q]:${NC} ")" choice
 
     case "$choice" in
         [1-8]) echo "$choice" ;;
+        a|A) echo "a" ;;
         r|R) echo "r" ;;
         s|S) echo "s" ;;
         q|Q|"") echo "q" ;;
@@ -647,6 +895,9 @@ main_menu() {
                 local idx=$((choice - 1))
                 set_current "$idx"
                 show_lesson "$idx"
+                ;;
+            a)
+                show_auth_flow
                 ;;
             r)
                 if has_gum; then
