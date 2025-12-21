@@ -424,7 +424,15 @@ update_bun() {
         return 0
     fi
 
+    # Capture version before update
+    capture_version_before "bun"
+
     run_cmd "Bun self-upgrade" "$bun_bin" upgrade
+
+    # Capture version after and log if changed
+    if capture_version_after "bun"; then
+        log_item "ok" "Bun updated" "${VERSION_BEFORE[bun]} → ${VERSION_AFTER[bun]}"
+    fi
 }
 
 update_agents() {
@@ -511,7 +519,29 @@ update_rust() {
         return 0
     fi
 
+    # Capture version before update
+    capture_version_before "rust"
+
+    # Update stable toolchain
     run_cmd "Rust stable" "$rustup_bin" update stable
+
+    # Check if nightly is installed and update it too
+    if "$rustup_bin" toolchain list 2>/dev/null | grep -q "^nightly"; then
+        run_cmd "Rust nightly" "$rustup_bin" update nightly
+    fi
+
+    # Update rustup itself
+    run_cmd "rustup self-update" "$rustup_bin" self update 2>/dev/null || true
+
+    # Capture version after and log if changed
+    if capture_version_after "rust"; then
+        log_item "ok" "Rust updated" "${VERSION_BEFORE[rust]} → ${VERSION_AFTER[rust]}"
+    fi
+
+    # Log installed toolchains
+    local toolchains
+    toolchains=$("$rustup_bin" toolchain list 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+    log_to_file "Installed toolchains: $toolchains"
 }
 
 update_uv() {
@@ -524,7 +554,54 @@ update_uv() {
         return 0
     fi
 
+    # Capture version before update
+    capture_version_before "uv"
+
     run_cmd "uv self-update" "$uv_bin" self update
+
+    # Capture version after and log if changed
+    if capture_version_after "uv"; then
+        log_item "ok" "uv updated" "${VERSION_BEFORE[uv]} → ${VERSION_AFTER[uv]}"
+    fi
+}
+
+update_go() {
+    log_section "Go Runtime"
+
+    # Check if go is installed
+    if ! command -v go &>/dev/null; then
+        log_item "skip" "Go" "not installed"
+        return 0
+    fi
+
+    # Determine how Go was installed
+    local go_path
+    go_path=$(command -v go 2>/dev/null || true)
+
+    # Check if it's apt-managed (system install)
+    if [[ "$go_path" == "/usr/bin/go" ]] || [[ "$go_path" == "/usr/local/go/bin/go" ]]; then
+        # System install - apt handles it, or manual install
+        if dpkg -l golang-go &>/dev/null 2>&1; then
+            log_item "ok" "Go" "apt-managed (updated via apt upgrade)"
+            log_to_file "Go is managed by apt, skipping dedicated update"
+        else
+            log_item "skip" "Go" "manual install, update manually from golang.org"
+            log_to_file "Go appears to be manually installed at $go_path"
+        fi
+        return 0
+    fi
+
+    # Check for goenv or similar version managers
+    if [[ -d "$HOME/.goenv" ]]; then
+        log_item "skip" "Go" "managed by goenv, use goenv to update"
+        return 0
+    fi
+
+    # For other installations, just log the version
+    local go_version
+    go_version=$(go version 2>/dev/null | awk '{print $3}' | sed 's/go//')
+    log_item "ok" "Go $go_version" "no auto-update available"
+    log_to_file "Go version: $go_version (path: $go_path)"
 }
 
 update_stack() {
@@ -798,6 +875,7 @@ main() {
     update_cloud
     update_rust
     update_uv
+    update_go
     update_stack
 
     # Summary
