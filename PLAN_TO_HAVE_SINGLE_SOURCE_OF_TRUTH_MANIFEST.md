@@ -41,6 +41,148 @@ The manifest becomes the canonical definition of:
 - **Category:** A human grouping (base/shell/lang/etc). Useful for generated file layout, not ordering.
 - **Verified installer:** An upstream script executed only after HTTPS + SHA256 verification against `checksums.yaml`.
 
+---
+
+## Module Taxonomy (Phase 0 Spec)
+
+This section defines the canonical categories, tags, and default behaviors for manifest modules.
+
+### Canonical Categories
+
+Categories determine generated file layout (`scripts/generated/install_<category>.sh`) and provide logical grouping:
+
+| Category | Description | Generated File | Phase |
+|----------|-------------|----------------|-------|
+| `base` | System foundation (apt packages, filesystem) | `install_base.sh` | 1, 3 |
+| `shell` | Shell environment (zsh, oh-my-zsh, p10k) | `install_shell.sh` | 4 |
+| `cli` | Modern CLI tools (ripgrep, fzf, etc.) | `install_cli.sh` | 5 |
+| `lang` | Language runtimes (bun, uv, rust, go) | `install_lang.sh` | 6 |
+| `agents` | Coding agents (claude, codex, gemini) | `install_agents.sh` | 7 |
+| `cloud` | Cloud & database tools | `install_cloud.sh` | 8 |
+| `stack` | Dicklesworthstone stack (ntm, bv, cass, etc.) | `install_stack.sh` | 9 |
+| `acfs` | ACFS finalization (onboard, doctor) | `install_acfs.sh` | 10 |
+
+**Notes:**
+- `users` (e.g., `users.ubuntu`) is an **orchestration-only** category with `generated: false`
+- `tools` modules (e.g., `tools.atuin`) are merged into `lang` or `cli` based on their nature
+- `db` modules (e.g., `db.postgres18`) are merged into `cloud` category
+
+### Canonical Tags
+
+Tags enable flexible filtering and behavior classification:
+
+| Tag | Description | Usage |
+|-----|-------------|-------|
+| `critical` | MUST succeed for system to work | `is_critical_tool()` in `scripts/lib/tools.sh` |
+| `recommended` | Safe to skip with warning | Default for optional tools |
+| `runtime` | Language runtime or manager | `lang.bun`, `lang.rust`, etc. |
+| `agent` | AI coding assistant | `agents.*` modules |
+| `cloud` | Cloud provider CLI | `cloud.*` modules |
+| `database` | Database server or client | `db.postgres18` |
+| `shell-ux` | Shell enhancements | `tools.atuin`, `tools.zoxide`, `shell.zsh` |
+| `cli-modern` | Modern CLI replacements | `bat`, `eza`, `ripgrep`, `fd` |
+| `orchestration` | Not generated; hand-maintained | `users.ubuntu`, `base.filesystem` (partial) |
+| `optional` | Explicitly opt-in only | Modules with `enabled_by_default: false` |
+
+### Default Install Policy (`enabled_by_default`)
+
+Controls whether a module is included in the default install:
+
+| Pattern | `enabled_by_default` | Rationale |
+|---------|---------------------|-----------|
+| `base.*` | `true` | Required for system |
+| `shell.*` | `true` | Required for shell UX |
+| `cli.modern` | `true` | Core developer UX |
+| `lang.*` | `true` | Required by agents and stack |
+| `tools.atuin` | `true` | Core shell history UX |
+| `tools.zoxide` | `true` | Core navigation UX |
+| `tools.ast_grep` | `true` | Required by UBS |
+| `agents.*` | `true` | Core workflow |
+| `stack.*` | `true` | Core workflow (Dicklesworthstone stack) |
+| `acfs.*` | `true` | ACFS finalization |
+| `db.postgres18` | **`false`** | Heavy; `--skip-postgres` exists |
+| `tools.vault` | **`false`** | Specialized; `--skip-vault` exists |
+| `cloud.*` | **`false`** | Specialized; `--skip-cloud` exists |
+
+**Rationale for opt-out defaults:**
+- PostgreSQL 18 is a heavy install (~500MB) that many users don't need
+- Vault is specialized for secrets management workflows
+- Cloud CLIs (wrangler, supabase, vercel) are only needed for specific providers
+
+### Legacy Flag → Module/Tag Mapping
+
+Preserve existing CLI ergonomics while migrating to manifest-driven selection:
+
+| Legacy Flag | New Behavior | Implementation |
+|-------------|--------------|----------------|
+| `--skip-postgres` | `--skip db.postgres18` | Map in `parse_args` |
+| `--skip-vault` | `--skip tools.vault` | Map in `parse_args` |
+| `--skip-cloud` | `--skip cloud.wrangler,cloud.supabase,cloud.vercel` OR `--skip-tag cloud` | Map in `parse_args` |
+| `--skip-preflight` | Orchestrator flag (not module-related) | Keep as-is |
+| `--mode vibe` | Sets `MODE=vibe` env var | Keep as-is |
+| `--mode safe` | Sets `MODE=safe` env var | Keep as-is |
+
+**New generic flags (additive):**
+- `--only <id1,id2,...>` — Install only specified modules + their dependencies
+- `--skip <id1,id2,...>` — Skip specified modules (fails if skipping required deps)
+- `--only-phase <N,...>` — Install only specified phases
+- `--skip-tag <tag>` — Skip all modules with given tag
+- `--no-deps` — Expert-only: disable automatic dependency expansion
+- `--print-plan` — Show execution plan and exit
+- `--list-modules` — List all modules with their metadata
+
+### Category → Install.sh Phase Mapping
+
+How categories map to install.sh phases:
+
+| Phase | Categories | Description |
+|-------|------------|-------------|
+| 1 | `base` (system) | Base apt packages |
+| 2 | — | User normalization (orchestration) |
+| 3 | `base` (filesystem) | Filesystem setup |
+| 4 | `shell` | Zsh + oh-my-zsh + plugins |
+| 5 | `cli` | Modern CLI tools |
+| 6 | `lang` | Language runtimes + tools |
+| 7 | `agents` | Coding agents |
+| 8 | `cloud` | Cloud & database tools |
+| 9 | `stack` | Dicklesworthstone stack |
+| 10 | `acfs` | Finalization |
+
+### Category → Wizard Step Mapping
+
+For website wizard progress display (step 8 "Run Installer"):
+
+| Category | Wizard Display | Visibility |
+|----------|---------------|------------|
+| `base` | "Installing base packages..." | Progress only |
+| `shell` | "Setting up shell..." | Progress only |
+| `cli` | "Installing CLI tools..." | Progress only |
+| `lang` | "Installing language runtimes..." | Visible (Bun, uv, Rust, Go) |
+| `agents` | "Installing coding agents..." | Visible (Claude, Codex, Gemini) |
+| `cloud` | "Installing cloud tools..." | Visible if enabled |
+| `stack` | "Installing agent stack..." | Visible (NTM, beads, etc.) |
+| `acfs` | "Finalizing..." | Progress only |
+
+### Critical vs Recommended Classification
+
+Alignment with `scripts/lib/tools.sh`:
+
+| Classification | Tags | Behavior on Failure |
+|----------------|------|---------------------|
+| CRITICAL | `critical` | Abort installation |
+| RECOMMENDED | `recommended` | Log warning, continue |
+| (unclassified) | — | Treat as RECOMMENDED |
+
+**CRITICAL tools** (from `scripts/lib/tools.sh`):
+- `git`, `curl` — Network/VCS foundation
+- `bun` — JS runtime, required by many installs
+- `uv` — Python tooling
+- `go` — Go compiler, required by lazygit etc.
+- `zsh` — Target shell
+- `mise`, `rustup`, `cargo` — Runtime managers
+
+All other tools are RECOMMENDED (can skip on failure).
+
 ## How This Plan Interacts With Other ACFS Work
 
 This plan is intentionally focused on **eliminating “two universes” drift** (manifest vs install.sh), but it must coexist cleanly with the project’s other reliability initiatives.
