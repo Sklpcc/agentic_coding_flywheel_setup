@@ -379,20 +379,21 @@ Which method would you like to use?"
 
         if [[ -n "$api_key" ]]; then
             # Add to shell config
-            local zshrc="$TARGET_HOME/.zshrc"
-            if ! grep -q "OPENAI_API_KEY" "$zshrc" 2>/dev/null; then
+            local zshrc_local="$TARGET_HOME/.zshrc.local"
+            if grep -q "OPENAI_API_KEY" "$zshrc_local" 2>/dev/null || \
+               grep -q "OPENAI_API_KEY" "$TARGET_HOME/.zshrc" 2>/dev/null; then
+                gum_warn "OPENAI_API_KEY already exists in your shell config"
+                gum_detail "Edit ~/.zshrc.local manually to update it"
+            else
                 local api_key_escaped
                 api_key_escaped="$(printf '%q' "$api_key")"
                 {
                     echo ""
                     echo "# OpenAI API Key (added by ACFS services-setup)"
                     echo "export OPENAI_API_KEY=$api_key_escaped"
-                } >> "$zshrc"
-                gum_success "API key added to ~/.zshrc"
+                } >> "$zshrc_local"
+                gum_success "API key added to ~/.zshrc.local"
                 gum_detail "Run 'source ~/.zshrc' or start a new shell to use it"
-            else
-                gum_warn "OPENAI_API_KEY already exists in ~/.zshrc"
-                gum_detail "Edit ~/.zshrc manually to update it"
             fi
         fi
     else

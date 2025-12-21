@@ -220,8 +220,6 @@ acfs() {
     services-setup|services|setup)
       if [[ -f "$HOME/.acfs/scripts/services-setup.sh" ]]; then
         bash "$HOME/.acfs/scripts/services-setup.sh" "$@"
-      elif [[ -f "/tmp/acfs/scripts/services-setup.sh" ]]; then
-        bash "/tmp/acfs/scripts/services-setup.sh" "$@"
       else
         echo "Error: services-setup.sh not found"
         echo "Re-run the ACFS installer to get the latest scripts"
