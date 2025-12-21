@@ -1308,6 +1308,11 @@ export default function WorkflowPage() {
               cloud service configuration, which requires your specific accounts and API keys.
               Running them separately keeps initial setup fast.
             </GuideExplain>
+            <GuideTip>
+              <strong>Supabase IPv4 note:</strong> some Supabase projects expose the direct Postgres host
+              over IPv6-only. If your VPS/network is IPv4-only, use the Supabase pooler connection string
+              instead (or upgrade/configure networking for direct IPv4).
+            </GuideTip>
           </SimplerGuide>
         </CollapsibleSection>
 

@@ -153,7 +153,7 @@ flowchart TB
     Verify["Verified upstream installers<br/>(security.sh + checksums.yaml)"]
     AcfsHome["~/.acfs/<br/>configs + scripts + state.json"]
     Commands["Commands<br/>acfs doctor / acfs update / acfs services-setup / onboard"]
-    Tools["Installed tools<br/>bun/uv/rust/go + tmux/rg/gh + ..."]
+    Tools["Installed tools<br/>bun/uv/rust/go + tmux/rg/gh + vault + ..."]
     Agents["Agent CLIs<br/>claude / codex / gemini"]
     Stack["Stack tools<br/>ntm / mcp_agent_mail / ubs / bv / cass / cm / caam / slb"]
   end
@@ -647,6 +647,10 @@ alias gmi='gemini --yolo --model gemini-3-pro-preview'
 | **Wrangler** | `wrangler` | Cloudflare CLI |
 | **Supabase CLI** | `supabase` | Supabase management |
 | **Vercel CLI** | `vercel` | Vercel deployment |
+
+Vault is installed by default (skip with `--skip-vault`). ACFS installs the Vault **CLI** so you have a real secrets tool available early; it does not automatically configure a Vault server for you.
+
+Supabase networking note: some Supabase projects expose the **direct Postgres host over IPv6-only** (often on free tiers). If your VPS/network is **IPv4-only**, use the Supabase **pooler** connection string instead (or upgrade/configure networking for direct IPv4).
 
 ### Dicklesworthstone Stack (8 Tools)
 
@@ -1382,9 +1386,12 @@ A single agent with basic tooling is useful. Three agents with:
 - Coordination via Agent Mail
 - Orchestration via NTM
 - Safety guardrails via SLB
+- Optional Claude Code guard hook (blocks destructive commands)
 - Task visibility via Beads
 
 ...can accomplish in one day what would take a solo developer a week.
+
+Tip: run `acfs services-setup` to configure logins, and optionally install the Claude destructive-command guard hook.
 
 **This is the flywheel effect in action.** Better tools → more capable agents → more code shipped → better understanding of what tools are needed → better tools.
 

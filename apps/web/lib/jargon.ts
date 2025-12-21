@@ -636,7 +636,7 @@ export const jargonDictionary: Record<string, JargonTerm> = {
   supabase: {
     term: "Supabase",
     short: "Open-source Firebase alternative with database, auth, and APIs instantly",
-    long: "Supabase gives you a PostgreSQL database plus authentication, real-time subscriptions, storage, and auto-generated APIs in one platform. It's 'backend-as-a-service' that lets you build full applications without writing backend code. You get an admin dashboard, client libraries, and can self-host or use their cloud.",
+    long: "Supabase gives you a PostgreSQL database plus authentication, real-time subscriptions, storage, and auto-generated APIs in one platform. It's 'backend-as-a-service' that lets you build full applications without writing backend code. You get an admin dashboard, client libraries, and can self-host or use their cloud. Note: some Supabase projects expose the direct Postgres host over IPv6-only; if your VPS/network is IPv4-only, use the Supabase pooler connection string instead.",
     analogy: "Like getting a pre-built backend for your app instead of building it from scratch. Database, user login, file storage: it's all there, ready to use.",
     why: "Supabase CLI lets you manage your Supabase projects from the terminal. Combined with AI coding agents, you can rapidly build full-stack applications.",
     related: ["postgresql", "deployment"],

@@ -407,6 +407,205 @@ Which method would you like to use?"
     fi
 }
 
+setup_claude_git_guard() {
+    local settings_dir="$TARGET_HOME/.claude"
+    local hooks_dir="$settings_dir/hooks"
+    local guard_path="$hooks_dir/git_safety_guard.sh"
+    local settings_file="$settings_dir/settings.json"
+
+    gum_box "Claude Git Safety Guard" "This installs a Claude Code PreToolUse hook that blocks destructive git/filesystem commands before they run.
+
+It helps prevent accidental loss of uncommitted work from commands like:
+  • git checkout -- <files>
+  • git restore <files>
+  • git reset --hard
+  • git clean -f
+  • git push --force / -f
+  • rm -rf (except temp dirs)
+  • git stash drop/clear
+
+Recommended if you run Claude in dangerous mode (ACFS vibe aliases).
+
+Press Enter to install the guard..."
+
+    read -r
+
+    mkdir -p "$hooks_dir"
+
+    cat > "$guard_path" << 'EOF'
+#!/usr/bin/env bash
+#
+# git_safety_guard.sh
+# Claude Code PreToolUse hook: blocks destructive git/filesystem commands.
+#
+# Behavior:
+#   - Exit 0 with no output = allow
+#   - Exit 0 with JSON permissionDecision=deny = block
+#
+set -euo pipefail
+
+input="$(cat 2>/dev/null || true)"
+[[ -n "$input" ]] || exit 0
+
+tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null || true)"
+command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
+
+[[ "$tool_name" == "Bash" ]] || exit 0
+[[ -n "$command" ]] || exit 0
+
+SAFE_PATTERNS=(
+  'git[[:space:]]+checkout[[:space:]]+-b[[:space:]]+'
+  'git[[:space:]]+checkout[[:space:]]+--orphan[[:space:]]+'
+  'git[[:space:]]+restore[[:space:]]+--staged[[:space:]]+'
+  'git[[:space:]]+clean[[:space:]]+-n([[:space:]]|$)'
+  'git[[:space:]]+clean[[:space:]]+--dry-run([[:space:]]|$)'
+  # Allow rm -rf on temp directories (ephemeral by design)
+  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+/tmp/'
+  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+/var/tmp/'
+  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+\\$TMPDIR/'
+  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+\\$\\{TMPDIR'
+  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+\"\\$TMPDIR/'
+  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+\"\\$\\{TMPDIR'
+)
+
+for pat in "${SAFE_PATTERNS[@]}"; do
+  if printf '%s' "$command" | grep -Eiq -- "$pat"; then
+    exit 0
+  fi
+done
+
+deny() {
+  local reason="$1"
+  jq -n --arg reason "$reason" --arg cmd "$command" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: ("BLOCKED by git_safety_guard.sh\n\nReason: " + $reason + "\n\nCommand: " + $cmd + "\n\nIf this operation is truly needed, ask the user for explicit permission and have them run the command manually.")
+    }
+  }'
+  exit 0
+}
+
+# git checkout -- / git checkout <ref> -- <path>
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+checkout[[:space:]]+.*--[[:space:]]+'; then
+  deny "git checkout ... -- can overwrite/discard uncommitted changes. Use 'git stash' first."
+fi
+
+# git restore (except --staged)
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+restore([[:space:]]|$)'; then
+  deny "git restore can discard uncommitted changes. Use 'git diff' and 'git stash' first."
+fi
+
+# git reset hard/merge
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+reset[[:space:]]+--hard([[:space:]]|$)'; then
+  deny "git reset --hard destroys uncommitted changes. Use 'git stash' first."
+fi
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+reset[[:space:]]+--merge([[:space:]]|$)'; then
+  deny "git reset --merge can lose uncommitted changes."
+fi
+
+# git clean -f / -fd / etc (except -n / --dry-run handled above)
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+clean[[:space:]]+-[a-z]*f'; then
+  deny "git clean -f removes untracked files permanently. Review with 'git clean -n' first."
+fi
+
+# force push
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+push([[:space:]]|$)'; then
+  if printf '%s' "$command" | grep -Eiq -- '--force-with-lease'; then
+    exit 0
+  fi
+  if printf '%s' "$command" | grep -Eiq -- '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
+    deny "Force push can destroy remote history. Prefer --force-with-lease if absolutely necessary."
+  fi
+fi
+
+# branch delete
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+branch[[:space:]]+-D([[:space:]]|$)'; then
+  deny "git branch -D force-deletes without merge check. Use -d for safety."
+fi
+
+# git stash drop/clear
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+stash[[:space:]]+drop([[:space:]]|$)'; then
+  deny "git stash drop permanently deletes stashed changes. List stashes first."
+fi
+if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+stash[[:space:]]+clear([[:space:]]|$)'; then
+  deny "git stash clear permanently deletes ALL stashed changes."
+fi
+
+# rm -rf (except temp dirs handled above)
+if printf '%s' "$command" | grep -Eiq -- '(^|[[:space:]])rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*([[:space:]]|$)'; then
+  if printf '%s' "$command" | grep -Eiq -- 'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+[/~]([[:space:]]|$)'; then
+    deny "rm -rf on root/home paths is extremely dangerous."
+  fi
+  deny "rm -rf is destructive. List files first, then delete individually with explicit permission."
+fi
+
+exit 0
+EOF
+
+    chmod +x "$guard_path"
+
+    # Create or merge settings.json
+    if [[ ! -f "$settings_file" ]]; then
+        cat > "$settings_file" << EOF
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "$guard_path" }
+        ]
+      }
+    ]
+  }
+}
+EOF
+    else
+        if command -v jq &>/dev/null; then
+            local tmp
+            tmp="$(mktemp)"
+            if jq --arg cmd "$guard_path" '
+              .hooks = (.hooks // {}) |
+              .hooks.PreToolUse = (.hooks.PreToolUse // []) |
+              if (.hooks.PreToolUse | type) != "array" then
+                .hooks.PreToolUse = []
+              else .
+              end |
+              if ( [ .hooks.PreToolUse[]? | .hooks[]? | select(.type=="command") | .command ] | index($cmd) ) != null then
+                .
+              else
+                ( [ .hooks.PreToolUse | to_entries[] | select(.value.matcher=="Bash") | .key ] | first ) as $bashKey |
+                if $bashKey == null then
+                  .hooks.PreToolUse += [{ "matcher":"Bash", "hooks":[ { "type":"command", "command":$cmd } ] }]
+                else
+                  .hooks.PreToolUse[$bashKey].hooks = ((.hooks.PreToolUse[$bashKey].hooks // []) | if type=="array" then . else [] end) |
+                  .hooks.PreToolUse[$bashKey].hooks += [{ "type":"command", "command":$cmd }]
+                end
+              end
+            ' "$settings_file" > "$tmp" 2>/dev/null; then
+                mv "$tmp" "$settings_file"
+            else
+                gum_warn "Could not update $settings_file automatically (invalid JSON?)"
+                gum_detail "Manually add this hook command:"
+                gum_detail "  $guard_path"
+            fi
+        else
+            gum_warn "jq not found; cannot update $settings_file automatically"
+            gum_detail "Manually add this hook command:"
+            gum_detail "  $guard_path"
+        fi
+    fi
+
+    # Ensure ownership if run via sudo/root
+    if [[ "$(whoami)" == "root" ]]; then
+        chown -R "$TARGET_USER:$TARGET_USER" "$settings_dir" 2>/dev/null || true
+    fi
+
+    gum_success "Installed Claude Git Safety Guard"
+    gum_warn "Restart Claude Code for hooks to take effect"
+}
+
 setup_gemini() {
     local gemini_bin="$TARGET_HOME/.bun/bin/gemini"
 
@@ -482,6 +681,9 @@ setup_supabase() {
     fi
 
     gum_box "Supabase Setup" "Supabase CLI uses OAuth to authenticate.
+
+Note: some Supabase projects expose the direct Postgres host over IPv6-only.
+If your VPS/network is IPv4-only, use the Supabase pooler connection string instead.
 
 Press Enter to launch 'supabase login'..."
 
@@ -586,6 +788,7 @@ show_menu() {
         done
 
         items+=("─────────────────────────────────────────")
+        items+=("🛡 Install Claude destructive-command guard (recommended)")
         items+=("⚡ Configure ALL unconfigured services")
         items+=("🔄 Refresh status")
         items+=("👋 Exit")
@@ -601,6 +804,7 @@ show_menu() {
             --height 12)
 
         case "$choice" in
+            *"destructive-command guard"*) setup_claude_git_guard ;;
             *"Claude"*)    setup_claude ;;
             *"Codex"*)     setup_codex ;;
             *"Gemini"*)    setup_gemini ;;
@@ -623,11 +827,13 @@ show_menu() {
             "5. Supabase (database platform)" \
             "6. Cloudflare Wrangler (edge platform)" \
             "7. PostgreSQL (check database)" \
-            "8. Configure ALL unconfigured services" \
-            "9. Refresh status" \
+            "8. Install Claude destructive-command guard (recommended)" \
+            "9. Configure ALL unconfigured services" \
+            "10. Refresh status" \
             "0. Exit")
 
         case "$choice" in
+            *"destructive-command guard"*) setup_claude_git_guard ;;
             *"Claude"*)    setup_claude ;;
             *"Codex"*)     setup_codex ;;
             *"Gemini"*)    setup_gemini ;;
