@@ -39,7 +39,7 @@ export default function WizardLayout({
   const progress = (currentStep / WIZARD_STEPS.length) * 100;
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-x-hidden bg-background">
       {/* Subtle background effects */}
       <div className="pointer-events-none fixed inset-0 bg-gradient-cosmic opacity-50" />
       <div className="pointer-events-none fixed inset-0 bg-grid-pattern opacity-20" />

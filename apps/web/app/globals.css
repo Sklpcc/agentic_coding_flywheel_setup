@@ -235,6 +235,12 @@
     @apply bg-background text-foreground antialiased;
   }
 
+  /* Prevent inline code from causing horizontal overflow on mobile */
+  code:not(pre code) {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
   /* Custom scrollbar for dark theme */
   ::-webkit-scrollbar {
     width: 8px;

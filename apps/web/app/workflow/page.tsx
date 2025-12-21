@@ -696,7 +696,7 @@ export default function WorkflowPage() {
                 Give the same prompt to{" "}
                 <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Claude Opus 4.5</a> and{" "}
                 <a href="https://aistudio.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Gemini 3 with Deep Think</a>.
-                Each model produces different insights — GPT excels at system design, Claude at code quality, Gemini at creative features.
+                Each model produces different insights: GPT excels at system design, Claude at code quality, Gemini at creative features.
               </p>
             </WorkflowStep>
 
@@ -706,7 +706,7 @@ export default function WorkflowPage() {
               </p>
               <CodeBlock code={PROMPT_BEST_OF_ALL_WORLDS} language="prompt" />
               <p className="mt-3 text-xs">
-                <strong>Pro tip:</strong> Do multiple passes — &quot;I had it carefully go over everything an additional two passes
+                <strong>Pro tip:</strong> Do multiple passes. &quot;I had it carefully go over everything an additional two passes
                 and it found some small oversights in each pass.&quot;
               </p>
             </WorkflowStep>
@@ -1050,15 +1050,15 @@ export default function WorkflowPage() {
             <GuideSection title="The Model Hierarchy">
               <ul className="space-y-2 text-sm">
                 <li>
-                  <strong>Opus 4.5 / GPT 5.2 with extra effort</strong> — Use for scrutinize_ui,
+                  <strong>Opus 4.5 / GPT 5.2 with extra effort:</strong> Use for scrutinize_ui,
                   check_orm, and high-stakes analysis. These require deep reasoning.
                 </li>
                 <li>
-                  <strong>Claude Sonnet / GPT 4o</strong> — Great for fresh_review, fix_bug,
+                  <strong>Claude Sonnet / GPT 4o:</strong> Great for fresh_review, fix_bug,
                   work_on_beads, and routine coding. Fast and reliable.
                 </li>
                 <li>
-                  <strong>Any capable model</strong> — check_mail, reread_agents, git_commit
+                  <strong>Any capable model:</strong> check_mail, reread_agents, git_commit
                   work fine with any model.
                 </li>
               </ul>
@@ -1225,7 +1225,7 @@ export default function WorkflowPage() {
           <div className="space-y-4">
             <h4 className="font-medium">The &quot;Improvement Cycle&quot; Queue</h4>
             <p className="text-sm text-muted-foreground mb-4">
-              Enter these prompts upfront — Codex processes them one at a time as each completes:
+              Enter these prompts upfront. Codex processes them one at a time as each completes:
             </p>
 
             <div className="space-y-4">
@@ -1371,13 +1371,13 @@ export default function WorkflowPage() {
               viewport={{ once: true }}
             >
               {[
-                { color: "from-amber-500 to-orange-600", text: "Plan with 3 AI models — GPT Pro, Opus 4.5, Gemini → synthesize best ideas" },
-                { color: "from-amber-500 to-orange-600", text: "Generate feature ideas — Use the \"100 ideas, show me 10\" technique" },
-                { color: "from-emerald-500 to-teal-600", text: "Create beads — Transform plan into granular, self-documenting tasks" },
-                { color: "from-emerald-500 to-teal-600", text: "Review beads — Iterate in \"plan space\" before implementing" },
-                { color: "from-violet-500 to-purple-600", text: "Launch agent swarm — Multiple agents working in parallel via Agent Mail" },
-                { color: "from-cyan-500 to-sky-600", text: "Review & test — Fresh reviews, peer reviews, UBS bug scanning, full tests" },
-                { color: "from-rose-500 to-red-600", text: "Ship — Deploy to Vercel, iterate daily with autopilot prompts!" },
+                { color: "from-amber-500 to-orange-600", text: "Plan with 3 AI models: GPT Pro, Opus 4.5, Gemini → synthesize best ideas" },
+                { color: "from-amber-500 to-orange-600", text: "Generate feature ideas: Use the \"100 ideas, show me 10\" technique" },
+                { color: "from-emerald-500 to-teal-600", text: "Create beads: Transform plan into granular, self-documenting tasks" },
+                { color: "from-emerald-500 to-teal-600", text: "Review beads: Iterate in \"plan space\" before implementing" },
+                { color: "from-violet-500 to-purple-600", text: "Launch agent swarm: Multiple agents working in parallel via Agent Mail" },
+                { color: "from-cyan-500 to-sky-600", text: "Review & test: Fresh reviews, peer reviews, UBS bug scanning, full tests" },
+                { color: "from-rose-500 to-red-600", text: "Ship: Deploy to Vercel, iterate daily with autopilot prompts!" },
               ].map((step, i) => (
                 <motion.li
                   key={i}
