@@ -1665,7 +1665,7 @@ These stories document the `--no-deps` and `--print-plan` flags for advanced tro
 ACFS Installation Plan
 ======================
 Mode: vibe
-Effective modules: 47
+Effective modules: 25 (5 disabled by default)
 Phases: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 
 Phase 1 (base):
