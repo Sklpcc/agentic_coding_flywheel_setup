@@ -19,6 +19,17 @@ export const ManifestDefaultsSchema = z.object({
  */
 const RunAsSchema = z.enum(['target_user', 'root', 'current']);
 
+/**
+ * Allowlist of verified installer runners.
+ * SECURITY: Only allow known-safe shell interpreters to prevent command injection.
+ * Expand only if there is a concrete, vetted need.
+ */
+const VerifiedInstallerRunnerSchema = z.enum(['bash', 'sh'], {
+  errorMap: () => ({
+    message: 'verified_installer.runner must be "bash" or "sh" (security: runner allowlist)',
+  }),
+});
+
 export const ModuleSchema = z
   .object({
     id: z
@@ -39,7 +50,7 @@ export const ModuleSchema = z
     verified_installer: z
       .object({
         tool: z.string().min(1, 'Verified installer tool cannot be empty'),
-        runner: z.string().min(1, 'Verified installer runner cannot be empty'),
+        runner: VerifiedInstallerRunnerSchema,
         args: z.array(z.string()).default([]),
       })
       .optional(),

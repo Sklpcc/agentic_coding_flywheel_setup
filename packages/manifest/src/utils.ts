@@ -148,6 +148,11 @@ export function sortModulesByInstallOrder(manifest: Manifest): Module[] {
     visiting.add(moduleId);
 
     const module = getModuleById(manifest, moduleId);
+    if (!module) {
+      // Module not found (should be caught by validation, but handle gracefully)
+      return;
+    }
+
     if (module) {
       // Visit dependencies first
       if (module.dependencies) {

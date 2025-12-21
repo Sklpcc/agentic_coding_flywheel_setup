@@ -18,7 +18,8 @@ export interface ValidationError {
     | 'DEPENDENCY_CYCLE'
     | 'PHASE_VIOLATION'
     | 'FUNCTION_NAME_COLLISION'
-    | 'RESERVED_NAME_COLLISION';
+    | 'RESERVED_NAME_COLLISION'
+    | 'INVALID_VERIFIED_INSTALLER_RUNNER';
   /** Human-readable error message */
   message: string;
   /** Module ID where the error was detected */
@@ -334,6 +335,54 @@ export function validateReservedNames(manifest: Manifest): ValidationError[] {
 }
 
 // ============================================================
+// Verified Installer Security Validation
+// ============================================================
+
+/**
+ * Allowlist of valid runners for verified installers.
+ * SECURITY: Only allow known-safe shell interpreters.
+ * This is a belt-and-suspenders check - schema.ts also validates this.
+ */
+const ALLOWED_VERIFIED_INSTALLER_RUNNERS = new Set(['bash', 'sh']);
+
+/**
+ * Validates that verified_installer.runner is in the security allowlist.
+ * This is a defense-in-depth check in addition to schema validation.
+ *
+ * @param manifest - The manifest to validate
+ * @returns Array of errors for invalid runners
+ *
+ * @example
+ * ```ts
+ * // If a module has verified_installer.runner: 'python', this returns an error
+ * const errors = validateVerifiedInstallerRunner(manifest);
+ * ```
+ */
+export function validateVerifiedInstallerRunner(manifest: Manifest): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  for (const module of manifest.modules) {
+    if (!module.verified_installer) continue;
+
+    const runner = module.verified_installer.runner;
+    if (!ALLOWED_VERIFIED_INSTALLER_RUNNERS.has(runner)) {
+      errors.push({
+        code: 'INVALID_VERIFIED_INSTALLER_RUNNER',
+        message: `Module "${module.id}" has invalid verified_installer.runner "${runner}" - only "bash" or "sh" allowed`,
+        moduleId: module.id,
+        context: {
+          runner,
+          allowedRunners: Array.from(ALLOWED_VERIFIED_INSTALLER_RUNNERS),
+          tool: module.verified_installer.tool,
+        },
+      });
+    }
+  }
+
+  return errors;
+}
+
+// ============================================================
 // Phase Ordering Validation
 // ============================================================
 
@@ -403,6 +452,7 @@ export function validatePhaseOrdering(manifest: Manifest): ValidationError[] {
  * 3. Phase ordering (execution plan feasibility)
  * 4. Function name uniqueness (no collisions in generated bash)
  * 5. Reserved name validation (no collisions with orchestrator)
+ * 6. Verified installer runner allowlist (security)
  *
  * @param manifest - The manifest to validate
  * @returns ValidationResult with all errors
@@ -440,6 +490,9 @@ export function validateManifest(manifest: Manifest): ValidationResult {
 
   // 5. Check for reserved name collisions (can run independently)
   errors.push(...validateReservedNames(manifest));
+
+  // 6. Check verified installer runners are in allowlist (security)
+  errors.push(...validateVerifiedInstallerRunner(manifest));
 
   return {
     valid: errors.length === 0,
@@ -485,6 +538,10 @@ export function formatValidationErrors(result: ValidationResult): string {
         if (error.context.suggestion) {
           lines.push(`    → ${error.context.suggestion}`);
         }
+        break;
+      case 'INVALID_VERIFIED_INSTALLER_RUNNER':
+        lines.push(`    → SECURITY: Only "bash" or "sh" are allowed as runners`);
+        lines.push(`    → Change verified_installer.runner to "bash" or "sh"`);
         break;
     }
     lines.push('');

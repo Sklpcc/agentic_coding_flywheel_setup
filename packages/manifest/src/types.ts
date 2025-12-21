@@ -21,13 +21,19 @@ export interface ManifestDefaults {
 export type RunAs = 'target_user' | 'root' | 'current';
 
 /**
+ * Allowed runners for verified installers.
+ * SECURITY: Only allow known-safe shell interpreters to prevent command injection.
+ */
+export type VerifiedInstallerRunner = 'bash' | 'sh';
+
+/**
  * Verified upstream installer reference (curl|bash)
  */
 export interface VerifiedInstaller {
   /** Tool key in checksums.yaml */
   tool: string;
-  /** Executable runner (e.g., bash, sh) */
-  runner: string;
+  /** Executable runner (must be bash or sh) */
+  runner: VerifiedInstallerRunner;
   /** Optional additional args for runner */
   args?: string[];
 }
