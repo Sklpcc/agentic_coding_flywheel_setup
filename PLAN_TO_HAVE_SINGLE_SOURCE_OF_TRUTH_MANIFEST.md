@@ -41,6 +41,24 @@ The manifest becomes the canonical definition of:
 - **Category:** A human grouping (base/shell/lang/etc). Useful for generated file layout, not ordering.
 - **Verified installer:** An upstream script executed only after HTTPS + SHA256 verification against `checksums.yaml`.
 
+## How This Plan Interacts With Other ACFS Work
+
+This plan is intentionally focused on **eliminating “two universes” drift** (manifest vs install.sh), but it must coexist cleanly with the project’s other reliability initiatives.
+
+### Must-Remain-True Invariants
+
+- **Installer reliability work remains valid after refactor.** Features like preflight, resume/state, and structured error reporting must live in (or be callable from) the orchestrator/libs so they survive category-by-category migration.
+- **Generated scripts are “library code”, not “programs”.** They must remain safe to `source` at any time (for `--list-modules`, `--print-plan`, argument parsing) and must not mutate global state on import.
+- **State + skip tracking must still make sense.** When a module is optional or explicitly skipped, the system must be able to explain “why it’s missing” later (especially in `acfs doctor` output).
+
+### Concrete Touchpoints (Existing Epics)
+
+- **Preflight (EPIC: Pre-Flight Validation):** Preflight runs *before* any installs. It should not depend on generated scripts (it can run before bootstrap completes, or immediately after bootstrap but before sourcing).
+- **Resume + state.json (EPIC: Phase-Granular Progress Persistence):** Phase wrappers (`run_phase`) should wrap *orchestrator* phase calls, not module internals. Module calls should be treated as “steps” for error context (and optionally recorded as completed modules if we choose to track at module granularity).
+- **Per-phase error reporting (EPIC: Per-Phase Error Reporting):** `try_step` and `report_failure` should remain orchestrator-owned. Generated modules should return non-zero on failure (or 0 if optional), with enough context (module_id) so the orchestrator can report consistently.
+- **Checksum recovery (EPIC: Checkpoint-Based Checksum Recovery):** Verified upstream installers are the generator’s default for remote scripts. The checksum recovery UX must remain centralized (in `scripts/lib/security.sh` and related helpers) so generated modules inherit it automatically.
+- **Doctor deep checks (EPIC: Enhanced Doctor with Functional Tests):** Manifest-driven `verify:` stays “fast existence checks”. Deep checks remain a separate opt-in mode; do not push connectivity/auth checks into generated verify steps.
+
 ---
 
 ## Current State (The Problem)
@@ -661,6 +679,94 @@ install_lang_bun() {
     # ... rest of function
 }
 ```
+
+---
+
+## Selection Semantics (Detailed)
+
+The goal of selection is to make filtering safe and predictable:
+
+- `--only` should “just work” on a fresh machine by installing prerequisites automatically (dependency closure).
+- `--skip` should never silently create a broken plan; skipping required prerequisites should fail early with an actionable message.
+- Defaults should be explicit (`enabled_by_default`) so we can ship optional tools without forcing them on all users.
+
+### Inputs
+
+**User-facing flags (additive to existing flags):**
+- `--only <id1,id2,...>`
+- `--only-phase <p1,p2,...>`
+- `--skip <id1,id2,...>`
+- `--no-deps` (expert-only; disables dependency closure)
+- `--print-plan` (prints the final resolved plan and exits; compatible with `--dry-run`)
+- `--list-modules` (prints the manifest index with phases/tags/categories and exits)
+
+**Legacy flags (must remain compatible):**
+- Any existing `--skip-*` flags should be implemented as wrappers that map to:
+  - skip explicit module IDs, and/or
+  - skip tag/category sets
+…so the “real” selection engine remains manifest-driven.
+
+### Default Behavior (When No --only/--only-phase Provided)
+
+When the user provides no filtering flags, selection should start from:
+- all modules where `enabled_by_default: true`
+
+This is critical for keeping installs stable for beginners while still allowing “extra” tools to exist in the manifest without surprising users.
+
+### Dependency Closure
+
+Unless `--no-deps` is provided:
+
+1. Initialize a “wanted” set from:
+   - `--only` module IDs (if provided), else `enabled_by_default` modules
+2. If `--only-phase` is provided, filter wanted set to those phases.
+3. Add dependencies recursively using `ACFS_MODULE_DEPS`:
+   - Always include deps even if `enabled_by_default: false`
+   - Reject manifest cycles at generation-time
+4. Apply skips:
+   - If a skipped module is required by any wanted module, **fail early**
+   - Error must name the exact edge: “X depends on skipped Y”
+
+### Deterministic Execution Order
+
+Execution must be deterministic and explainable:
+- Generator emits `ACFS_MODULES_IN_ORDER=(...)` in `scripts/generated/manifest_index.sh`
+- Orchestrator filters this list to just the effective run set
+- “Phase order” is implicit in the ordering list (phases 1→10, topo sort within each phase)
+
+### `manifest_index.sh` Responsibilities
+
+`scripts/generated/manifest_index.sh` is the “bridge” between Bash and the manifest:
+
+- **Data**:
+  - `ACFS_MANIFEST_SHA256="..."`
+  - `declare -A ACFS_MODULE_PHASE=([id]=N ...)`
+  - `declare -A ACFS_MODULE_DEPS=([id]="a,b,c" ...)`
+  - `declare -A ACFS_MODULE_FUNC=([id]="install_x_y" ...)`
+  - `declare -A ACFS_MODULE_TAGS=([id]="lang,runtime" ...)` (recommended)
+  - `declare -A ACFS_MODULE_CATEGORY=([id]="lang" ...)` (recommended)
+  - `declare -A ACFS_MODULE_DEFAULT=([id]="1|0" ...)` (recommended)
+  - `ACFS_MODULES_IN_ORDER=(...)`
+- **Helpers** (optional but recommended to keep install.sh small):
+  - `acfs_manifest_list_modules`
+  - `acfs_manifest_print_plan`
+
+### `acfs_resolve_selection` Responsibilities
+
+`scripts/lib/install_helpers.sh` (or equivalent) owns the runtime selection algorithm:
+
+- Computes the effective set (`declare -A ACFS_EFFECTIVE_RUN=([id]=1 ...)`)
+- Optionally builds a human-readable plan (for `--print-plan`)
+- Provides `should_run_module` as a cheap membership predicate
+
+### UX Expectations
+
+- `--print-plan` must show:
+  - execution order
+  - why a module is included (default, only, dependency of X)
+  - why a module is excluded (skip, disabled by default, filtered by phase)
+- `--no-deps` must print a prominent warning because it is easy to foot-gun.
+- Errors should be crisp and actionable (“Remove --skip base.system or add --no-deps if debugging”).
 
 ---
 
