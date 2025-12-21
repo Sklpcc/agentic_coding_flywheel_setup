@@ -23,6 +23,7 @@ LESSONS=(
     "05_ntm_core.md|NTM Command Center|7 min"
     "06_ntm_command_palette.md|NTM Prompt Palette|5 min"
     "07_flywheel_loop.md|The Flywheel Loop|8 min"
+    "08_keeping_updated.md|Keeping Updated|4 min"
 )
 
 # Colors
@@ -421,7 +422,7 @@ _show_menu() {
         read -r -p "Choose: " choice </dev/tty || true
 
         case "$choice" in
-            [1-8])
+            [1-9])
                 local idx=$((choice - 1))
                 if (( idx >= 0 && idx < ${#LESSONS[@]} )); then
                     _run_lesson "$idx"
@@ -457,7 +458,7 @@ onboard - ACFS onboarding tutorial
 Usage:
   onboard                Interactive TUI menu
   onboard --list         List lessons with completion status
-  onboard <n>            Run a single lesson (1-8)
+  onboard <n>            Run a single lesson (1-9)
   onboard --reset        Reset all progress
   onboard --help         Show this help
 
@@ -520,7 +521,7 @@ main() {
         --reset)
             _reset_progress
             ;;
-        [1-8])
+        [1-9])
             local idx=$(($1 - 1))
             _run_lesson "$idx"
             ;;

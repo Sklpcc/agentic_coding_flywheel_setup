@@ -51,6 +51,12 @@ acfs_require_contract() {
     if ! declare -f run_as_current_shell >/dev/null 2>&1; then
         missing+=("run_as_current_shell function")
     fi
+    # Check for security.sh functions (since we rely on them for interactive checks)
+    if ! declare -f _acfs_is_interactive >/dev/null 2>&1; then
+        # This is often sourced via install.sh -> detect_environment -> security.sh
+        # But verify it's actually there to avoid runtime errors in stack.sh/others
+        missing+=("_acfs_is_interactive (security.sh)")
+    fi
 
     if [[ ${#missing[@]} -gt 0 ]]; then
         if declare -f log_error >/dev/null 2>&1; then

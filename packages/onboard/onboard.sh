@@ -201,7 +201,7 @@ mark_completed() {
         tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || tmp="/tmp/acfs_onboard_temp.$$"
         jq --argjson lesson "$lesson" '
             .completed = (.completed + [$lesson] | unique | sort) |
-            .current = (if $lesson < 8 then $lesson + 1 else $lesson end) |
+            .current = (if $lesson < 9 then $lesson + 1 else $lesson end) |
             .last_accessed = now | todate
         ' "$PROGRESS_FILE" > "$tmp" && mv "$tmp" "$PROGRESS_FILE"
     else
@@ -356,125 +356,126 @@ get_auth_status_display() {
 
 # Show authentication flow
 show_auth_flow() {
-    clear 2>/dev/null || true
+    while true; do
+        clear 2>/dev/null || true
 
-    if has_gum; then
-        gum style \
-            --border rounded \
-            --border-foreground "$ACFS_ACCENT" \
-            --padding "1 4" \
-            --margin "1" \
-            "$(gum style --foreground "$ACFS_PINK" --bold '🔐 Service Authentication')" \
-            "$(gum style --foreground "$ACFS_MUTED" --italic "Connect your services for the full experience")"
-    else
-        echo ""
-        echo -e "${BOLD}${MAGENTA}╭─────────────────────────────────────────╮${NC}"
-        echo -e "${BOLD}${MAGENTA}│     🔐 Service Authentication          │${NC}"
-        echo -e "${BOLD}${MAGENTA}│  Connect your services                  │${NC}"
-        echo -e "${BOLD}${MAGENTA}╰─────────────────────────────────────────╯${NC}"
-        echo ""
-    fi
-
-    echo ""
-    echo -e "${BOLD}Service Status:${NC}"
-    echo ""
-
-    local authed=0
-    local total=0
-
-    for service in "${AUTH_SERVICES[@]}"; do
-        local name="${AUTH_SERVICE_NAMES[$service]}"
-        local desc="${AUTH_SERVICE_DESCRIPTIONS[$service]}"
-        local status_icon
-        status_icon=$(get_auth_status_display "$service")
-
-        local status
-        status=$(get_auth_status_code "$service")
-
-        if [[ $status -ne 2 ]]; then
-            ((total++))
-            [[ $status -eq 0 ]] && ((authed++))
+        if has_gum; then
+            gum style \
+                --border rounded \
+                --border-foreground "$ACFS_ACCENT" \
+                --padding "1 4" \
+                --margin "1" \
+                "$(gum style --foreground "$ACFS_PINK" --bold '🔐 Service Authentication')" \
+                "$(gum style --foreground "$ACFS_MUTED" --italic "Connect your services for the full experience")"
+        else
+            echo ""
+            echo -e "${BOLD}${MAGENTA}╭─────────────────────────────────────────╮${NC}"
+            echo -e "${BOLD}${MAGENTA}│     🔐 Service Authentication          │${NC}"
+            echo -e "${BOLD}${MAGENTA}│  Connect your services                  │${NC}"
+            echo -e "${BOLD}${MAGENTA}╰─────────────────────────────────────────╯${NC}"
+            echo ""
         fi
 
-        printf "  %s  %-15s %s\n" "$status_icon" "$name" "${DIM}$desc${NC}"
-    done
-
-    echo ""
-    echo -e "${DIM}Legend: ${GREEN}✓${NC} authenticated  ${YELLOW}○${NC} needs auth  ${DIM}—${NC} not installed${NC}"
-    echo ""
-
-    if [[ $total -gt 0 ]]; then
-        echo -e "${CYAN}Progress: $authed/$total services authenticated${NC}"
-    fi
-
-    echo ""
-    echo -e "${DIM}─────────────────────────────────────────${NC}"
-
-    # Show menu options
-    if has_gum; then
-        local -a items=()
-        for service in "${AUTH_SERVICES[@]}"; do
-            local status
-            status=$(get_auth_status_code "$service")
-            if [[ $status -eq 1 ]]; then
-                items+=("🔑 Authenticate ${AUTH_SERVICE_NAMES[$service]}")
-            fi
-        done
-        items+=("─────────────────────────────────")
-        items+=("📋 [m] Back to menu")
-        items+=("🔄 [r] Refresh status")
-
-        local choice
-        choice=$(printf '%s\n' "${items[@]}" | gum choose \
-            --cursor.foreground "$ACFS_ACCENT" \
-            --selected.foreground "$ACFS_SUCCESS")
-
-        case "$choice" in
-            *"[m]"*) return 0 ;;
-            *"[r]"*) show_auth_flow; return $? ;;
-            *"Authenticate"*)
-                # Extract service name from choice
-                for service in "${AUTH_SERVICES[@]}"; do
-                    if [[ "$choice" == *"${AUTH_SERVICE_NAMES[$service]}"* ]]; then
-                        show_auth_service "$service"
-                        show_auth_flow
-                        return $?
-                    fi
-                done
-                ;;
-        esac
-    else
-        echo "Options:"
-        echo "  [1-8] Authenticate a service"
-        echo "  [m]   Back to menu"
-        echo "  [r]   Refresh status"
+        echo ""
+        echo -e "${BOLD}Service Status:${NC}"
         echo ""
 
-        local idx=1
+        local authed=0
+        local total=0
+
         for service in "${AUTH_SERVICES[@]}"; do
+            local name="${AUTH_SERVICE_NAMES[$service]}"
+            local desc="${AUTH_SERVICE_DESCRIPTIONS[$service]}"
+            local status_icon
+            status_icon=$(get_auth_status_display "$service")
+
             local status
             status=$(get_auth_status_code "$service")
-            if [[ $status -eq 1 ]]; then
-                echo "  [$idx] ${AUTH_SERVICE_NAMES[$service]}"
+
+            if [[ $status -ne 2 ]]; then
+                ((total++))
+                [[ $status -eq 0 ]] && ((authed++))
             fi
-            ((idx++))
+
+            printf "  %s  %-15s %s\n" "$status_icon" "$name" "${DIM}$desc${NC}"
         done
 
-        read -rp "$(echo -e "${CYAN}Choose:${NC} ")" choice
+        echo ""
+        echo -e "${DIM}Legend: ${GREEN}✓${NC} authenticated  ${YELLOW}○${NC} needs auth  ${DIM}—${NC} not installed${NC}"
+        echo ""
 
-        case "$choice" in
-            m|M) return 0 ;;
-            r|R) show_auth_flow; return $? ;;
-            [1-8])
-                local idx=$((choice - 1))
-                if [[ $idx -lt ${#AUTH_SERVICES[@]} ]]; then
-                    show_auth_service "${AUTH_SERVICES[$idx]}"
-                    show_auth_flow
-                    return $?
+        if [[ $total -gt 0 ]]; then
+            echo -e "${CYAN}Progress: $authed/$total services authenticated${NC}"
+        fi
+
+        echo ""
+        echo -e "${DIM}─────────────────────────────────────────${NC}"
+
+        # Show menu options
+        if has_gum; then
+            local -a items=()
+            for service in "${AUTH_SERVICES[@]}"; do
+                local status
+                status=$(get_auth_status_code "$service")
+                if [[ $status -eq 1 ]]; then
+                    items+=("🔑 Authenticate ${AUTH_SERVICE_NAMES[$service]}")
                 fi
-                ;;
-        esac
-    fi
+            done
+            items+=("─────────────────────────────────")
+            items+=("📋 [m] Back to menu")
+            items+=("🔄 [r] Refresh status")
+
+            local choice
+            choice=$(printf '%s\n' "${items[@]}" | gum choose \
+                --cursor.foreground "$ACFS_ACCENT" \
+                --selected.foreground "$ACFS_SUCCESS")
+
+            case "$choice" in
+                *"[m]"*) return 0 ;;
+                *"[r]"*) continue ;;
+                *"Authenticate"*)
+                    # Extract service name from choice
+                    for service in "${AUTH_SERVICES[@]}"; do
+                        if [[ "$choice" == *"${AUTH_SERVICE_NAMES[$service]}"* ]]; then
+                            show_auth_service "$service"
+                            # Loop continues to refresh
+                            break
+                        fi
+                    done
+                    ;;
+            esac
+        else
+            echo "Options:"
+            echo "  [1-8] Authenticate a service"
+            echo "  [m]   Back to menu"
+            echo "  [r]   Refresh status"
+            echo ""
+
+            local idx=1
+            for service in "${AUTH_SERVICES[@]}"; do
+                local status
+                status=$(get_auth_status_code "$service")
+                if [[ $status -eq 1 ]]; then
+                    echo "  [$idx] ${AUTH_SERVICE_NAMES[$service]}"
+                fi
+                ((idx++))
+            done
+
+            read -rp "$(echo -e "${CYAN}Choose:${NC} ")" choice
+
+            case "$choice" in
+                m|M) return 0 ;;
+                r|R) continue ;;
+                [1-8])
+                    local idx=$((choice - 1))
+                    if [[ $idx -lt ${#AUTH_SERVICES[@]} ]]; then
+                        show_auth_service "${AUTH_SERVICES[$idx]}"
+                        # Loop continues to refresh
+                    fi
+                    ;;
+            esac
+        fi
+    done
 }
 
 # Show auth instructions for a specific service
@@ -802,7 +803,7 @@ $(gum style --foreground "$ACFS_MUTED" "You're ready to fly!")"
                     mark_completed "$idx"
                     echo -e "${GREEN}Lesson $((idx + 1)) marked complete!${NC}"
                     sleep 1
-                    if [[ $idx -lt 7 ]]; then
+                    if [[ $idx -lt 8 ]]; then
                         show_lesson $((idx + 1))
                         return $?
                     else
@@ -1004,10 +1005,11 @@ Lessons:
   1 - Linux Navigation
   2 - SSH & Persistence
   3 - tmux Basics
-  4 - Agent Commands
+  4 - Agent Commands (cc, cod, gmi)
   5 - NTM Command Center
   6 - NTM Prompt Palette
   7 - The Flywheel Loop
+  8 - Keeping Updated
 
 Environment:
   ACFS_LESSONS_DIR   Path to lesson files (default: ~/.acfs/onboard/lessons)

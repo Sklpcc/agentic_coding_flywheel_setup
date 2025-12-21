@@ -239,6 +239,10 @@ log_item() {
         run)
             [[ "$QUIET" != "true" ]] && echo -e "  ${YELLOW}[...]${NC} $msg"
             ;;
+        warn)
+            [[ "$QUIET" != "true" ]] && echo -e "  ${YELLOW}[warn]${NC} $msg"
+            [[ -n "$details" && "$QUIET" != "true" ]] && echo -e "       ${DIM}$details${NC}"
+            ;;
     esac
 }
 

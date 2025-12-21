@@ -31,6 +31,30 @@ _tailscale_has_systemd() {
     command -v systemctl &>/dev/null && [[ -d /run/systemd/system ]]
 }
 
+# Get Tailscale backend state (jq optional)
+_tailscale_backend_state() {
+    local output
+    output=$(tailscale status --json 2>/dev/null || echo "")
+    if [[ -z "$output" ]]; then
+        echo "unknown"
+        return 0
+    fi
+
+    if command -v jq &>/dev/null; then
+        local state
+        state=$(printf '%s' "$output" | jq -r '.BackendState // "unknown"' 2>/dev/null || echo "unknown")
+        echo "$state"
+        return 0
+    fi
+
+    local state
+    state=$(printf '%s' "$output" | sed -n 's/.*"BackendState"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    if [[ -z "$state" ]]; then
+        state="unknown"
+    fi
+    echo "$state"
+}
+
 # Get Ubuntu codename with fallback
 _tailscale_get_codename() {
     local codename=""
@@ -162,7 +186,7 @@ verify_tailscale() {
 
     # Check connection status
     local backend_state
-    backend_state=$(tailscale status --json 2>/dev/null | jq -r '.BackendState // "unknown"' 2>/dev/null || echo "unknown")
+    backend_state=$(_tailscale_backend_state)
 
     case "$backend_state" in
         "Running")
@@ -197,7 +221,7 @@ check_tailscale_auth() {
     fi
 
     local backend_state
-    backend_state=$(tailscale status --json 2>/dev/null | jq -r '.BackendState // "unknown"' 2>/dev/null || echo "unknown")
+    backend_state=$(_tailscale_backend_state)
 
     if [[ "$backend_state" == "Running" ]]; then
         return 0  # Authenticated and connected

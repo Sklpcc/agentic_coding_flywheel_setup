@@ -215,7 +215,12 @@ install_mcp_agent_mail() {
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
     # MCP Agent Mail uses --yes for non-interactive install
-    if _stack_run_installer "$tool" "--yes"; then
+    local args=""
+    if ! _acfs_is_interactive; then
+        args="--yes"
+    fi
+
+    if _stack_run_installer "$tool" "$args"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
@@ -239,7 +244,13 @@ install_ubs() {
     log_detail "Installing ${STACK_NAMES[$tool]}..."
 
     # UBS uses --easy-mode for simplified setup
-    if _stack_run_installer "$tool" "--easy-mode"; then
+    # Also add --yes for non-interactive installs if needed by UBS installer
+    local args="--easy-mode"
+    if ! _acfs_is_interactive; then
+        args="$args --yes"
+    fi
+
+    if _stack_run_installer "$tool" "$args"; then
         if _stack_is_installed "$tool"; then
             log_success "${STACK_NAMES[$tool]} installed"
             return 0
