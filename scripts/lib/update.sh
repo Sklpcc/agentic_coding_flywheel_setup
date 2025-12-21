@@ -933,8 +933,9 @@ update_zoxide() {
         return 0
     fi
 
+    # Show version change without double-counting
     if capture_version_after "zoxide"; then
-        log_item "ok" "Zoxide updated" "${VERSION_BEFORE[zoxide]} → ${VERSION_AFTER[zoxide]}"
+        [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[zoxide]} → ${VERSION_AFTER[zoxide]}${NC}"
     fi
 }
 
