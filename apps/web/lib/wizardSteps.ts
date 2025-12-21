@@ -1,7 +1,7 @@
 /**
  * Wizard Steps Configuration
  *
- * Defines the 11 steps of the Agent Flywheel setup wizard.
+ * Defines the 12 steps of the Agent Flywheel setup wizard.
  * Each step guides beginners from "I have a laptop" to "fully configured VPS".
  * Uses TanStack Query for React state management with localStorage persistence.
  */
