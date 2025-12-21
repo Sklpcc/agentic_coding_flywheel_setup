@@ -412,8 +412,10 @@ Which method would you like to use?"
 setup_claude_git_guard() {
     local settings_dir="$TARGET_HOME/.claude"
     local hooks_dir="$settings_dir/hooks"
-    local guard_path="$hooks_dir/git_safety_guard.sh"
+    local guard_path_py="$hooks_dir/git_safety_guard.py"
+    local guard_path_sh="$hooks_dir/git_safety_guard.sh"
     local settings_file="$settings_dir/settings.json"
+    local source_py="$HOME/.acfs/claude/hooks/git_safety_guard.py"
 
     if [[ "$SERVICES_SETUP_NONINTERACTIVE" != "true" ]] && ([[ -t 0 ]] || [[ -r /dev/tty ]]); then
         gum_box "Claude Git Safety Guard" "This installs a Claude Code PreToolUse hook that blocks destructive git/filesystem commands before they run.
@@ -442,7 +444,17 @@ Press Enter to install the guard..."
 
     mkdir -p "$hooks_dir"
 
-    cat > "$guard_path" << 'EOF'
+    # Prefer Python implementation if available
+    local installed_guard="$guard_path_sh"
+    
+    if [[ -f "$source_py" ]] && command -v python3 &>/dev/null; then
+        gum_detail "Installing Python implementation..."
+        cp "$source_py" "$guard_path_py"
+        chmod +x "$guard_path_py"
+        installed_guard="$guard_path_py"
+    else
+        gum_detail "Installing Bash implementation (fallback)..."
+        cat > "$guard_path_sh" << 'EOF'
 #!/usr/bin/env bash
 #
 # git_safety_guard.sh
@@ -552,8 +564,8 @@ fi
 
 exit 0
 EOF
-
-    chmod +x "$guard_path"
+        chmod +x "$guard_path_sh"
+    fi
 
     # Create or merge settings.json
     if [[ ! -f "$settings_file" ]]; then
@@ -564,7 +576,7 @@ EOF
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "$guard_path" }
+          { "type": "command", "command": "$installed_guard" }
         ]
       }
     ]
@@ -574,8 +586,8 @@ EOF
     else
         local tmp
         if command -v jq &>/dev/null; then
-            tmp="$(mktemp "${TMPDIR:-/tmp}/acfs_services.XXXXXX" 2>/dev/null)" || tmp="/tmp/acfs_services_temp.$"
-            if jq --arg cmd "$guard_path" '
+            tmp="$(mktemp "${TMPDIR:-/tmp}/acfs_services.XXXXXX" 2>/dev/null)" || tmp="/tmp/acfs_services_temp.$$"
+            if jq --arg cmd "$installed_guard" '
               .hooks = (.hooks // {}) |
               .hooks.PreToolUse = (.hooks.PreToolUse // []) |
               if (.hooks.PreToolUse | type) != "array" then
@@ -598,12 +610,12 @@ EOF
             else
                 gum_warn "Could not update $settings_file automatically (invalid JSON?)"
                 gum_detail "Manually add this hook command:"
-                gum_detail "  $guard_path"
+                gum_detail "  $installed_guard"
             fi
         else
             gum_warn "jq not found; cannot update $settings_file automatically"
             gum_detail "Manually add this hook command:"
-            gum_detail "  $guard_path"
+            gum_detail "  $installed_guard"
         fi
     fi
 
