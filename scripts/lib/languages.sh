@@ -370,7 +370,7 @@ install_go_latest() {
 
     # Download and install
     local tmpdir
-    tmpdir=$(mktemp -d)
+    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/acfs_go.XXXXXX")
     local tarball="${version}.linux-${arch}.tar.gz"
 
     log_detail "Downloading $tarball..."

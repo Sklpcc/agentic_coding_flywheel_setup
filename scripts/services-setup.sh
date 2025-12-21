@@ -572,9 +572,9 @@ EOF
 }
 EOF
     else
+        local tmp
         if command -v jq &>/dev/null; then
-            local tmp
-            tmp="$(mktemp)"
+            tmp="$(mktemp "${TMPDIR:-/tmp}/acfs_services.XXXXXX" 2>/dev/null)" || tmp="/tmp/acfs_services_temp.$"
             if jq --arg cmd "$guard_path" '
               .hooks = (.hooks // {}) |
               .hooks.PreToolUse = (.hooks.PreToolUse // []) |
