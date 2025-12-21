@@ -677,7 +677,15 @@ ACFS_SESSIONS_DIR="${ACFS_SESSIONS_DIR:-${HOME}/.acfs/sessions}"
 
 # Generate a unique session ID
 generate_session_id() {
-    head -c 4 /dev/urandom | xxd -p
+    if command -v xxd >/dev/null 2>&1; then
+        head -c 4 /dev/urandom | xxd -p
+        return 0
+    fi
+    if command -v od >/dev/null 2>&1; then
+        head -c 4 /dev/urandom | od -An -tx1 | tr -d ' \n'
+        return 0
+    fi
+    date +%s%N | sha256sum | head -c 8
 }
 
 # Import a session file for local viewing/reference
