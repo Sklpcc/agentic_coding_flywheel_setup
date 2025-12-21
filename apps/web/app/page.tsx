@@ -167,7 +167,7 @@ interface FeatureCardProps {
 function FeatureCard({ icon, title, description, gradient, index }: FeatureCardProps) {
   return (
     <motion.div
-      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm transition-colors duration-300 hover:border-primary/30"
+      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 active:scale-[0.98] active:bg-card/70"
       variants={fadeUp}
       whileHover={{ y: -4, boxShadow: "0 20px 40px -12px oklch(0.75 0.18 195 / 0.15)" }}
       transition={{ ...springs.snappy, delay: staggerDelay(index, 0.08) }}
@@ -338,7 +338,7 @@ function FlywheelSection() {
 
         {/* Tool preview grid */}
         <motion.div
-          className="grid grid-cols-4 sm:grid-cols-8 gap-4 mb-8"
+          className="grid grid-cols-2 gap-4 mb-8 xs:grid-cols-4 sm:grid-cols-8"
           variants={staggerContainer}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
@@ -414,27 +414,30 @@ function WorkflowStepsSection() {
           </p>
         </motion.div>
 
-        <motion.div
-          className="flex flex-wrap justify-center gap-3"
-          variants={staggerContainer}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-        >
-          {WORKFLOW_STEPS.map((step, i) => (
-            <motion.div
-              key={step}
-              className="flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-2 text-sm transition-colors hover:border-primary/30 hover:bg-card"
-              variants={fadeUp}
-              transition={{ delay: staggerDelay(i, 0.05) }}
-              whileHover={{ scale: 1.05, y: -2 }}
-            >
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
-                {i + 1}
-              </span>
-              <span className="text-foreground">{step}</span>
-            </motion.div>
-          ))}
-        </motion.div>
+        {/* Horizontal scroll on mobile, wrap on desktop */}
+        <div className="relative -mx-6 px-6 sm:mx-0 sm:px-0">
+          <motion.div
+            className="flex gap-3 overflow-x-auto pb-4 sm:flex-wrap sm:justify-center sm:overflow-visible sm:pb-0 scrollbar-hide"
+            variants={staggerContainer}
+            initial="hidden"
+            animate={isInView ? "visible" : "hidden"}
+          >
+            {WORKFLOW_STEPS.map((step, i) => (
+              <motion.div
+                key={step}
+                className="flex shrink-0 items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-2 text-sm transition-colors hover:border-primary/30 hover:bg-card active:scale-95"
+                variants={fadeUp}
+                transition={{ delay: staggerDelay(i, 0.05) }}
+                whileHover={{ scale: 1.05, y: -2 }}
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
+                  {i + 1}
+                </span>
+                <span className="whitespace-nowrap text-foreground">{step}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
 
         <motion.div
           className="mt-12 flex justify-center"
@@ -712,7 +715,7 @@ export default function HomePage() {
 
               {/* Stats */}
               <motion.div
-                className="mt-10 flex items-center divide-x divide-border/50"
+                className="mt-10 flex flex-wrap items-center justify-center gap-4 sm:justify-start sm:gap-0 sm:divide-x sm:divide-border/50"
                 variants={fadeUp}
               >
                 <StatBadge value="30+" label="Tools Installed" />
@@ -769,7 +772,7 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="border-t border-border/30 py-12">
           <div className="mx-auto max-w-7xl px-6">
-            <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+            <div className="flex flex-col items-center gap-8 text-center sm:flex-row sm:justify-between sm:text-left">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
                   <Terminal className="h-4 w-4 text-primary" />
@@ -777,7 +780,7 @@ export default function HomePage() {
                 <span className="font-mono text-sm font-bold">Agent Flywheel</span>
               </div>
 
-              <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
                 <a
                   href="https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup"
                   target="_blank"
@@ -814,7 +817,6 @@ export default function HomePage() {
                 >
                   Jeffrey Emanuel
                 </a>
-                {" "}for the agentic coding community
               </p>
             </div>
           </div>
