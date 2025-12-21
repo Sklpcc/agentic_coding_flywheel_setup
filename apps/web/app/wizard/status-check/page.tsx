@@ -16,6 +16,12 @@ import { CommandCard } from "@/components/command-card";
 import { AlertCard, OutputPreview } from "@/components/alert-card";
 import { markStepComplete } from "@/lib/wizardSteps";
 import {
+  SERVICES,
+  CATEGORY_NAMES,
+  type Service,
+  type ServiceCategory,
+} from "@/lib/services";
+import {
   SimplerGuide,
   GuideSection,
   GuideStep,
@@ -41,6 +47,30 @@ const QUICK_CHECKS = [
     description: "Check tmux is installed",
   },
 ];
+
+// Category icons for auth section
+const AUTH_CATEGORY_ICONS: Record<ServiceCategory, React.ReactNode> = {
+  access: <Shield className="h-5 w-5" />,
+  agent: <Bot className="h-5 w-5" />,
+  cloud: <Cloud className="h-5 w-5" />,
+  devtools: <Wrench className="h-5 w-5" />,
+};
+
+// Get services that have auth commands, grouped by category
+function getAuthServices(): Record<ServiceCategory, Service[]> {
+  const groups: Record<ServiceCategory, Service[]> = {
+    access: [],
+    agent: [],
+    cloud: [],
+    devtools: [],
+  };
+  for (const service of SERVICES) {
+    if (service.postInstallCommand && service.installedByAcfs) {
+      groups[service.category].push(service);
+    }
+  }
+  return groups;
+}
 
 export default function StatusCheckPage() {
   const router = useRouter();
