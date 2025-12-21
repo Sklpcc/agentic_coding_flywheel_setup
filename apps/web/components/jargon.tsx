@@ -1,18 +1,19 @@
 "use client";
 
-import React, {
+import {
   useState,
   useCallback,
   useRef,
   useEffect,
   useLayoutEffect,
+  type CSSProperties,
   type ReactNode,
 } from "react";
-import { motion, AnimatePresence } from "@/components/motion";
-import { springs } from "@/components/motion";
+import { motion, AnimatePresence, springs } from "@/components/motion";
 import { X, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getJargon, type JargonTerm } from "@/lib/jargon";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 interface JargonProps {
   /** The term key to look up in the dictionary */
@@ -35,13 +36,22 @@ export function Jargon({ term, children, className }: JargonProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [tooltipLayout, setTooltipLayout] = useState<{
     position: "top" | "bottom";
-    style: React.CSSProperties;
+    style: CSSProperties;
   }>({ position: "top", style: {} });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const prefersReducedMotion = useReducedMotion();
 
   const jargonData = getJargon(term);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Detect mobile on mount
   useEffect(() => {
@@ -67,7 +77,7 @@ export function Jargon({ term, children, className }: JargonProps) {
     // Calculate left position (centered on trigger, clamped to viewport)
     const left = Math.min(
       Math.max(16, rect.left - 140 + offsetWidth / 2),
-      window.innerWidth - 336
+      Math.max(16, window.innerWidth - 336)
     );
 
     // Calculate vertical position
@@ -107,6 +117,22 @@ export function Jargon({ term, children, className }: JargonProps) {
     closeTimeoutRef.current = setTimeout(() => {
       setIsOpen(false);
     }, 150);
+  }, [isMobile]);
+
+  const handleFocus = useCallback(() => {
+    if (isMobile) return;
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    setIsOpen(true);
+  }, [isMobile]);
+
+  const handleBlur = useCallback(() => {
+    if (isMobile) return;
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+    setIsOpen(false);
   }, [isMobile]);
 
   const handleClick = useCallback(() => {
@@ -155,6 +181,8 @@ export function Jargon({ term, children, className }: JargonProps) {
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         className={cn(
           "relative inline cursor-help",
           // Dotted underline with subtle color
@@ -176,10 +204,18 @@ export function Jargon({ term, children, className }: JargonProps) {
         {isOpen && !isMobile && (
           <motion.div
             ref={tooltipRef}
-            initial={{ opacity: 0, y: tooltipLayout.position === "top" ? 8 : -8, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: tooltipLayout.position === "top" ? 8 : -8, scale: 0.95 }}
-            transition={springs.snappy}
+            initial={
+              prefersReducedMotion
+                ? { opacity: 0 }
+                : { opacity: 0, y: tooltipLayout.position === "top" ? 8 : -8, scale: 0.95 }
+            }
+            animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={
+              prefersReducedMotion
+                ? { opacity: 0 }
+                : { opacity: 0, y: tooltipLayout.position === "top" ? 8 : -8, scale: 0.95 }
+            }
+            transition={prefersReducedMotion ? { duration: 0.12 } : springs.snappy}
             className={cn(
               "fixed z-[100] w-80 max-w-[calc(100vw-2rem)]",
               "rounded-xl border border-border/50 bg-card/95 p-4 shadow-2xl backdrop-blur-xl",
@@ -205,7 +241,7 @@ export function Jargon({ term, children, className }: JargonProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0.12 } : { duration: 0.2 }}
               className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
               onClick={handleClose}
               aria-hidden="true"
@@ -214,10 +250,10 @@ export function Jargon({ term, children, className }: JargonProps) {
             {/* Sheet */}
             <motion.div
               ref={tooltipRef}
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={springs.smooth}
+              initial={prefersReducedMotion ? { opacity: 0 } : { y: "100%" }}
+              animate={prefersReducedMotion ? { opacity: 1 } : { y: 0 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { y: "100%" }}
+              transition={prefersReducedMotion ? { duration: 0.12 } : springs.smooth}
               className="fixed inset-x-0 bottom-0 z-[101] max-h-[80vh] overflow-hidden rounded-t-3xl border-t border-border/50 bg-card/98 shadow-2xl backdrop-blur-xl"
             >
               {/* Handle */}
@@ -275,7 +311,7 @@ function TooltipContent({ term }: { term: JargonTerm }) {
 
       {/* Tap for more hint */}
       <p className="text-[11px] text-muted-foreground/60">
-        Click to learn more
+        Hover or focus to learn more
       </p>
     </div>
   );
@@ -294,7 +330,9 @@ function SheetContent({ term }: { term: JargonTerm }) {
         </div>
         <div>
           <h3 className="text-xl font-bold text-foreground">{term.term}</h3>
-          <p className="text-sm text-muted-foreground">{term.short.split("—")[0]}</p>
+          <p className="text-sm text-muted-foreground">
+            {term.short.split("—")[0].trim()}
+          </p>
         </div>
       </div>
 
@@ -308,6 +346,18 @@ function SheetContent({ term }: { term: JargonTerm }) {
             {term.long}
           </p>
         </div>
+
+        {/* Why we use it */}
+        {term.why && (
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              Why we use it
+            </p>
+            <p className="text-sm leading-relaxed text-foreground">
+              {term.why}
+            </p>
+          </div>
+        )}
 
         {/* Analogy */}
         {term.analogy && (

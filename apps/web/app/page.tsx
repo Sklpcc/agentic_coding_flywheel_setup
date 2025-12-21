@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "@/components/motion";
 import { Button } from "@/components/ui/button";
+import { Jargon } from "@/components/jargon";
 import { springs, fadeUp, staggerContainer, fadeScale } from "@/components/motion";
 import { useScrollReveal, staggerDelay } from "@/lib/hooks/useScrollReveal";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
@@ -117,7 +118,7 @@ function AnimatedTerminal() {
 interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
-  description: string;
+  description: React.ReactNode;
   gradient: string;
   index: number;
 }
@@ -157,37 +158,68 @@ const FEATURES = [
   {
     icon: <Rocket className="h-6 w-6" />,
     title: "One-liner Install",
-    description: "A single command transforms your VPS. No manual configuration, no dependency hell.",
+    description: (
+      <>
+        A single command transforms your <Jargon term="vps">VPS</Jargon>. No manual configuration, no dependency hell.
+      </>
+    ),
     gradient: "bg-[oklch(0.75_0.18_195)]",
   },
   {
     icon: <Cpu className="h-6 w-6" />,
     title: "Three AI Agents",
-    description: "Claude Code, Codex CLI, and Gemini CLI, all configured with optimal settings for coding.",
+    description: (
+      <>
+        <Jargon term="claude-code">Claude Code</Jargon>, <Jargon term="codex">Codex CLI</Jargon>, and{" "}
+        <Jargon term="gemini-cli">Gemini CLI</Jargon>, all configured with optimal settings for coding.
+      </>
+    ),
     gradient: "bg-[oklch(0.7_0.2_330)]",
   },
   {
     icon: <ShieldCheck className="h-6 w-6" />,
     title: "Idempotent & Safe",
-    description: "Re-run anytime. Checkpointed phases resume on failure. SHA256 verified installers.",
+    description: (
+      <>
+        Re-run anytime. <Jargon term="idempotent">Idempotent</Jargon> phases resume on failure.{" "}
+        <Jargon term="sha256">SHA256</Jargon> verified installers.
+      </>
+    ),
     gradient: "bg-[oklch(0.72_0.19_145)]",
   },
   {
     icon: <Zap className="h-6 w-6" />,
     title: "Vibe Mode",
-    description: "Passwordless sudo with dangerous flags enabled for maximum velocity on throwaway VPS environments.",
+    description: (
+      <>
+        Passwordless <Jargon term="sudo">sudo</Jargon> with dangerous flags enabled for maximum velocity on throwaway{" "}
+        <Jargon term="vps">VPS</Jargon> environments.
+      </>
+    ),
     gradient: "bg-[oklch(0.78_0.16_75)]",
   },
   {
     icon: <Terminal className="h-6 w-6" />,
     title: "Modern Shell",
-    description: "zsh + oh-my-zsh + powerlevel10k with lsd, atuin, fzf, and zoxide; developer UX perfected.",
+    description: (
+      <>
+        <Jargon term="zsh">zsh</Jargon> + <Jargon term="oh-my-zsh">oh-my-zsh</Jargon> +{" "}
+        <Jargon term="powerlevel10k">powerlevel10k</Jargon> with <Jargon term="lsd">lsd</Jargon>,{" "}
+        <Jargon term="atuin">atuin</Jargon>, <Jargon term="fzf">fzf</Jargon>, and{" "}
+        <Jargon term="zoxide">zoxide</Jargon>; developer UX perfected.
+      </>
+    ),
     gradient: "bg-[oklch(0.65_0.18_290)]",
   },
   {
     icon: <Clock className="h-6 w-6" />,
     title: "Interactive Tutorial",
-    description: "Run 'onboard' after setup for guided lessons from Linux basics to full agentic workflows.",
+    description: (
+      <>
+        Run &apos;onboard&apos; after setup for guided lessons from <Jargon term="linux">Linux</Jargon> basics to full{" "}
+        <Jargon term="agentic">agentic</Jargon> workflows.
+      </>
+    ),
     gradient: "bg-[oklch(0.75_0.18_195)]",
   },
 ];
@@ -207,7 +239,8 @@ function FeaturesSection() {
           Everything You Need
         </h2>
         <p className="mx-auto max-w-2xl text-muted-foreground">
-          A single curl command installs and configures your complete agentic coding environment
+          A single <Jargon term="curl">curl</Jargon> command installs and configures your complete{" "}
+          <Jargon term="agentic">agentic</Jargon> coding environment
         </p>
       </motion.div>
 
@@ -254,10 +287,11 @@ function FlywheelSection() {
             <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
           </div>
           <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight">
-            The Agentic Coding Flywheel
+            The <Jargon term="agentic">Agentic</Jargon> Coding <Jargon term="flywheel">Flywheel</Jargon>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Eight interconnected tools that transform multi-agent workflows. Each tool enhances the others.
+            Eight interconnected tools that transform multi-<Jargon term="ai-agents">agent</Jargon> workflows.
+            Each tool enhances the others.
           </p>
         </motion.div>
 
@@ -335,7 +369,7 @@ function WorkflowStepsSection() {
             10 Steps to Liftoff
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            The wizard guides you from &quot;I have a laptop&quot; to &quot;AI agents are coding for me&quot;
+            The wizard guides you from &quot;I have a laptop&quot; to &quot;<Jargon term="ai-agents">AI agents</Jargon> are coding for me&quot;
           </p>
         </motion.div>
 
@@ -460,7 +494,10 @@ function AboutSection() {
 
             <p>
               This is also a platform to share my suite of{" "}
-              <strong className="text-foreground">totally free, open-source agentic coding tools</strong>.
+              <strong className="text-foreground">
+                totally free, <Jargon term="open-source">open-source</Jargon>{" "}
+                <Jargon term="agentic">agentic</Jargon> coding tools
+              </strong>.
               I originally built these for myself to move faster in my consulting work with
               Private Equity and Hedge Funds. Now I want to help others be more productive
               and creative too.
@@ -596,9 +633,11 @@ export default function HomePage() {
                 className="mb-8 max-w-xl text-lg leading-relaxed text-muted-foreground"
                 variants={fadeUp}
               >
-                Transform a fresh cloud server into a fully-configured agentic coding
-                environment. Claude Code, OpenAI Codex, Google Gemini: all pre-configured
-                with 30+ modern developer tools. All totally free and open-source.
+                Transform a fresh <Jargon term="cloud-server">cloud server</Jargon> into a fully-configured{" "}
+                <Jargon term="agentic">agentic</Jargon> coding environment.{" "}
+                <Jargon term="claude-code">Claude Code</Jargon>, OpenAI <Jargon term="codex">Codex</Jargon>,{" "}
+                Google <Jargon term="gemini-cli">Gemini</Jargon>: all pre-configured with 30+ modern developer tools.
+                All totally free and <Jargon term="open-source">open-source</Jargon>.
               </motion.p>
 
               {/* CTA Buttons */}
