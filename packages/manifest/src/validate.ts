@@ -104,7 +104,8 @@ export function detectDependencyCycles(manifest: Manifest): ValidationError[] {
     if (cycleStart !== -1) {
       // Extract just the cycle portion
       const cyclePath = [...path.slice(cycleStart), moduleId];
-      const cycleKey = cyclePath.sort().join(',');
+      // Create sorted key for deduplication WITHOUT mutating cyclePath
+      const cycleKey = [...cyclePath].sort().join(',');
 
       if (!reportedCycles.has(cycleKey)) {
         reportedCycles.add(cycleKey);

@@ -236,6 +236,71 @@ describe('detectDependencyCycles', () => {
     expect(errors[0].code).toBe('DEPENDENCY_CYCLE');
     expect(errors[0].context.cycleLength).toBe(3);
   });
+
+  test('preserves cycle order in error message (not alphabetized)', () => {
+    // Create a cycle where alphabetical order differs from dependency order
+    // Cycle: z -> a -> m -> z (dependency order)
+    // Alphabetical would be: a, m, z, z (wrong!)
+    const manifest = createManifest([
+      {
+        id: 'z.first',
+        description: 'Z First',
+        dependencies: ['m.middle'],
+        install: ['echo "z"'],
+        verify: ['echo "z"'],
+        run_as: 'target_user',
+        optional: false,
+        enabled_by_default: true,
+        generated: true,
+      },
+      {
+        id: 'a.start',
+        description: 'A Start',
+        dependencies: ['z.first'],
+        install: ['echo "a"'],
+        verify: ['echo "a"'],
+        run_as: 'target_user',
+        optional: false,
+        enabled_by_default: true,
+        generated: true,
+      },
+      {
+        id: 'm.middle',
+        description: 'M Middle',
+        dependencies: ['a.start'],
+        install: ['echo "m"'],
+        verify: ['echo "m"'],
+        run_as: 'target_user',
+        optional: false,
+        enabled_by_default: true,
+        generated: true,
+      },
+    ]);
+
+    const errors = detectDependencyCycles(manifest);
+    expect(errors).toHaveLength(1);
+
+    // The cycle path should show dependency order, not alphabetical
+    const cyclePath = errors[0].context.cyclePath as string[];
+
+    // The cycle should end with the same module it starts with
+    expect(cyclePath[0]).toBe(cyclePath[cyclePath.length - 1]);
+
+    // The message should show arrows in dependency order
+    expect(errors[0].message).toContain(' → ');
+
+    // Verify it's NOT alphabetically sorted (which would start with 'a')
+    // The actual cycle traversal order depends on DFS starting point
+    // but consecutive elements should follow the dependency chain
+    const cycleWithoutDup = cyclePath.slice(0, -1);
+    for (let i = 0; i < cycleWithoutDup.length; i++) {
+      const current = cycleWithoutDup[i];
+      const next = cycleWithoutDup[(i + 1) % cycleWithoutDup.length];
+      // current depends on next (in the manifest setup)
+      const currentModule = manifest.modules.find((m) => m.id === current);
+      expect(currentModule?.dependencies).toContain(next);
+    }
+  });
 });
 
 describe('validatePhaseOrdering', () => {
