@@ -10,6 +10,7 @@ import {
   Rocket,
   ShieldCheck,
   Code,
+  Wifi,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CommandCard } from "@/components/command-card";
@@ -117,6 +118,24 @@ export default function RunInstallerPage() {
           className="border-2 border-primary/20"
         />
       </div>
+
+      {/* Connection drop reassurance */}
+      <AlertCard variant="info" icon={Wifi} title="What if my connection drops?">
+        <div className="space-y-2">
+          <p>
+            <strong>Don&apos;t panic!</strong> If your SSH connection drops during installation:
+          </p>
+          <ol className="list-decimal list-inside space-y-1 text-sm">
+            <li>The installer keeps running on the VPS</li>
+            <li>Just SSH back in using the same command</li>
+            <li>Run the installer command again — it will resume where it left off</li>
+          </ol>
+          <p className="text-sm text-muted-foreground">
+            The installer is designed to be run multiple times safely. If anything fails,
+            you can always re-run it.
+          </p>
+        </div>
+      </AlertCard>
 
       {/* Transparency & trust */}
       <div className="flex gap-3 rounded-xl border border-[oklch(0.72_0.19_145/0.25)] bg-[oklch(0.72_0.19_145/0.05)] p-3 sm:p-4">

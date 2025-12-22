@@ -535,6 +535,31 @@ export default function LaunchOnboardingPage() {
             </ul>
           </GuideExplain>
 
+          <GuideExplain term="What is tmux and ntm?">
+            <p>
+              <strong>The problem:</strong> When you SSH into your VPS and then close your laptop
+              or lose internet, your terminal session dies. Any running commands stop.
+            </p>
+            <p className="mt-3">
+              <strong>The solution:</strong> <Jargon term="tmux">tmux</Jargon> creates &quot;sessions&quot; that keep
+              running on the VPS even when you disconnect. Think of it like leaving a TV playing in another room
+              — it keeps going whether you&apos;re watching or not.
+            </p>
+            <p className="mt-3">
+              <strong>NTM</strong> (Named Tmux Manager) makes tmux easier. Instead of cryptic commands,
+              you get simple ones:
+            </p>
+            <ul className="mt-2 list-disc list-inside space-y-1">
+              <li><code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ntm new myproject</code> — Start a new session</li>
+              <li><code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ntm attach myproject</code> — Resume a session</li>
+              <li><code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">ntm list</code> — See all your sessions</li>
+            </ul>
+            <p className="mt-3 text-sm">
+              This is why you can start a Claude task, close your laptop, go to bed, and come back
+              to find it completed. The session keeps running on the VPS.
+            </p>
+          </GuideExplain>
+
           <GuideSection title="Understanding the Tools">
             <div className="space-y-4">
               <div>
