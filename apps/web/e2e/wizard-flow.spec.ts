@@ -574,19 +574,19 @@ test.describe("Complete Wizard Flow Integration", () => {
 
     // Step 9: Run Installer
     await expect(page.locator("h1").first()).toContainText(/installer/i);
-    await page.click('button:has-text("finished")');
+    await page.click('button:has-text("Installation finished")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/reconnect-ubuntu"));
 
     // Step 10: Reconnect Ubuntu
-    await page.click('button:has-text("connected as ubuntu")');
+    await page.click('button:has-text("I\'m connected as ubuntu")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/verify-key-connection"));
 
     // Step 11: Verify Key Connection
-    await page.click('button:has-text("connected")');
+    await page.click('button:has-text("My key works, continue")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/status-check"));
 
     // Step 12: Status Check
-    await page.click('button:has-text("Everything looks good")');
+    await page.click('button:has-text("Everything looks good!")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/launch-onboarding"));
 
     // Step 13: Launch Onboarding - Final step!
