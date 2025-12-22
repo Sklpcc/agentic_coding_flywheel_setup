@@ -207,6 +207,18 @@ get_current() {
     fi
 }
 
+# Get the next recommended lesson index (first incomplete, 0-8).
+get_next_incomplete() {
+    local i
+    for i in {0..8}; do
+        if ! is_completed "$i"; then
+            echo "$i"
+            return 0
+        fi
+    done
+    echo "8"
+}
+
 # Mark a lesson as completed
 mark_completed() {
     local lesson=$1
@@ -216,7 +228,10 @@ mark_completed() {
         tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || tmp="/tmp/acfs_onboard_temp.$$"
         jq --argjson lesson "$lesson" '
             .completed = (.completed + [$lesson] | unique | sort) |
-            .current = (if $lesson < 9 then $lesson + 1 else $lesson end) |
+            . as $o |
+            .current = (
+                [range(0;9) as $i | select(($o.completed | index($i)) == null) | $i] | first // 8
+            ) |
             .last_accessed = now | todate
         ' "$PROGRESS_FILE" > "$tmp" && mv "$tmp" "$PROGRESS_FILE"
     else
@@ -1022,9 +1037,9 @@ $(gum style --foreground "$ACFS_PRIMARY" "$bar") $(gum style --foreground "$ACFS
                 --bold \
                 "🎉 All lessons complete! You're ready to fly!"
         else
-            local current
-            current=$(get_current)
-            echo "$(gum style --foreground "$ACFS_MUTED" "Next up:") $(gum style --foreground "$ACFS_PRIMARY" "Lesson $((current + 1)) - ${LESSON_TITLES[$current]}")"
+            local next_idx
+            next_idx=$(get_next_incomplete)
+            echo "$(gum style --foreground "$ACFS_MUTED" "Next up:") $(gum style --foreground "$ACFS_PRIMARY" "Lesson $((next_idx + 1)) - ${LESSON_TITLES[$next_idx]}")"
         fi
 
         echo ""
@@ -1054,9 +1069,9 @@ $(gum style --foreground "$ACFS_PRIMARY" "$bar") $(gum style --foreground "$ACFS
         if [[ $completed_count -eq 9 ]]; then
             echo -e "${GREEN}${BOLD}All lessons complete! You're ready to fly!${NC}"
         else
-            local current
-            current=$(get_current)
-            echo -e "${CYAN}Next up: Lesson $((current + 1)) - ${LESSON_TITLES[$current]}${NC}"
+            local next_idx
+            next_idx=$(get_next_incomplete)
+            echo -e "${CYAN}Next up: Lesson $((next_idx + 1)) - ${LESSON_TITLES[$next_idx]}${NC}"
         fi
 
         echo ""

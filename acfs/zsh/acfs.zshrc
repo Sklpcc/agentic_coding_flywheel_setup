@@ -221,7 +221,7 @@ fi
 # Provides `acfs <subcommand>` for post-install utilities
 acfs() {
   local cmd="${1:-help}"
-  shift 2>/dev/null || true
+  shift 1 2>/dev/null || true
 
   case "$cmd" in
     services-setup|services|setup)
