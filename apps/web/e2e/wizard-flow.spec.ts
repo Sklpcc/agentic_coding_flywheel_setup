@@ -50,7 +50,7 @@ async function setupWizardState(
  * Button text for each step:
  * - Step 1 (OS Selection): "Continue"
  * - Step 2 (Install Terminal): "I installed it, continue"
- * - Step 3 (Generate SSH Key): "I copied my public key"
+ * - Step 3 (Generate SSH Key): "I saved my public key"
  * - Step 4 (Rent VPS): "I rented a VPS"
  * - Step 5 (Create VPS): "Continue to SSH"
  * - Step 6 (SSH Connect): "I'm connected, continue"
@@ -131,7 +131,7 @@ test.describe("Wizard Flow", () => {
     await expect(page.locator("h1").first()).toContainText(/SSH/i);
 
     // Click the step 3 specific button
-    await page.click('button:has-text("I copied my public key")');
+    await page.click('button:has-text("I saved my public key")');
 
     // Should navigate to step 4
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
@@ -144,7 +144,7 @@ test.describe("Wizard Flow", () => {
     await page.getByRole('radio', { name: /Mac/i }).click();
     await page.getByRole('button', { name: /continue/i }).click();
     await page.getByRole('button', { name: /continue/i }).click();
-    await page.click('button:has-text("I copied my public key")');
+    await page.click('button:has-text("I saved my public key")');
 
     // Now on step 4
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
@@ -164,7 +164,7 @@ test.describe("Wizard Flow", () => {
     await page.getByRole('radio', { name: /Mac/i }).click();
     await page.getByRole('button', { name: /continue/i }).click();
     await page.getByRole('button', { name: /continue/i }).click();
-    await page.click('button:has-text("I copied my public key")');
+    await page.click('button:has-text("I saved my public key")');
     await page.click('button:has-text("I rented a VPS")');
 
     // Now on step 5
@@ -528,7 +528,7 @@ test.describe("Complete Wizard Flow Integration", () => {
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/generate-ssh-key"));
 
     // Step 3: Generate SSH Key
-    await page.click('button:has-text("I copied my public key")');
+    await page.click('button:has-text("I saved my public key")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
 
     // Step 4: Rent VPS
@@ -629,7 +629,7 @@ test.describe("No localStorage (query-only resilience)", () => {
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/generate-ssh-key"));
 
     // Step 3 -> Step 4
-    await page.click('button:has-text("I copied my public key")');
+    await page.click('button:has-text("I saved my public key")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/rent-vps"));
 
     // Step 4 -> Step 5
