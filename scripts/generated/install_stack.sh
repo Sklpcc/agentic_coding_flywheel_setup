@@ -513,15 +513,15 @@ install_stack_slb() {
     log_step "Installing stack.slb"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: install: go install github.com/Dicklesworthstone/slb@latest (target_user)"
+        log_info "dry-run: install: go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest (target_user)"
     else
         if ! run_as_target_shell <<'INSTALL_STACK_SLB'
-go install github.com/Dicklesworthstone/slb@latest
+go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest
 INSTALL_STACK_SLB
         then
-            log_warn "stack.slb: install command failed: go install github.com/Dicklesworthstone/slb@latest"
+            log_warn "stack.slb: install command failed: go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest"
             if type -t record_skipped_tool >/dev/null 2>&1; then
-              record_skipped_tool "stack.slb" "install command failed: go install github.com/Dicklesworthstone/slb@latest"
+              record_skipped_tool "stack.slb" "install command failed: go install github.com/Dicklesworthstone/simultaneous_launch_button/cmd/slb@latest"
             elif type -t state_tool_skip >/dev/null 2>&1; then
               state_tool_skip "stack.slb"
             fi
