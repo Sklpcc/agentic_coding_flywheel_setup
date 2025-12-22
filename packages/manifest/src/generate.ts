@@ -568,23 +568,26 @@ function generateManifestIndex(manifest: Manifest, manifestSha256: string): stri
   lines.push(')');
   lines.push('');
 
+  // Note: Associative array keys must NOT use double quotes inside [] with set -u
+  // Using ["key"] causes bash to try variable expansion on $key, failing with "unbound variable"
+  // Correct: [key]="value" or ['key']="value"
   lines.push('declare -gA ACFS_MODULE_PHASE=(');
   for (const module of orderedModules) {
-    lines.push(`  ["${module.id}"]="${getModulePhase(module)}"`);
+    lines.push(`  [${module.id}]="${getModulePhase(module)}"`);
   }
   lines.push(')');
   lines.push('');
 
   lines.push('declare -gA ACFS_MODULE_DEPS=(');
   for (const module of orderedModules) {
-    lines.push(`  ["${module.id}"]="${escapeBash(joinList(module.dependencies))}"`);
+    lines.push(`  [${module.id}]="${escapeBash(joinList(module.dependencies))}"`);
   }
   lines.push(')');
   lines.push('');
 
   lines.push('declare -gA ACFS_MODULE_FUNC=(');
   for (const module of orderedModules) {
-    lines.push(`  ["${module.id}"]="${toFunctionName(module.id)}"`);
+    lines.push(`  [${module.id}]="${toFunctionName(module.id)}"`);
   }
   lines.push(')');
   lines.push('');
@@ -592,21 +595,21 @@ function generateManifestIndex(manifest: Manifest, manifestSha256: string): stri
   lines.push('declare -gA ACFS_MODULE_CATEGORY=(');
   for (const module of orderedModules) {
     const category = module.category ?? getModuleCategory(module.id);
-    lines.push(`  ["${module.id}"]="${escapeBash(category)}"`);
+    lines.push(`  [${module.id}]="${escapeBash(category)}"`);
   }
   lines.push(')');
   lines.push('');
 
   lines.push('declare -gA ACFS_MODULE_TAGS=(');
   for (const module of orderedModules) {
-    lines.push(`  ["${module.id}"]="${escapeBash(joinList(module.tags))}"`);
+    lines.push(`  [${module.id}]="${escapeBash(joinList(module.tags))}"`);
   }
   lines.push(')');
   lines.push('');
 
   lines.push('declare -gA ACFS_MODULE_DEFAULT=(');
   for (const module of orderedModules) {
-    lines.push(`  ["${module.id}"]="${module.enabled_by_default ? '1' : '0'}"`);
+    lines.push(`  [${module.id}]="${module.enabled_by_default ? '1' : '0'}"`);
   }
   lines.push(')');
   lines.push('');
