@@ -35,17 +35,17 @@ log_test() {
 
 log_pass() {
     echo -e "${GREEN}[PASS]${NC} $*"
-    ((TESTS_PASSED++))
+    ((TESTS_PASSED += 1))
 }
 
 log_fail() {
     echo -e "${RED}[FAIL]${NC} $*"
-    ((TESTS_FAILED++))
+    ((TESTS_FAILED += 1))
 }
 
 log_skip() {
     echo -e "${YELLOW}[SKIP]${NC} $*"
-    ((TESTS_SKIPPED++))
+    ((TESTS_SKIPPED += 1))
 }
 
 assert_equals() {
