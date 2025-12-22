@@ -54,7 +54,138 @@ acfs_security_init() {
 }
 
 # Category: acfs
-# Modules: 2
+# Modules: 3
+
+# Agent workspace with tmux session and project folder
+install_acfs_workspace() {
+    local module_id="acfs.workspace"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing acfs.workspace"
+
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Create project directory (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_ACFS_WORKSPACE'
+# Create project directory
+mkdir -p /data/projects/my_first_project
+cd /data/projects/my_first_project
+git init 2>/dev/null || true
+INSTALL_ACFS_WORKSPACE
+        then
+            log_error "acfs.workspace: install command failed: # Create project directory"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Create workspace instructions file (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_ACFS_WORKSPACE'
+# Create workspace instructions file
+mkdir -p ~/.acfs
+printf '%s\n' "" \
+  "  ACFS AGENT WORKSPACE - QUICK REFERENCE" \
+  "  --------------------------------------" \
+  "" \
+  "  RECONNECT AFTER SSH:" \
+  "    tmux attach -t agents    OR just type:  agents" \
+  "" \
+  "  WINDOWS (Ctrl-b + number):" \
+  "    0:welcome  - This instructions window" \
+  "    1:claude   - Claude Code (Anthropic)" \
+  "    2:codex    - Codex CLI (OpenAI)" \
+  "    3:gemini   - Gemini CLI (Google)" \
+  "" \
+  "  TMUX BASICS:" \
+  "    Ctrl-b d        - Detach (keep session running)" \
+  "    Ctrl-b c        - Create new window" \
+  "    Ctrl-b n/p      - Next/previous window" \
+  "    Ctrl-b [0-9]    - Switch to window number" \
+  "" \
+  "  START AN AGENT:" \
+  "    claude          - Start Claude Code" \
+  "    codex           - Start Codex CLI" \
+  "    gemini          - Start Gemini CLI" \
+  "" \
+  "  PROJECT: /data/projects/my_first_project" \
+  "  (Rename with: mv /data/projects/my_first_project /data/projects/NEW_NAME)" \
+  "" > ~/.acfs/workspace-instructions.txt
+INSTALL_ACFS_WORKSPACE
+        then
+            log_error "acfs.workspace: install command failed: # Create workspace instructions file"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Create tmux session with agent panes (if not already running) (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_ACFS_WORKSPACE'
+# Create tmux session with agent panes (if not already running)
+SESSION_NAME="agents"
+if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+  # Create session with first window for instructions
+  tmux new-session -d -s "$SESSION_NAME" -n "welcome" -c /data/projects/my_first_project
+
+  # Add agent windows
+  tmux new-window -t "$SESSION_NAME" -n "claude" -c /data/projects/my_first_project
+  tmux new-window -t "$SESSION_NAME" -n "codex" -c /data/projects/my_first_project
+  tmux new-window -t "$SESSION_NAME" -n "gemini" -c /data/projects/my_first_project
+
+  # Send instructions to welcome window
+  tmux send-keys -t "$SESSION_NAME:welcome" "cat ~/.acfs/workspace-instructions.txt" Enter
+
+  # Select the welcome window
+  tmux select-window -t "$SESSION_NAME:welcome"
+fi
+INSTALL_ACFS_WORKSPACE
+        then
+            log_error "acfs.workspace: install command failed: # Create tmux session with agent panes (if not already running)"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: # Add agents alias to zshrc.local if not already present (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_ACFS_WORKSPACE'
+# Add agents alias to zshrc.local if not already present
+if [[ ! -f ~/.zshrc.local ]] || ! grep -q "^alias agents=" ~/.zshrc.local; then
+  mkdir -p ~/.zshrc.local.d 2>/dev/null || true
+  echo '' >> ~/.zshrc.local
+  echo '# ACFS agents workspace alias' >> ~/.zshrc.local
+  echo 'alias agents="tmux attach -t agents 2>/dev/null || tmux new-session -s agents -c /data/projects"' >> ~/.zshrc.local
+fi
+INSTALL_ACFS_WORKSPACE
+        then
+            log_error "acfs.workspace: install command failed: # Add agents alias to zshrc.local if not already present"
+            return 1
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: verify: test -d /data/projects/my_first_project (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_ACFS_WORKSPACE'
+test -d /data/projects/my_first_project
+INSTALL_ACFS_WORKSPACE
+        then
+            log_error "acfs.workspace: verify failed: test -d /data/projects/my_first_project"
+            return 1
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: verify: grep -q \"alias agents=\" ~/.zshrc.local || grep -q \"alias agents=\" ~/.zshrc (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_ACFS_WORKSPACE'
+grep -q "alias agents=" ~/.zshrc.local || grep -q "alias agents=" ~/.zshrc
+INSTALL_ACFS_WORKSPACE
+        then
+            log_error "acfs.workspace: verify failed: grep -q \"alias agents=\" ~/.zshrc.local || grep -q \"alias agents=\" ~/.zshrc"
+            return 1
+        fi
+    fi
+
+    log_success "acfs.workspace installed"
+}
 
 # Onboarding TUI tutorial
 install_acfs_onboard() {
@@ -105,6 +236,7 @@ INSTALL_ACFS_DOCTOR
 # Install all acfs modules
 install_acfs() {
     log_section "Installing acfs modules"
+    install_acfs_workspace
     install_acfs_onboard
     install_acfs_doctor
 }

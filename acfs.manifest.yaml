@@ -802,6 +802,92 @@ modules:
   # ============================================================
   # PHASE 10: Finalization (onboard, doctor, verification)
   # ============================================================
+  - id: acfs.workspace
+    description: Agent workspace with tmux session and project folder
+    category: acfs
+    phase: 10
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [workspace, agents]
+    dependencies:
+      - agents.claude
+      - agents.codex
+      - agents.gemini
+      - cli.modern
+    installed_check:
+      run_as: target_user
+      command: "test -d /data/projects/my_first_project"
+    install:
+      - |
+        # Create project directory
+        mkdir -p /data/projects/my_first_project
+        cd /data/projects/my_first_project
+        git init 2>/dev/null || true
+      - |
+        # Create workspace instructions file
+        mkdir -p ~/.acfs
+        printf '%s\n' "" \
+          "  ACFS AGENT WORKSPACE - QUICK REFERENCE" \
+          "  --------------------------------------" \
+          "" \
+          "  RECONNECT AFTER SSH:" \
+          "    tmux attach -t agents    OR just type:  agents" \
+          "" \
+          "  WINDOWS (Ctrl-b + number):" \
+          "    0:welcome  - This instructions window" \
+          "    1:claude   - Claude Code (Anthropic)" \
+          "    2:codex    - Codex CLI (OpenAI)" \
+          "    3:gemini   - Gemini CLI (Google)" \
+          "" \
+          "  TMUX BASICS:" \
+          "    Ctrl-b d        - Detach (keep session running)" \
+          "    Ctrl-b c        - Create new window" \
+          "    Ctrl-b n/p      - Next/previous window" \
+          "    Ctrl-b [0-9]    - Switch to window number" \
+          "" \
+          "  START AN AGENT:" \
+          "    claude          - Start Claude Code" \
+          "    codex           - Start Codex CLI" \
+          "    gemini          - Start Gemini CLI" \
+          "" \
+          "  PROJECT: /data/projects/my_first_project" \
+          "  (Rename with: mv /data/projects/my_first_project /data/projects/NEW_NAME)" \
+          "" > ~/.acfs/workspace-instructions.txt
+      - |
+        # Create tmux session with agent panes (if not already running)
+        SESSION_NAME="agents"
+        if ! tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+          # Create session with first window for instructions
+          tmux new-session -d -s "$SESSION_NAME" -n "welcome" -c /data/projects/my_first_project
+
+          # Add agent windows
+          tmux new-window -t "$SESSION_NAME" -n "claude" -c /data/projects/my_first_project
+          tmux new-window -t "$SESSION_NAME" -n "codex" -c /data/projects/my_first_project
+          tmux new-window -t "$SESSION_NAME" -n "gemini" -c /data/projects/my_first_project
+
+          # Send instructions to welcome window
+          tmux send-keys -t "$SESSION_NAME:welcome" "cat ~/.acfs/workspace-instructions.txt" Enter
+
+          # Select the welcome window
+          tmux select-window -t "$SESSION_NAME:welcome"
+        fi
+      - |
+        # Add agents alias to zshrc.local if not already present
+        if [[ ! -f ~/.zshrc.local ]] || ! grep -q "^alias agents=" ~/.zshrc.local; then
+          mkdir -p ~/.zshrc.local.d 2>/dev/null || true
+          echo '' >> ~/.zshrc.local
+          echo '# ACFS agents workspace alias' >> ~/.zshrc.local
+          echo 'alias agents="tmux attach -t agents 2>/dev/null || tmux new-session -s agents -c /data/projects"' >> ~/.zshrc.local
+        fi
+    verify:
+      - test -d /data/projects/my_first_project
+      - grep -q "alias agents=" ~/.zshrc.local || grep -q "alias agents=" ~/.zshrc
+    notes:
+      - "Creates /data/projects/my_first_project as starter project"
+      - "Sets up 'agents' tmux session with windows for each coding agent"
+      - "Adds 'agents' alias for quick reconnection"
+
   - id: acfs.onboard
     description: Onboarding TUI tutorial
     category: acfs

@@ -112,6 +112,8 @@ node --version	required"
     "stack.cm.2	Procedural memory for agents (cass-memory)	cm doctor --json	optional"
     "stack.caam	Instant auth switching for agent CLIs	caam status || caam --help	required"
     "stack.slb	Two-person rule for dangerous commands (optional guardrails)	slb --help	required"
+    "acfs.workspace.1	Agent workspace with tmux session and project folder	test -d /data/projects/my_first_project	required"
+    "acfs.workspace.2	Agent workspace with tmux session and project folder	grep -q \"alias agents=\" ~/.zshrc.local || grep -q \"alias agents=\" ~/.zshrc	required"
     "acfs.onboard	Onboarding TUI tutorial	onboard --help || command -v onboard	required"
     "acfs.doctor	ACFS doctor command for health checks	acfs doctor --help || command -v acfs	required"
 )

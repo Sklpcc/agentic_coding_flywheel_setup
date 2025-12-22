@@ -6,7 +6,7 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="c08cc298ceb8f71db2439ca4877253880de7cc65639984bee4c5639d100e9bc9"
+ACFS_MANIFEST_SHA256="1f24e2e737ac44193fb480abe87bb2fcea6d66b8aafd4c800d21172e5c4716d0"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
@@ -40,6 +40,7 @@ ACFS_MODULES_IN_ORDER=(
   "stack.cm"
   "stack.caam"
   "stack.slb"
+  "acfs.workspace"
   "acfs.onboard"
   "acfs.doctor"
 )
@@ -76,6 +77,7 @@ declare -gA ACFS_MODULE_PHASE=(
   [stack.cm]="9"
   [stack.caam]="9"
   [stack.slb]="9"
+  [acfs.workspace]="10"
   [acfs.onboard]="10"
   [acfs.doctor]="10"
 )
@@ -112,6 +114,7 @@ declare -gA ACFS_MODULE_DEPS=(
   [stack.cm]="lang.rust,lang.uv"
   [stack.caam]="lang.bun"
   [stack.slb]="lang.rust"
+  [acfs.workspace]="agents.claude,agents.codex,agents.gemini,cli.modern"
   [acfs.onboard]=""
   [acfs.doctor]=""
 )
@@ -148,6 +151,7 @@ declare -gA ACFS_MODULE_FUNC=(
   [stack.cm]="install_stack_cm"
   [stack.caam]="install_stack_caam"
   [stack.slb]="install_stack_slb"
+  [acfs.workspace]="install_acfs_workspace"
   [acfs.onboard]="install_acfs_onboard"
   [acfs.doctor]="install_acfs_doctor"
 )
@@ -184,6 +188,7 @@ declare -gA ACFS_MODULE_CATEGORY=(
   [stack.cm]="stack"
   [stack.caam]="stack"
   [stack.slb]="stack"
+  [acfs.workspace]="acfs"
   [acfs.onboard]="acfs"
   [acfs.doctor]="acfs"
 )
@@ -220,6 +225,7 @@ declare -gA ACFS_MODULE_TAGS=(
   [stack.cm]="recommended"
   [stack.caam]="recommended"
   [stack.slb]="optional"
+  [acfs.workspace]="workspace,agents"
   [acfs.onboard]="orchestration"
   [acfs.doctor]="orchestration"
 )
@@ -256,6 +262,7 @@ declare -gA ACFS_MODULE_DEFAULT=(
   [stack.cm]="1"
   [stack.caam]="1"
   [stack.slb]="1"
+  [acfs.workspace]="1"
   [acfs.onboard]="1"
   [acfs.doctor]="1"
 )
