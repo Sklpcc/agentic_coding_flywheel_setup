@@ -202,14 +202,14 @@ check_memory() {
 check_disk() {
     local free_kb
     # Use -P for POSIX output (header + one line per FS), awk column 4 is usually Available
-    # Tail -1 to get the data line
+    # Tail -n 1 to get the data line (more portable than tail -1)
     if [[ "$(uname)" == "Darwin" ]]; then
         # macOS df -k -P
-        free_kb=$(df -k -P / | tail -1 | awk '{print $4}')
+        free_kb=$(df -k -P / 2>/dev/null | tail -n 1 | awk '{print $4}')
     else
         # Linux df -P (often implies 1K blocks, but verify)
         # Using -k ensures 1K blocks
-        free_kb=$(df -k -P / | tail -1 | awk '{print $4}')
+        free_kb=$(df -k -P / 2>/dev/null | tail -n 1 | awk '{print $4}')
     fi
 
     # Handle non-numeric or empty values
