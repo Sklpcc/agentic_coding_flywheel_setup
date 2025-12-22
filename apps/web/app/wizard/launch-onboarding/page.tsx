@@ -224,9 +224,16 @@ export default function LaunchOnboardingPage() {
             </div>
             <div className="space-y-2">
               <h3 className="font-medium">When you&apos;re done for the day</h3>
-              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
-                <div className="flex-1">
-                  <CommandCard command="Ctrl+B, then D" description="Detach from session" />
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+                <div className="flex-1 rounded-lg border border-border/50 bg-card/50 p-3">
+                  <p className="text-sm text-muted-foreground mb-2">Detach from session:</p>
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="rounded bg-muted px-2 py-1 font-mono text-sm">Ctrl</kbd>
+                    <span className="text-muted-foreground">+</span>
+                    <kbd className="rounded bg-muted px-2 py-1 font-mono text-sm">B</kbd>
+                    <span className="text-muted-foreground mx-1">then</span>
+                    <kbd className="rounded bg-muted px-2 py-1 font-mono text-sm">D</kbd>
+                  </div>
                 </div>
                 <div className="flex-1">
                   <CommandCard command="exit" description="Disconnect from VPS" />
