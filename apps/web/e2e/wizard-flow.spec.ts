@@ -827,7 +827,7 @@ test.describe("Step 10: Reconnect Ubuntu Page", () => {
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.LOADING_SPINNER });
 
     // Should show the exit command
-    await expect(page.locator('text="exit"')).toBeVisible();
+    await expect(page.locator('text="exit"').first()).toBeVisible();
   });
 });
 
