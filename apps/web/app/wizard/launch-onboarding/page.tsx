@@ -17,6 +17,7 @@ import {
 } from "@/components/simpler-guide";
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { Jargon } from "@/components/jargon";
+import { useVPSIP } from "@/lib/userPreferences";
 
 // Confetti colors
 const CONFETTI_COLORS = [
@@ -84,6 +85,10 @@ export default function LaunchOnboardingPage() {
     stepNumber: 13,
     stepTitle: "Launch Onboarding",
   });
+
+  // Get user's VPS IP for reconnection instructions
+  const [vpsIP] = useVPSIP();
+  const displayIP = vpsIP || "YOUR_VPS_IP";
 
   // Mark all steps complete on reaching this page
   useEffect(() => {
@@ -245,6 +250,65 @@ export default function LaunchOnboardingPage() {
             🎉 Congratulations! You just used AI to write and run code!
           </p>
         </div>
+      </Card>
+
+      {/* Getting Back In */}
+      <Card className="border-[oklch(0.75_0.18_195/0.3)] bg-[oklch(0.75_0.18_195/0.05)] p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Terminal className="h-6 w-6 text-[oklch(0.75_0.18_195)]" />
+          <h2 className="text-xl font-semibold">Getting Back In</h2>
+        </div>
+
+        <p className="text-muted-foreground mb-4">
+          Closed your terminal? Here&apos;s how to reconnect:
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-medium">1. Open your terminal app</h3>
+            <p className="text-sm text-muted-foreground">
+              Ghostty, WezTerm, or Windows Terminal
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-medium">2. Connect to your VPS</h3>
+            <CommandCard
+              command={`ssh -i ~/.ssh/acfs_ed25519 ubuntu@${displayIP}`}
+              windowsCommand={`ssh -i $HOME\\.ssh\\acfs_ed25519 ubuntu@${displayIP}`}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-medium">3. Resume your session (if using NTM)</h3>
+            <CommandCard command="ntm list" description="See your sessions" />
+            <CommandCard command="ntm attach myproject" description="Resume a session" />
+            <p className="text-sm text-muted-foreground mt-2">
+              This brings back exactly where you left off — including any running Claude sessions!
+            </p>
+          </div>
+        </div>
+
+        {/* SSH Config tip */}
+        <details className="mt-6 group">
+          <summary className="cursor-pointer font-medium text-[oklch(0.75_0.18_195)] hover:text-[oklch(0.65_0.18_195)] transition-colors">
+            💡 Pro tip: Set up SSH config for easier access
+          </summary>
+          <div className="mt-4 space-y-4 pl-6 border-l-2 border-[oklch(0.75_0.18_195/0.3)]">
+            <p className="text-sm text-muted-foreground">
+              Add this to your local <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">~/.ssh/config</code> file:
+            </p>
+            <pre className="rounded-lg bg-muted p-4 text-sm font-mono overflow-x-auto">
+{`Host myserver
+    HostName ${displayIP}
+    User ubuntu
+    IdentityFile ~/.ssh/acfs_ed25519`}
+            </pre>
+            <p className="text-sm text-muted-foreground">
+              Then just type: <code className="rounded bg-muted px-2 py-1 font-mono text-xs">ssh myserver</code>
+            </p>
+          </div>
+        </details>
       </Card>
 
       {/* What you can do now */}
