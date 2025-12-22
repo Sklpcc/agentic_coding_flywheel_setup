@@ -270,7 +270,7 @@ ACFS_MUTED="#6c7086"
 # Fetch commit SHA and date from GitHub API
 # This ensures we always know exactly which version is running
 # ============================================================
-ACFS_COMMIT_DATE=""
+export ACFS_COMMIT_DATE=""  # exported for child processes/debugging
 ACFS_COMMIT_AGE=""
 
 fetch_commit_sha() {
