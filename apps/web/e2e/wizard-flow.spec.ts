@@ -940,8 +940,8 @@ test.describe("Step 13: Launch Onboarding Page", () => {
     await page.goto("/wizard/launch-onboarding");
     await expect(page.locator("h1").first()).toBeVisible({ timeout: TIMEOUTS.PAGE_LOAD });
 
-    // Should have positive messaging
-    await expect(page.locator('text=/ready|complete|success|done/i').first()).toBeVisible();
+    // Should have positive messaging in the main heading
+    await expect(page.locator("h1").first()).toContainText(/congratulations|set up|ready/i);
   });
 });
 
