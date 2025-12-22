@@ -220,7 +220,7 @@ export default function SSHConnectPage() {
             </li>
             <li>
               <span className="text-destructive">✗ Wrong:</span>{" "}
-              Your Hetzner/Vultr/DigitalOcean <em>account</em> login password
+              Your OVH/Contabo <em>account</em> login password
             </li>
           </ul>
           <p className="text-xs text-muted-foreground mt-2">

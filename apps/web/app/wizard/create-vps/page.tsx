@@ -286,14 +286,13 @@ export default function CreateVPSPage() {
             <GuideSection title="Detailed Steps for Creating Your VPS">
               <div className="space-y-4">
                 <GuideStep number={1} title="Log into your VPS provider">
-                  Go to the website where you created your account (Hetzner, OVH, or Contabo)
+                  Go to the website where you created your account (OVH or Contabo)
                   and sign in with the email and password you created earlier.
                 </GuideStep>
 
                 <GuideStep number={2} title="Find the 'Create Server' or 'Add VPS' button">
                   Look for a button that says something like:
                   <ul className="mt-2 list-disc space-y-1 pl-5">
-                    <li><strong>Hetzner:</strong> Click &quot;Add Server&quot; (big blue button)</li>
                     <li><strong>OVH:</strong> Click &quot;Create an instance&quot; or &quot;Order&quot;</li>
                     <li><strong>Contabo:</strong> Go to &quot;Your services&quot; → click the VPS you ordered</li>
                   </ul>
