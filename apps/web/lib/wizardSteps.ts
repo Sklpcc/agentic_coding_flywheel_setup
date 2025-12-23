@@ -7,7 +7,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { safeGetJSON, safeSetJSON } from "./utils";
 
 export interface WizardStep {
@@ -118,28 +118,48 @@ export function getStepBySlug(slug: string): WizardStep | undefined {
 /** localStorage key for storing completed steps */
 export const COMPLETED_STEPS_KEY = "agent-flywheel-wizard-completed-steps";
 
+export const COMPLETED_STEPS_CHANGED_EVENT =
+  "acfs:wizard:completed-steps-changed";
+
 // Query keys for TanStack Query
 export const wizardStepsKeys = {
   completedSteps: ["wizardSteps", "completed"] as const,
 };
 
+type CompletedStepsChangedDetail = {
+  steps: number[];
+};
+
+function normalizeCompletedSteps(steps: unknown[]): number[] {
+  const validSteps = steps.filter(
+    (n): n is number => typeof n === "number" && n >= 1 && n <= TOTAL_STEPS
+  );
+  return Array.from(new Set(validSteps)).sort((a, b) => a - b);
+}
+
+function emitCompletedStepsChanged(steps: number[]): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<CompletedStepsChangedDetail>(COMPLETED_STEPS_CHANGED_EVENT, {
+      detail: { steps },
+    })
+  );
+}
+
 /** Get completed steps from localStorage */
 export function getCompletedSteps(): number[] {
   const parsed = safeGetJSON<unknown[]>(COMPLETED_STEPS_KEY);
   if (Array.isArray(parsed)) {
-    // Filter to only valid step numbers (1..TOTAL_STEPS)
-    return parsed.filter(
-      (n): n is number => typeof n === "number" && n >= 1 && n <= TOTAL_STEPS
-    );
+    return normalizeCompletedSteps(parsed);
   }
   return [];
 }
 
 /** Save completed steps to localStorage */
 export function setCompletedSteps(steps: number[]): void {
-  // Validate steps before saving
-  const validSteps = steps.filter((n) => n >= 1 && n <= TOTAL_STEPS);
-  safeSetJSON(COMPLETED_STEPS_KEY, validSteps);
+  const normalized = normalizeCompletedSteps(steps);
+  safeSetJSON(COMPLETED_STEPS_KEY, normalized);
+  emitCompletedStepsChanged(normalized);
 }
 
 /** Mark a step as completed (pure function, returns new array) */
@@ -161,11 +181,42 @@ export function addCompletedStep(currentSteps: number[], stepId: number): number
 export function useCompletedSteps(): [number[], (stepId: number) => void] {
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleCompletedStepsChanged = (event: Event) => {
+      const customEvent = event as CustomEvent<CompletedStepsChangedDetail>;
+      const nextSteps = customEvent.detail?.steps ?? getCompletedSteps();
+      queryClient.setQueryData(wizardStepsKeys.completedSteps, nextSteps);
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== COMPLETED_STEPS_KEY) return;
+      queryClient.setQueryData(wizardStepsKeys.completedSteps, getCompletedSteps());
+    };
+
+    window.addEventListener(
+      COMPLETED_STEPS_CHANGED_EVENT,
+      handleCompletedStepsChanged as EventListener
+    );
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener(
+        COMPLETED_STEPS_CHANGED_EVENT,
+        handleCompletedStepsChanged as EventListener
+      );
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [queryClient]);
+
   const { data: steps } = useQuery({
     queryKey: wizardStepsKeys.completedSteps,
     queryFn: getCompletedSteps,
-    // Use staleTime: 0 so the stepper re-fetches from localStorage on mount.
-    // This ensures changes made by markStepComplete() are reflected.
+    // The stepper lives in a persistent Next.js layout, so it won't remount
+    // between steps. We keep this query in sync by listening for:
+    // - `COMPLETED_STEPS_CHANGED_EVENT` (same-tab writes)
+    // - `storage` events (cross-tab writes)
     staleTime: 0,
     gcTime: Infinity,
   });
@@ -194,7 +245,8 @@ export function useCompletedSteps(): [number[], (stepId: number) => void] {
 
 /**
  * Imperatively mark a step as complete (for use outside React components).
- * Note: If used, you should invalidate the query in components that depend on it.
+ * This writes to localStorage and notifies any mounted `useCompletedSteps()`
+ * hooks (e.g., the Stepper in the wizard layout) via a DOM event.
  */
 export function markStepComplete(stepId: number): number[] {
   const completed = getCompletedSteps();
