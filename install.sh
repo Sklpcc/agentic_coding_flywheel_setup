@@ -2000,18 +2000,30 @@ setup_filesystem() {
     try_step "Setting /data ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" /data || true
 
     # User directories (in TARGET_HOME, not $HOME)
-    local user_dirs=("$TARGET_HOME/Development" "$TARGET_HOME/Projects" "$TARGET_HOME/dotfiles")
+    # CRITICAL: Create these as target user to ensure correct ownership
+    local user_dirs=("Development" "Projects" "dotfiles")
     for dir in "${user_dirs[@]}"; do
-        if [[ ! -d "$dir" ]]; then
-            log_detail "Creating: $dir"
-            try_step "Creating $dir" $SUDO mkdir -p "$dir" || return 1
+        local full_path="$TARGET_HOME/$dir"
+        if [[ ! -d "$full_path" ]]; then
+            log_detail "Creating: $full_path"
+            try_step "Creating $full_path" run_as_target mkdir -p "$full_path" || return 1
         fi
     done
 
-    # Create ACFS directories
+    # Create ACFS directories (as root, then chown)
     try_step "Creating ACFS directories" $SUDO mkdir -p "$ACFS_HOME"/{zsh,tmux,bin,docs,logs} || return 1
     try_step "Setting ACFS directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME" || return 1
     try_step "Creating ACFS log directory" $SUDO mkdir -p "$ACFS_LOG_DIR" || return 1
+
+    # Create user's .local/bin and .bun directories early - many installers need them
+    # This prevents NTM, UBS, CASS, Bun, etc. from creating them as root via sudo
+    try_step "Creating .local/bin directory" run_as_target mkdir -p "$TARGET_HOME/.local/bin" || return 1
+    try_step "Creating .bun directory" run_as_target mkdir -p "$TARGET_HOME/.bun" || return 1
+
+    # Ensure home directory and contents have correct ownership (safety net)
+    # Some cloud images have /home/ubuntu owned by root after user creation
+    # This is CRITICAL - many installers will fail if home dir is root-owned
+    try_step "Fixing home directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" || true
 
     log_success "Filesystem setup complete"
 }

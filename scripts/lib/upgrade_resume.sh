@@ -46,10 +46,13 @@ log_error() {
 }
 
 # Cleanup function - disables the service to prevent loops
+# NOTE: We do NOT call systemctl stop here because this script IS the running
+# service. Calling stop would kill ourselves before completing cleanup.
+# The service will exit naturally when the script finishes.
 cleanup_service() {
     log "Disabling ${SERVICE_NAME} service to prevent reboot loops..."
     systemctl disable "${SERVICE_NAME}.service" 2>/dev/null || true
-    systemctl stop "${SERVICE_NAME}.service" 2>/dev/null || true
+    # DO NOT call systemctl stop - that would kill this running script!
 }
 
 # Update MOTD with failure message and instructions
