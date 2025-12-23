@@ -79,6 +79,11 @@ acfs_security_init() {
         return 1
     fi
 
+    # Use ACFS_CHECKSUMS_YAML if set by install.sh bootstrap (overrides security.sh default)
+    if [[ -n "\${ACFS_CHECKSUMS_YAML:-}" ]]; then
+        export CHECKSUMS_FILE="\${ACFS_CHECKSUMS_YAML}"
+    fi
+
     # shellcheck source=../lib/security.sh
     # shellcheck disable=SC1091  # runtime relative source
     source "\$security_lib"
