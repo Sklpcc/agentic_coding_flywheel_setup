@@ -90,8 +90,8 @@ _check_user() {
 _check_shell() {
     local shell
     shell=$(getent passwd "$TARGET_USER" 2>/dev/null | cut -d: -f7)
-    # Check if configured shell is zsh OR if zsh is installed and linked
-    if [[ "$shell" == *"zsh"* ]] || command -v zsh &>/dev/null; then
+    # Check if configured shell is zsh (the actual login shell, not just that zsh exists)
+    if [[ "$shell" == *"zsh"* ]]; then
         _smoke_pass "Shell: zsh"
         return 0
     else
