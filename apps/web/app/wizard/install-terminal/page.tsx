@@ -185,7 +185,7 @@ function MacContent() {
  * This is the foundational "Terminal Onboarding" content that helps beginners
  * understand prompts, copy/paste, and verify their terminal works.
  */
-function TerminalBasicsSection({ os }: { os: "mac" | "windows" }) {
+function TerminalBasicsSection({ os }: { os: "mac" | "windows" | "linux" }) {
   return (
     <div className="space-y-6 rounded-2xl border-2 border-primary/20 bg-primary/5 p-6">
       <div className="space-y-2">

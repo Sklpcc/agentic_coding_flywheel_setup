@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Apple, Monitor, Sparkles, Laptop, ChevronRight } from "lucide-react";
+import { Apple, Monitor, Sparkles, Laptop, ChevronRight, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { markStepComplete } from "@/lib/wizardSteps";
@@ -140,7 +140,15 @@ export default function OSSelectionPage() {
       markComplete({ selected_os: selectedOS });
       markStepComplete(1);
       setIsNavigating(true);
-      router.push(withCurrentSearch("/wizard/install-terminal"));
+
+      // Linux users already have a terminal and SSH - skip to SSH key generation
+      if (selectedOS === "linux") {
+        // Also mark install-terminal step as complete since Linux users skip it
+        markStepComplete(2);
+        router.push(withCurrentSearch("/wizard/generate-ssh-key"));
+      } else {
+        router.push(withCurrentSearch("/wizard/install-terminal"));
+      }
     }
   }, [selectedOS, router, markComplete, setStoredOS]);
 
@@ -167,7 +175,7 @@ export default function OSSelectionPage() {
       </div>
 
       {/* OS Options */}
-      <div data-os-selection className="grid gap-6 sm:grid-cols-2" role="radiogroup" aria-label="Select your operating system">
+      <div data-os-selection className="grid gap-6 sm:grid-cols-3" role="radiogroup" aria-label="Select your operating system">
         <OSCard
           icon={<Apple className="h-10 w-10" />}
           title="Mac"
@@ -183,6 +191,14 @@ export default function OSSelectionPage() {
           selected={selectedOS === "windows"}
           detected={detectedOS === "windows"}
           onClick={() => handleSelectOS("windows")}
+        />
+        <OSCard
+          icon={<Terminal className="h-10 w-10" />}
+          title="Linux"
+          description="Ubuntu, Debian, Fedora, Arch, etc."
+          selected={selectedOS === "linux"}
+          detected={detectedOS === "linux"}
+          onClick={() => handleSelectOS("linux")}
         />
       </div>
 
@@ -218,6 +234,10 @@ export default function OSSelectionPage() {
             <strong>Windows</strong> = Most non-Apple computers (Dell, HP, Lenovo, etc.).
             If you see a Windows logo (four colored squares) when your computer starts,
             you have Windows.
+            <br /><br />
+            <strong>Linux</strong> = If you&apos;re already using Ubuntu, Debian, Fedora, Arch,
+            or another Linux distribution. You probably already know if you&apos;re running Linux!
+            Selecting Linux will skip the terminal installation step since you already have one.
           </GuideExplain>
 
           <GuideSection title="How do I know which one I have?">
@@ -231,6 +251,11 @@ export default function OSSelectionPage() {
                 <strong>Windows:</strong> Look at the bottom-left corner of your screen.
                 Do you see a Windows icon (four blue squares)? That means you have Windows.
                 You can also press the Windows key on your keyboard (between Ctrl and Alt).
+              </li>
+              <li>
+                <strong>Linux:</strong> If you installed Linux yourself (Ubuntu, Fedora, Arch, etc.),
+                you already know! Open a terminal and type <code className="rounded bg-muted px-1">uname -a</code> to
+                confirm. You&apos;ll see &quot;Linux&quot; in the output.
               </li>
             </ul>
           </GuideSection>
