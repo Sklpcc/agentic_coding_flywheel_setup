@@ -171,7 +171,7 @@ export default function StatusCheckPage() {
           <div>
             <h2 className="text-xl font-semibold">Authenticate your services</h2>
             <p className="text-sm text-muted-foreground">
-              Log in to each tool to connect your accounts
+              Log in to the tools you plan to use now (you can do the rest later)
             </p>
           </div>
         </div>
@@ -203,9 +203,9 @@ export default function StatusCheckPage() {
               the rest later.
             </p>
             <ul className="list-disc space-y-1 pl-5">
-              <li><strong>Recommended now:</strong> Claude Code</li>
+              <li><strong>Recommended now:</strong> Claude Code (so you can start coding immediately)</li>
               <li><strong>Optional now:</strong> Codex, Gemini (only if you plan to use them)</li>
-              <li><strong>Later:</strong> Cloud tools (Wrangler / Supabase / Vercel), GitHub CLI, etc.</li>
+              <li><strong>Optional later:</strong> Cloud tools (Wrangler / Supabase / Vercel) and anything else you don&apos;t need yet</li>
             </ul>
             <p className="text-xs text-muted-foreground">
               If you skip a login, the tool is still installed — it just won&apos;t work until you authenticate.

@@ -244,7 +244,7 @@ export default function OSSelectionPage() {
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 <strong>Mac:</strong> Look at the top-left corner of your screen. Do you
-                see an Apple icon ()? Click it and select &quot;About This Mac&quot; and
+                see the Apple menu (top-left Apple logo)? Click it and select &quot;About This Mac&quot; and
                 it will say something like &quot;macOS Sonoma&quot; or &quot;macOS Ventura&quot;.
               </li>
               <li>
