@@ -19,6 +19,7 @@ import {
 import { useWizardAnalytics } from "@/lib/hooks/useWizardAnalytics";
 import { Jargon } from "@/components/jargon";
 import { useVPSIP } from "@/lib/userPreferences";
+import { withCurrentSearch } from "@/lib/utils";
 
 // Confetti colors
 const CONFETTI_COLORS = [
@@ -575,7 +576,7 @@ export default function LaunchOnboardingPage() {
         {/* Windows Terminal tip */}
         <div className="mt-6 rounded-lg border border-[oklch(0.75_0.18_195/0.3)] bg-[oklch(0.75_0.18_195/0.1)] p-4">
           <Link
-            href="/wizard/windows-terminal-setup"
+            href={withCurrentSearch("/wizard/windows-terminal-setup")}
             className="flex items-start gap-3"
           >
             <Terminal className="mt-0.5 h-5 w-5 text-[oklch(0.75_0.18_195)]" />
