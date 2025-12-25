@@ -137,6 +137,8 @@ try_step() {
             if (
                 set -o pipefail
                 "$@" 2>&1 | tee "$output_file"
+                # Prefer the command's exit code over tee's (output capture is best-effort).
+                exit "${PIPESTATUS[0]}"
             ); then
                 exit_code=0
             else
