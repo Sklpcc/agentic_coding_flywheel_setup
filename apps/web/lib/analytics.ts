@@ -18,8 +18,19 @@ declare global {
   }
 }
 
-// Measurement ID from environment
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+// Validate GA4 Measurement ID format (G-XXXXXXXXXX or UA-XXXXXXXX-X)
+function isValidGaMeasurementId(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length === 0) return false;
+  // GA4 format: G-XXXXXXXXXX (10+ alphanumeric after G-)
+  // Universal Analytics format: UA-XXXXXXXX-X
+  return /^(G-[A-Z0-9]{10,}|UA-\d+-\d+)$/.test(value);
+}
+
+// Measurement ID from environment (validated to prevent script injection)
+const GA_MEASUREMENT_ID_RAW = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+export const GA_MEASUREMENT_ID = isValidGaMeasurementId(GA_MEASUREMENT_ID_RAW)
+  ? GA_MEASUREMENT_ID_RAW
+  : undefined;
 
 // Check if analytics is available
 export const isAnalyticsEnabled = (): boolean => {
