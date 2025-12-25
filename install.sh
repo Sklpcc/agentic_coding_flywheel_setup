@@ -2674,6 +2674,13 @@ install_agents_phase() {
         fi
     fi
 
+    # Prefer ~/.local/bin for Claude to avoid PATH conflict warnings in acfs doctor.
+    # (If Claude was installed via bun, link it into ~/.local/bin which is earlier in PATH.)
+    if [[ ! -x "$claude_bin_local" && -x "$claude_bin_bun" ]]; then
+        run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
+        try_step "Linking Claude Code into ~/.local/bin" run_as_target ln -sf "$claude_bin_bun" "$claude_bin_local" || true
+    fi
+
     # Codex CLI (install as target user)
     log_detail "Installing Codex CLI for $TARGET_USER"
     try_step "Installing Codex CLI" run_as_target "$bun_bin" install -g --trust @openai/codex@latest || true
@@ -2710,10 +2717,15 @@ install_cloud_db_legacy_db() {
             if try_step "Installing PostgreSQL 18" $SUDO apt-get install -y postgresql-18 postgresql-client-18; then
                 log_success "PostgreSQL 18 installed"
 
-                # Best-effort service start (containers may not have systemd)
-                if command_exists systemctl; then
+                # Best-effort service start (GitHub Actions containers may not have systemd)
+                if command_exists systemctl && [[ -d /run/systemd/system ]]; then
                     try_step "Enabling PostgreSQL service" $SUDO systemctl enable postgresql || true
                     try_step "Starting PostgreSQL service" $SUDO systemctl start postgresql || true
+                elif command_exists pg_ctlcluster; then
+                    # Start directly without systemd to avoid noisy `systemctl` errors in containers.
+                    try_step "Starting PostgreSQL cluster" $SUDO pg_ctlcluster 18 main start || true
+                elif command_exists service; then
+                    try_step "Starting PostgreSQL service (service)" $SUDO service postgresql start || true
                 fi
 
                 # Best-effort role + db for target user
@@ -2784,6 +2796,16 @@ install_cloud_db_legacy_cloud() {
                 if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
                     log_detail "$cli already installed"
                     continue
+                fi
+
+                # Supabase CLI's postinstall runs `node scripts/postinstall.js`.
+                # In bun-only environments (and CI containers), `node` may not exist.
+                # Provide a bun-backed node shim so the postinstall can run and install the binary.
+                if [[ "$cli" == "supabase" ]]; then
+                    if ! run_as_target sh -c 'command -v node >/dev/null 2>&1'; then
+                        run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
+                        try_step "Creating node shim for Supabase CLI" run_as_target ln -sf "$bun_bin" "$TARGET_HOME/.local/bin/node" || true
+                    fi
                 fi
 
                 log_detail "Installing $cli via bun"
@@ -3279,7 +3301,9 @@ run_smoke_test() {
     if [[ "$SKIP_POSTGRES" == "true" ]]; then
         echo "⚠️ PostgreSQL: skipped (optional)" >&2
         ((warnings += 1))
-    elif command_exists systemctl && systemctl is-active --quiet postgresql 2>/dev/null; then
+    elif command_exists systemctl && [[ -d /run/systemd/system ]] && systemctl is-active --quiet postgresql 2>/dev/null; then
+        echo "✅ PostgreSQL: running" >&2
+    elif command_exists pg_isready && pg_isready -q 2>/dev/null; then
         echo "✅ PostgreSQL: running" >&2
     else
         echo "⚠️ PostgreSQL: not running (optional)" >&2

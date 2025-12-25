@@ -130,7 +130,7 @@ jobs:
 
       - name: Run doctor
         run: |
-          su - ubuntu -c "zsh -ic 'acfs doctor'"
+          su - ubuntu -c "ACFS_DOCTOR_CI=true zsh -ic 'acfs doctor'"
 
       - name: Verify key tools
         run: |

@@ -791,6 +791,8 @@ check_git_safety_guard() {
 check_cloud() {
     section "Cloud/DB"
 
+    local doctor_ci="${ACFS_DOCTOR_CI:-false}"
+
     check_optional_command "cloud.vault" "Vault" "vault"
     check_optional_command "cloud.postgres" "PostgreSQL" "psql"
     check_optional_command "cloud.wrangler" "Wrangler" "wrangler" "bun install -g --trust wrangler"
@@ -811,14 +813,26 @@ check_cloud() {
                 check "network.tailscale" "Tailscale" "pass" "connected"
                 ;;
             "NeedsLogin")
-                check "network.tailscale" "Tailscale" "warn" "needs login" "Run: sudo tailscale up"
+                if [[ "$doctor_ci" == "true" ]]; then
+                    check "network.tailscale" "Tailscale (needs login)" "pass" "expected in CI"
+                else
+                    check "network.tailscale" "Tailscale" "warn" "needs login" "Run: sudo tailscale up"
+                fi
                 ;;
             *)
-                check "network.tailscale" "Tailscale" "warn" "$ts_status" "Run: sudo tailscale up"
+                if [[ "$doctor_ci" == "true" ]]; then
+                    check "network.tailscale" "Tailscale ($ts_status)" "pass" "expected in CI"
+                else
+                    check "network.tailscale" "Tailscale" "warn" "$ts_status" "Run: sudo tailscale up"
+                fi
                 ;;
         esac
     else
-        check "network.tailscale" "Tailscale" "warn" "not installed (optional)" "Install: curl -fsSL https://tailscale.com/install.sh | sh"
+        if [[ "$doctor_ci" == "true" ]]; then
+            check "network.tailscale" "Tailscale (not installed)" "pass" "ok in CI"
+        else
+            check "network.tailscale" "Tailscale" "warn" "not installed (optional)" "Install: curl -fsSL https://tailscale.com/install.sh | sh"
+        fi
     fi
 
     blank_line
