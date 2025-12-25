@@ -356,7 +356,7 @@ $content"
 }
 
 # Install gum if not present
-install_gum() {
+ensure_gum_installed() {
     if [[ "$HAS_GUM" == "true" ]]; then
         gum_detail "gum already installed"
         return 0
