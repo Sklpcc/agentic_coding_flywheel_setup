@@ -1,10 +1,10 @@
-# checksums.yaml - Auto-generated 2025-12-22T20:27:14-05:00
+# checksums.yaml - Auto-generated 2025-12-25T08:05:45+00:00
 # Run: ./scripts/lib/security.sh --update-checksums
 
 installers:
   zoxide:
     url: "https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh"
-    sha256: "2282ab73d26e63c6730e450dff7eced45fd638a160ff6127f272d86ced6f4f93"
+    sha256: "c5d94701cfdd87d19f3989c1239e921d4ff95d4c0742b16beca061618c937bf0"
 
   cass:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_session_search/main/install.sh"
@@ -20,15 +20,15 @@ installers:
 
   atuin:
     url: "https://setup.atuin.sh"
-    sha256: "68f9d6dde067a9db9fc44cb6004cc9397e81dcfd69341fbaef037be5570a3661"
+    sha256: "7cfabf7e18c03953f3fbd9288c97d9d8b47df3666da522ef903608de617370e7"
 
   bun:
     url: "https://bun.sh/install"
-    sha256: "49842b0fb57c7606ba35eececd43cfd4795e1df91c516ea4f3ecc99ac7a8c4eb"
+    sha256: "16d1ca592a28bd08b3304073491c4304e50073da6b8af34f8d1e5e8c00fc64d5"
 
   uv:
     url: "https://astral.sh/uv/install.sh"
-    sha256: "a9a65633e803ca0a2908ac52ac5f788e226e6418d9c221ad717ba8130c25c187"
+    sha256: "e27424708d1ac59cfc94e3f540a111f2edbb37bc8164febce8ee7fa5d5505c71"
 
   ntm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh"
@@ -56,7 +56,7 @@ installers:
 
   rust:
     url: "https://sh.rustup.rs"
-    sha256: "16571f4c95d8ca37f72c3f907b73d829359021d99f44d9f4bfa4dce38ab0768e"
+    sha256: "17247e4bcacf6027ec2e11c79a72c494c9af69ac8d1abcc1b271fa4375a106c2"
 
   bv:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh"
@@ -64,5 +64,5 @@ installers:
 
   ohmyzsh:
     url: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
-    sha256: "a16d27b2ec373e48aa5b3ca3b119f11f0c89abefde8846352c4acc79940f6ec5"
+    sha256: "ce0b7c94aa04d8c7a8137e45fe5c4744e3947871f785fd58117c480c1bf49352"
 
