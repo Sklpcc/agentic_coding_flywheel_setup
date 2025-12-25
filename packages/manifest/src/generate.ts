@@ -155,12 +155,44 @@ function buildVerifiedInstallerPipe(module: Module): string {
   }
 
   const parts: string[] = [vi.runner];
-  if (vi.args && vi.args.length > 0) {
-    // SECURITY: Use proper shell quoting to prevent command injection
-    for (const arg of vi.args) {
+  const args = vi.args ?? [];
+
+  // SECURITY: Use proper shell quoting to prevent command injection.
+  // Special-case bash/sh when piping script content: ensure stdin is used and
+  // keep script args after a `--` separator.
+  if (!['bash', 'sh'].includes(vi.runner)) {
+    for (const arg of args) {
+      parts.push(shellQuote(arg));
+    }
+    return parts.join(' ');
+  }
+
+  // No args: `echo ... | bash` / `echo ... | sh` already reads from stdin.
+  if (args.length === 0) {
+    return parts.join(' ');
+  }
+
+  // Interpret args as: [runner_options..., '--', script_args...]
+  // If no '--' is provided, treat all args as script args.
+  const dashIndex = args.indexOf('--');
+  const runnerArgs = dashIndex === -1 ? [] : args.slice(0, dashIndex);
+  const scriptArgs = dashIndex === -1 ? args : args.slice(dashIndex + 1);
+
+  if (!runnerArgs.includes('-s')) {
+    runnerArgs.unshift('-s');
+  }
+
+  for (const arg of runnerArgs) {
+    parts.push(shellQuote(arg));
+  }
+
+  if (scriptArgs.length > 0) {
+    parts.push(shellQuote('--'));
+    for (const arg of scriptArgs) {
       parts.push(shellQuote(arg));
     }
   }
+
   return parts.join(' ');
 }
 
