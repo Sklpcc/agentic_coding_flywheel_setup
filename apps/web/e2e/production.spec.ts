@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 /**
  * Production smoke tests that run against the live site.
@@ -6,69 +6,102 @@ import { test, expect } from "@playwright/test";
  *
  * Run with: PLAYWRIGHT_BASE_URL=https://agent-flywheel.com npx playwright test production
  */
+
+type ErrorCollector = {
+  jsErrors: string[];
+  failedRequests: Array<{ url: string; status: number }>;
+};
+
+/** Helper to set up error/request monitoring on a page */
+function setupErrorMonitoring(page: Page): ErrorCollector {
+  const collector: ErrorCollector = { jsErrors: [], failedRequests: [] };
+
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      // Ignore some expected console errors
+      const text = msg.text();
+      if (!text.includes("favicon")) {
+        collector.jsErrors.push(`Console: ${text}`);
+      }
+    }
+  });
+
+  page.on("pageerror", (error) => {
+    collector.jsErrors.push(`Page Error: ${error.message}`);
+  });
+
+  page.on("response", (response) => {
+    // Track 4xx/5xx responses for scripts (indicates broken assets)
+    if (response.status() >= 400) {
+      const url = response.url();
+      // Focus on JS/critical resources
+      if (url.includes(".js") || url.includes("/_next/") || url.includes("/_vercel/")) {
+        collector.failedRequests.push({ url, status: response.status() });
+      }
+    }
+  });
+
+  return collector;
+}
+
 test.describe("Production Smoke Tests", () => {
   test.skip(
     !process.env.PLAYWRIGHT_BASE_URL?.includes("agent-flywheel.com"),
     "Only runs against production"
   );
 
-  test("homepage loads without JS errors", async ({ page }) => {
-    const errors: string[] = [];
-
-    page.on("console", (msg) => {
-      if (msg.type() === "error") {
-        errors.push(`Console: ${msg.text()}`);
-      }
-    });
-
-    page.on("pageerror", (error) => {
-      errors.push(`Page Error: ${error.message}`);
-    });
+  test("homepage loads without JS errors or failed requests", async ({ page }) => {
+    const { jsErrors, failedRequests } = setupErrorMonitoring(page);
 
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("h1")).toBeVisible();
-    expect(errors).toEqual([]);
+    expect(failedRequests).toEqual([]);
+    expect(jsErrors).toEqual([]);
   });
 
-  test("learn dashboard loads without JS errors", async ({ page }) => {
-    const errors: string[] = [];
-
-    page.on("console", (msg) => {
-      if (msg.type() === "error") {
-        errors.push(`Console: ${msg.text()}`);
-      }
-    });
-
-    page.on("pageerror", (error) => {
-      errors.push(`Page Error: ${error.message}`);
-    });
+  test("learn dashboard loads without JS errors or failed requests", async ({ page }) => {
+    const { jsErrors, failedRequests } = setupErrorMonitoring(page);
 
     await page.goto("/learn");
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("h1")).toBeVisible();
-    expect(errors).toEqual([]);
+    expect(failedRequests).toEqual([]);
+    expect(jsErrors).toEqual([]);
   });
 
-  test("lesson page loads without JS errors", async ({ page }) => {
-    const errors: string[] = [];
-
-    page.on("console", (msg) => {
-      if (msg.type() === "error") {
-        errors.push(`Console: ${msg.text()}`);
-      }
-    });
-
-    page.on("pageerror", (error) => {
-      errors.push(`Page Error: ${error.message}`);
-    });
+  test("lesson page loads without JS errors or failed requests", async ({ page }) => {
+    const { jsErrors, failedRequests } = setupErrorMonitoring(page);
 
     await page.goto("/learn/welcome");
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("h1")).toBeVisible();
-    expect(errors).toEqual([]);
+    expect(failedRequests).toEqual([]);
+    expect(jsErrors).toEqual([]);
+  });
+
+  test("commands page loads without JS errors or failed requests", async ({ page }) => {
+    const { jsErrors, failedRequests } = setupErrorMonitoring(page);
+
+    await page.goto("/learn/commands");
+    await page.waitForLoadState("networkidle");
+
+    await expect(page.locator("h1")).toBeVisible();
+    expect(failedRequests).toEqual([]);
+    expect(jsErrors).toEqual([]);
+  });
+
+  test("wizard flow is accessible", async ({ page }) => {
+    const { jsErrors, failedRequests } = setupErrorMonitoring(page);
+
+    await page.goto("/wizard/os-selection");
+    await page.waitForLoadState("networkidle");
+
+    await expect(page.locator("h1")).toBeVisible();
+    expect(failedRequests).toEqual([]);
+    expect(jsErrors).toEqual([]);
   });
 });
