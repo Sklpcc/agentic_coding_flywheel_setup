@@ -60,19 +60,43 @@ is_installer_running() {
     pgrep -f "bash.*install.sh.*--yes" &>/dev/null
 }
 
+# Select the correct state file based on query key.
+#
+# Rationale:
+# - Install progress is tracked in ~/.acfs/state.json (user state).
+# - Ubuntu upgrade progress is tracked in /var/lib/acfs/state.json (system state).
+# If both exist, we must avoid letting the system state mask install status.
+select_state_file_for_key() {
+    local key="$1"
+    local preferred=""
+    local fallback=""
+
+    if [[ "$key" == *"ubuntu_upgrade"* ]]; then
+        preferred="$ACFS_STATE_FILE"
+        fallback="$USER_STATE_FILE"
+    else
+        preferred="$USER_STATE_FILE"
+        fallback="$ACFS_STATE_FILE"
+    fi
+
+    if [[ -f "$preferred" ]]; then
+        echo "$preferred"
+        return 0
+    fi
+    if [[ -f "$fallback" ]]; then
+        echo "$fallback"
+        return 0
+    fi
+
+    return 1
+}
+
 # Get state from state.json
 get_state_value() {
     local key="$1"
     local state_file=""
 
-    # Try system state file first, then user state file
-    if [[ -f "$ACFS_STATE_FILE" ]]; then
-        state_file="$ACFS_STATE_FILE"
-    elif [[ -f "$USER_STATE_FILE" ]]; then
-        state_file="$USER_STATE_FILE"
-    else
-        return 1
-    fi
+    state_file=$(select_state_file_for_key "$key") || return 1
 
     command -v jq &>/dev/null || return 1
 
@@ -111,7 +135,7 @@ get_install_status() {
         return 0
     fi
 
-    current_phase=$(get_state_value '.current_phase // empty')
+    current_phase=$(get_state_value '.current_phase.id? // .current_phase // empty')
     if [[ -n "$current_phase" ]] && [[ "$current_phase" != "null" ]]; then
         echo "running"
         return 0
