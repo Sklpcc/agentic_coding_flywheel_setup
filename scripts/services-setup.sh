@@ -45,15 +45,21 @@ resolve_home_dir() {
 }
 
 TARGET_HOME="${TARGET_HOME:-}"
-if [[ -z "$TARGET_HOME" ]]; then
-    TARGET_HOME="$(resolve_home_dir "$TARGET_USER")"
-fi
-if [[ -z "$TARGET_HOME" ]]; then
-    log_error "Unable to determine home directory for user: $TARGET_USER"
-    exit 1
-fi
+BUN_BIN="${BUN_BIN:-}"
 
-BUN_BIN="$TARGET_HOME/.bun/bin/bun"
+init_target_context() {
+    if [[ -z "${TARGET_HOME:-}" ]]; then
+        TARGET_HOME="$(resolve_home_dir "$TARGET_USER")"
+    fi
+    if [[ -z "${TARGET_HOME:-}" ]]; then
+        log_error "Unable to determine home directory for user: $TARGET_USER"
+        return 1
+    fi
+
+    if [[ -z "${BUN_BIN:-}" ]]; then
+        BUN_BIN="$TARGET_HOME/.bun/bin/bun"
+    fi
+}
 
 # Service status tracking
 declare -A SERVICE_STATUS
@@ -631,6 +637,7 @@ maybe_run_cli_action() {
     fi
 
     if [[ "$install_claude_guard" == "true" ]]; then
+        init_target_context || return 1
         setup_claude_git_guard
         return 0
     fi
@@ -991,6 +998,10 @@ $(gum style --foreground "$ACFS_MUTED" "Configure AI agents and cloud services")
         gum_detail "Post-install services configuration for user: $TARGET_USER"
     fi
     echo ""
+
+    if ! init_target_context; then
+        exit 1
+    fi
 
     # Check if bun is available
     if [[ ! -x "$BUN_BIN" ]]; then
