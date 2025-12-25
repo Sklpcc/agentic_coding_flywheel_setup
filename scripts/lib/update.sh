@@ -6,6 +6,9 @@
 
 set -euo pipefail
 
+# Prevent interactive prompts during apt operations
+export DEBIAN_FRONTEND=noninteractive
+
 ACFS_VERSION="${ACFS_VERSION:-0.1.0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

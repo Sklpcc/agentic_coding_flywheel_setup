@@ -225,10 +225,8 @@ export function createAuthChecks(overrides: Partial<AuthCheckDeps> = {}) {
         continue;
       }
     }
-    const configPath = path.join(homedir, '.supabase', 'config.toml');
-    if (deps.existsSync(configPath)) {
-      return { authenticated: true };
-    }
+    // Note: config.toml existence alone doesn't indicate authentication
+    // It's created by `supabase init` but contains no credentials
     return { authenticated: false };
   };
 
@@ -247,15 +245,9 @@ export function createAuthChecks(overrides: Partial<AuthCheckDeps> = {}) {
       }
     }
 
-    const configPaths = [
-      path.join(homedir, '.config', 'wrangler', 'config', 'default.toml'),
-      path.join(homedir, '.wrangler', 'config', 'default.toml'),
-    ];
-    for (const configPath of configPaths) {
-      if (deps.existsSync(configPath)) {
-        return { authenticated: true };
-      }
-    }
+    // Note: config file existence alone doesn't indicate authentication
+    // wrangler whoami is the reliable check; if it's not available or fails,
+    // we cannot confirm authentication
     return { authenticated: false };
   };
 
