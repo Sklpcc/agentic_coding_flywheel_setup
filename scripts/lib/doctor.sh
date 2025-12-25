@@ -728,6 +728,8 @@ check_agents() {
 # Check for agent PATH conflicts (bead hi7)
 # Native installations should take precedence over package manager versions
 check_agent_path_conflicts() {
+    local doctor_ci="${ACFS_DOCTOR_CI:-false}"
+
     local claude_path
     claude_path=$(command -v claude 2>/dev/null) || true
 
@@ -739,10 +741,14 @@ check_agent_path_conflicts() {
     if [[ "$claude_path" == "$HOME/.local/bin/claude" ]]; then
         check "agent.path.claude" "Claude Code path" "pass" "native ($claude_path)"
     elif [[ "$claude_path" == *".bun"* ]] || [[ "$claude_path" == *"node_modules"* ]]; then
-        # Package manager version - warn about potential conflicts
-        check "agent.path.claude" "Claude Code path" "warn" \
-            "using bun/npm version ($claude_path)" \
-            "rm '$claude_path' to use native install"
+        if [[ "$doctor_ci" == "true" ]]; then
+            check "agent.path.claude" "Claude Code path" "pass" "using bun/npm version (expected in CI): $claude_path"
+        else
+            # Package manager version - warn about potential conflicts
+            check "agent.path.claude" "Claude Code path" "warn" \
+                "using bun/npm version ($claude_path)" \
+                "rm '$claude_path' to use native install"
+        fi
     else
         # Some other path - just note it
         check "agent.path.claude" "Claude Code path" "pass" "$claude_path"
