@@ -334,10 +334,17 @@ sanitize_session_export() {
         return 1
     fi
 
-    # Create temp file for atomic write
+    # Create temp file for atomic write (same directory to guarantee atomic rename).
     local tmpfile
-    tmpfile=$(mktemp "${TMPDIR:-/tmp}/acfs_session_sanitize.XXXXXX" 2>/dev/null) || {
-        log_error "Failed to create temp file for sanitization"
+    local file_dir="${file%/*}"
+    if [[ -z "$file_dir" ]]; then
+        file_dir="/"
+    elif [[ "$file_dir" == "$file" ]]; then
+        file_dir="."
+    fi
+
+    tmpfile=$(mktemp "${file_dir}/acfs_session_sanitize.XXXXXX" 2>/dev/null) || {
+        log_error "Failed to create temp file for sanitization in: $file_dir"
         return 1
     }
 
