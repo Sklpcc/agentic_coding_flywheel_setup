@@ -715,7 +715,15 @@ command_exists_as_target() {
         return 1
     fi
 
-    run_as_target bash -c "command -v '$cmd' >/dev/null 2>&1"
+    # NOTE: We intentionally avoid embedding $cmd into the shell string.
+    # Passing as $1 avoids quoting bugs when cmd contains special chars.
+    #
+    # Also, extend PATH with common user install locations so we can detect
+    # tools installed under $HOME (bun, cargo, etc.) when running via sudo/runuser.
+    # shellcheck disable=SC2016  # $HOME/$PATH expand inside the target user's bash -c
+    run_as_target bash -c \
+        'export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$HOME/.bun/bin:$HOME/.atuin/bin:$HOME/go/bin:$PATH"; command -v -- "$1" >/dev/null 2>&1' \
+        _ "$cmd"
 }
 
 # ------------------------------------------------------------

@@ -68,8 +68,24 @@ declare -A SERVICE_STATUS
 # Helper Functions
 # ============================================================
 
-# Run command as target user
+# Run a command (argv) as target user.
+#
+# Prefer argv mode to avoid quoting pitfalls (paths with spaces, etc.).
 run_as_user() {
+    if [[ $# -lt 1 ]]; then
+        return 0
+    fi
+
+    if [[ "$(whoami)" == "$TARGET_USER" ]]; then
+        "$@"
+        return $?
+    fi
+
+    sudo -u "$TARGET_USER" -H "$@"
+}
+
+# Run a shell string as target user (use for pipelines/redirections).
+run_as_user_shell() {
     local cmd="$1"
     if [[ "$(whoami)" == "$TARGET_USER" ]]; then
         bash -c "$cmd"
@@ -82,7 +98,12 @@ run_as_user() {
 # More robust than checking binary paths directly - respects user's PATH
 user_command_exists() {
     local cmd="$1"
-    run_as_user "command -v '$cmd'" &>/dev/null
+    # Include common user install locations (bun/cargo/etc) even when running
+    # via sudo, which may otherwise provide a restricted PATH.
+    # shellcheck disable=SC2016  # $HOME/$PATH expand inside the target user's bash -c
+    run_as_user bash -c \
+        'export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$HOME/.bun/bin:$HOME/.atuin/bin:$HOME/go/bin:$PATH"; command -v -- "$1" >/dev/null 2>&1' \
+        _ "$cmd"
 }
 
 # Check if a file exists (from current user perspective)
@@ -241,7 +262,7 @@ check_postgres_status() {
     fi
 
     # Check if service is running and user can connect
-    if run_as_user "psql -c 'SELECT 1'" &>/dev/null; then
+    if run_as_user psql -c 'SELECT 1' &>/dev/null; then
         SERVICE_STATUS[postgres]="configured"
     elif systemctl is-active --quiet postgresql 2>/dev/null; then
         SERVICE_STATUS[postgres]="running"
@@ -365,7 +386,7 @@ Press Enter to launch Claude Code login..."
     read -r
 
     # Run claude interactively
-    run_as_user "'$claude_bin'" || true
+    run_as_user "$claude_bin" || true
 
     # Re-check status
     check_claude_status
@@ -395,7 +416,7 @@ setup_codex() {
 We'll launch the login flow in your terminal/browser."
 
     gum_detail "Launching Codex OAuth login..."
-    run_as_user "'$codex_bin' login" || true
+    run_as_user "$codex_bin" login || true
 
     check_codex_status
     if [[ "${SERVICE_STATUS[codex]}" == "configured" ]]; then
@@ -702,7 +723,7 @@ Press Enter to launch Gemini login..."
 
     read -r
 
-    run_as_user "'$gemini_bin'" || true
+    run_as_user "$gemini_bin" || true
 
     check_gemini_status
     if [[ "${SERVICE_STATUS[gemini]}" == "configured" ]]; then
@@ -730,7 +751,7 @@ Press Enter to launch 'vercel login'..."
 
     read -r
 
-    run_as_user "'$vercel_bin' login" || true
+    run_as_user "$vercel_bin" login || true
 
     check_vercel_status
     if [[ "${SERVICE_STATUS[vercel]}" == "configured" ]]; then
@@ -761,7 +782,7 @@ Press Enter to launch 'supabase login'..."
 
     read -r
 
-    run_as_user "'$supabase_bin' login" || true
+    run_as_user "$supabase_bin" login || true
 
     check_supabase_status
     if [[ "${SERVICE_STATUS[supabase]}" == "configured" ]]; then
@@ -789,7 +810,7 @@ Press Enter to launch 'wrangler login'..."
 
     read -r
 
-    run_as_user "'$wrangler_bin' login" || true
+    run_as_user "$wrangler_bin" login || true
 
     check_wrangler_status
     if [[ "${SERVICE_STATUS[wrangler]}" == "configured" ]]; then
@@ -818,11 +839,11 @@ setup_postgres() {
     fi
 
     # Test connection
-    if run_as_user "psql -c 'SELECT version()'" &>/dev/null; then
+    if run_as_user psql -c 'SELECT version()' &>/dev/null; then
         gum_success "Database connection working"
         echo ""
         gum_detail "PostgreSQL version:"
-        run_as_user "psql -c 'SELECT version()'" 2>/dev/null | head -3
+        run_as_user psql -c 'SELECT version()' 2>/dev/null | head -3
     else
         gum_warn "Cannot connect to database as $TARGET_USER"
         gum_detail "This is normal if you haven't created a role yet"
