@@ -49,6 +49,17 @@ define_required_functions() {
     export -f log_detail run_as_target run_as_target_shell run_as_root_shell run_as_current_shell _acfs_is_interactive
 }
 
+# Define stub functions WITHOUT security.sh helpers.
+# Contract should not require _acfs_is_interactive (security is opt-in via acfs_security_init).
+define_required_functions_no_security() {
+    log_detail() { :; }
+    run_as_target() { :; }
+    run_as_target_shell() { :; }
+    run_as_root_shell() { :; }
+    run_as_current_shell() { :; }
+    export -f log_detail run_as_target run_as_target_shell run_as_root_shell run_as_current_shell
+}
+
 # Undefine functions
 undefine_required_functions() {
     unset -f run_as_target run_as_target_shell run_as_root_shell run_as_current_shell
@@ -120,6 +131,23 @@ test_all_basic_vars_present() {
         test_pass "$name"
     else
         test_fail "$name" "Should pass with all required vars"
+    fi
+}
+
+test_security_helpers_optional() {
+    local name="Missing _acfs_is_interactive does not fail contract"
+    reset_env
+    define_required_functions_no_security
+
+    TARGET_USER="testuser"
+    TARGET_HOME="/home/test"
+    MODE="normal"
+    SCRIPT_DIR="/some/path"
+
+    if acfs_require_contract "test" 2>/dev/null; then
+        test_pass "$name"
+    else
+        test_fail "$name" "Contract should not require security.sh helpers"
     fi
 }
 
@@ -248,6 +276,7 @@ test_missing_target_user
 test_missing_target_home
 test_missing_mode
 test_all_basic_vars_present
+test_security_helpers_optional
 test_bootstrap_mode_missing_vars
 test_bootstrap_mode_all_vars
 test_missing_run_as_target_function
