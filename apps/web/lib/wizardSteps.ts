@@ -113,7 +113,11 @@ export function getStepById(id: number): WizardStep | undefined {
 
 /** Get a step by its URL slug */
 export function getStepBySlug(slug: string): WizardStep | undefined {
-  return WIZARD_STEPS.find((step) => step.slug === slug);
+  // Some pages under `/wizard/*` are optional "bonus" routes that should still
+  // highlight a canonical step in the sidebar.
+  const canonicalSlug =
+    slug === "windows-terminal-setup" ? "verify-key-connection" : slug;
+  return WIZARD_STEPS.find((step) => step.slug === canonicalSlug);
 }
 
 /** localStorage key for storing completed steps */
