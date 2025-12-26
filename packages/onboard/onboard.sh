@@ -225,7 +225,10 @@ mark_completed() {
 
 	if command -v jq &>/dev/null; then
 	    local tmp
-	    tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || return 0
+	    tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || {
+            echo -e "${YELLOW}Warning: could not save progress (mktemp failed).${NC}"
+            return 0
+        }
 	    if jq --argjson lesson "$lesson" '
 	            .completed = (.completed + [$lesson] | unique | sort) |
 	            . as $o |
@@ -251,7 +254,10 @@ set_current() {
 
 	if command -v jq &>/dev/null; then
 	    local tmp
-	    tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || return 0
+	    tmp=$(mktemp "${TMPDIR:-/tmp}/acfs_onboard.XXXXXX" 2>/dev/null) || {
+            echo -e "${YELLOW}Warning: could not update progress (mktemp failed).${NC}"
+            return 0
+        }
 	    if jq --argjson lesson "$lesson" '
 	            .current = $lesson |
 	            .last_accessed = (now | todateiso8601)
@@ -265,7 +271,15 @@ set_current() {
 
 # Reset progress
 reset_progress() {
-    rm -f "$PROGRESS_FILE"
+    if [[ -f "$PROGRESS_FILE" ]]; then
+        local backup
+        backup="${PROGRESS_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+        if mv "$PROGRESS_FILE" "$backup" 2>/dev/null; then
+            echo -e "${DIM}Backed up previous progress to: $backup${NC}"
+        else
+            echo -e "${YELLOW}Warning: could not back up progress file; continuing.${NC}"
+        fi
+    fi
     init_progress
     echo -e "${GREEN}Progress reset!${NC}"
 }
