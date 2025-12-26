@@ -234,13 +234,14 @@ curl -fsSL .../install.sh | bash -s -- --yes --mode vibe --skip-ubuntu-upgrade
 To completely reset and start over:
 
 ```bash
-# 1. Remove state files
-sudo rm -rf /var/lib/acfs/
-rm -f ~/.acfs/state.json
+# 1. Backup state files (recommended)
+ts="$(date +%Y%m%d_%H%M%S)"
+[ -d /var/lib/acfs ] && sudo mv /var/lib/acfs /var/lib/acfs.backup."$ts"
+[ -f ~/.acfs/state.json ] && mv ~/.acfs/state.json ~/.acfs/state.json.backup."$ts"
 
 # 2. Disable systemd service
 sudo systemctl disable acfs-upgrade-resume 2>/dev/null
-sudo rm -f /etc/systemd/system/acfs-upgrade-resume.service
+[ -f /etc/systemd/system/acfs-upgrade-resume.service ] && sudo mv /etc/systemd/system/acfs-upgrade-resume.service /etc/systemd/system/acfs-upgrade-resume.service.backup."$ts"
 sudo systemctl daemon-reload
 
 # 3. Start fresh

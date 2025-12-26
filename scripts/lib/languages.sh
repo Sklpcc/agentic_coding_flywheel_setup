@@ -371,20 +371,24 @@ install_go_latest() {
 
     # Download and install
     local tmpdir
-    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/acfs_go.XXXXXX")
+    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/acfs_go.XXXXXX" 2>/dev/null)" || tmpdir=""
+    if [[ -z "$tmpdir" ]] || [[ ! -d "$tmpdir" ]]; then
+        log_warn "mktemp failed; cannot install Go"
+        return 1
+    fi
     local tarball="${version}.linux-${arch}.tar.gz"
 
     log_detail "Downloading $tarball..."
     if ! curl --proto '=https' --proto-redir '=https' -fsSL -o "$tmpdir/$tarball" "https://go.dev/dl/$tarball"; then
         log_warn "Failed to download Go"
-        rm -rf "$tmpdir"
+        rm -rf -- "$tmpdir"
         return 1
     fi
 
     # Remove old installation and extract new one
-    $sudo_cmd rm -rf /usr/local/go
+    $sudo_cmd rm -rf -- /usr/local/go
     $sudo_cmd tar -C /usr/local -xzf "$tmpdir/$tarball"
-    rm -rf "$tmpdir"
+    rm -rf -- "$tmpdir"
 
     # Create symlinks
     $sudo_cmd ln -sf /usr/local/go/bin/go /usr/local/bin/go

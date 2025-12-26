@@ -35,13 +35,13 @@ declare -gA ERROR_PATTERNS=(
     # APT/package management
     ['E: Unable to locate package']="Package not found in APT repositories. Try:\n  sudo apt-get update\nIf still failing, the package may not exist for your Ubuntu version."
 
-    ['E: Could not get lock']="APT lock held by another process. Solutions:\n  1. Wait for other installs to finish\n  2. Check: ps aux | grep -E 'apt|dpkg'\n  3. If stuck: sudo rm /var/lib/apt/lists/lock (use with caution)"
+    ['E: Could not get lock']="APT lock held by another process. Solutions:\n  1. Wait for other installs to finish\n  2. Check: ps aux | grep -E 'apt|dpkg'\n  3. Check: sudo systemctl status unattended-upgrades --no-pager || true\n  4. Safest fix if stuck: reboot"
 
     ['dpkg: error processing']="DPKG database corrupted. Try:\n  sudo dpkg --configure -a\n  sudo apt-get install -f"
 
     ['Unmet dependencies']="Package dependencies cannot be satisfied. Try:\n  sudo apt-get install -f\n  sudo apt-get update && sudo apt-get upgrade"
 
-    ['Hash Sum mismatch']="APT cache corrupted. Fix with:\n  sudo rm -rf /var/lib/apt/lists/*\n  sudo apt-get update"
+    ['Hash Sum mismatch']="APT reported a hash mismatch. Try:\n  sudo apt-get clean\n  sudo apt-get update\nIf it persists, reboot and retry."
 
     # Permission issues
     ['Permission denied']="Permission issue. Ensure you're running with appropriate privileges:\n  1. Run with sudo: sudo bash install.sh\n  2. Or run as root user\n  3. Check file permissions: ls -la"

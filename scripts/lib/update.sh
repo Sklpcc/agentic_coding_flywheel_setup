@@ -1259,9 +1259,9 @@ WHAT EACH CATEGORY UPDATES:
   shell:    Oh-My-Zsh, Powerlevel10k, zsh plugins (git pull)
             Atuin, Zoxide (reinstall from upstream)
   agents:   Claude Code (claude update)
-            Codex CLI (bun install -g @openai/codex@latest)
-            Gemini CLI (bun install -g @google/gemini-cli@latest)
-  cloud:    Wrangler, Supabase CLI, Vercel CLI (bun install -g @latest)
+            Codex CLI (bun install -g --trust @openai/codex@latest)
+            Gemini CLI (bun install -g --trust @google/gemini-cli@latest)
+  cloud:    Wrangler, Supabase CLI, Vercel CLI (bun install -g --trust <pkg>@latest)
   runtime:  Bun (bun upgrade), Rust (rustup update), uv (uv self update), Go (apt-managed)
   stack:    NTM, UBS, BV, CASS, CM, CAAM, SLB (re-run upstream installers)
 
@@ -1276,12 +1276,20 @@ ENVIRONMENT VARIABLES:
   ACFS_VERSION       Override version string in logs
 
 TROUBLESHOOTING:
-  - If apt is locked: wait for other package operations or run:
-    sudo rm /var/lib/dpkg/lock-frontend && sudo dpkg --configure -a
+  - If apt is locked: wait for other package operations to finish.
+    To see who holds the lock:
+      sudo fuser -v /var/lib/dpkg/lock-frontend || true
+      sudo systemctl status unattended-upgrades --no-pager || true
+    If unattended-upgrades is running, wait for it to complete (recommended),
+    or temporarily stop it:
+      sudo systemctl stop unattended-upgrades
+    (After the update finishes, re-enable it:)
+      sudo systemctl start unattended-upgrades
 
   - If an agent update fails: try running the update command directly:
     claude update
-    bun install -g @openai/codex@latest
+    bun install -g --trust @openai/codex@latest
+    bun install -g --trust @google/gemini-cli@latest
 
   - If shell tools fail to update: check git remote access:
     git -C ~/.oh-my-zsh remote -v

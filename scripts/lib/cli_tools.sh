@@ -326,17 +326,21 @@ install_lazygit() {
     version=$(_fetch_github_version "jesseduffield/lazygit" true) || version="0.44.1"
 
     local tmpdir
-    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/acfs_lazygit.XXXXXX")
+    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/acfs_lazygit.XXXXXX" 2>/dev/null)" || tmpdir=""
+    if [[ -z "$tmpdir" ]] || [[ ! -d "$tmpdir" ]]; then
+        log_warn "mktemp failed; cannot install lazygit"
+        return 1
+    fi
     curl --proto '=https' --proto-redir '=https' -fsSL -o "$tmpdir/lazygit.tar.gz" \
         "https://github.com/jesseduffield/lazygit/releases/download/v${version}/lazygit_${version}_Linux_${arch}.tar.gz" || {
         log_warn "Could not download lazygit"
-        rm -rf "$tmpdir"
+        rm -rf -- "$tmpdir"
         return 1
     }
 
     tar -xzf "$tmpdir/lazygit.tar.gz" -C "$tmpdir"
     $sudo_cmd install "$tmpdir/lazygit" /usr/local/bin/lazygit
-    rm -rf "$tmpdir"
+    rm -rf -- "$tmpdir"
 
     log_success "lazygit installed from GitHub"
 }
@@ -367,17 +371,21 @@ install_lazydocker() {
     version=$(_fetch_github_version "jesseduffield/lazydocker" true) || version="0.23.3"
 
     local tmpdir
-    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/acfs_lazydocker.XXXXXX")
+    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/acfs_lazydocker.XXXXXX" 2>/dev/null)" || tmpdir=""
+    if [[ -z "$tmpdir" ]] || [[ ! -d "$tmpdir" ]]; then
+        log_warn "mktemp failed; cannot install lazydocker"
+        return 1
+    fi
     curl --proto '=https' --proto-redir '=https' -fsSL -o "$tmpdir/lazydocker.tar.gz" \
         "https://github.com/jesseduffield/lazydocker/releases/download/v${version}/lazydocker_${version}_Linux_${arch}.tar.gz" || {
         log_warn "Could not download lazydocker"
-        rm -rf "$tmpdir"
+        rm -rf -- "$tmpdir"
         return 1
     }
 
     tar -xzf "$tmpdir/lazydocker.tar.gz" -C "$tmpdir"
     $sudo_cmd install "$tmpdir/lazydocker" /usr/local/bin/lazydocker
-    rm -rf "$tmpdir"
+    rm -rf -- "$tmpdir"
 
     log_success "lazydocker installed from GitHub"
 }
@@ -408,17 +416,21 @@ install_yq() {
     version=$(_fetch_github_version "mikefarah/yq" false) || version="v4.44.1"
 
     local tmpdir
-    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/acfs_yq.XXXXXX")
+    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/acfs_yq.XXXXXX" 2>/dev/null)" || tmpdir=""
+    if [[ -z "$tmpdir" ]] || [[ ! -d "$tmpdir" ]]; then
+        log_warn "mktemp failed; cannot install yq"
+        return 1
+    fi
     curl --proto '=https' --proto-redir '=https' -fsSL -o "$tmpdir/yq" \
         "https://github.com/mikefarah/yq/releases/download/${version}/yq_linux_${arch}" || {
         log_warn "Could not download yq"
-        rm -rf "$tmpdir"
+        rm -rf -- "$tmpdir"
         return 1
     }
 
     chmod +x "$tmpdir/yq"
     $sudo_cmd install "$tmpdir/yq" /usr/local/bin/yq
-    rm -rf "$tmpdir"
+    rm -rf -- "$tmpdir"
 
     log_success "yq installed from GitHub"
 }

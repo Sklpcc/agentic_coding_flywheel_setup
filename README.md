@@ -1805,7 +1805,7 @@ Vibe:        Describe → Generate → Verify → Ship → Iterate
 
 The magic of vibe coding happens on **ephemeral VPS instances**. When your environment is disposable:
 - You can experiment without fear
-- Catastrophic failures are just `rm -rf / && create new VPS`
+- Catastrophic failures are just "rebuild the VPS"
 - Agents can have dangerous permissions (they can't break what's disposable)
 - You focus on output, not on protecting your setup
 
@@ -2233,11 +2233,14 @@ When all else fails, the nuclear option:
 ```bash
 # Save any important files first!
 
-# Remove ACFS state
-rm -rf ~/.acfs
+# Backup ACFS state (recommended)
+ts="$(date +%Y%m%d_%H%M%S)"
+[ -d ~/.acfs ] && mv ~/.acfs ~/.acfs.backup."$ts"
 
-# Remove installed configs
-rm -f ~/.zshrc ~/.tmux.conf ~/.p10k.zsh
+# Backup installed configs (optional)
+for f in ~/.zshrc ~/.tmux.conf ~/.p10k.zsh; do
+  [ -f "$f" ] && mv "$f" "$f".backup."$ts"
+done
 
 # Re-run installer fresh
 curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/install.sh?$(date +%s)" | bash -s -- --yes --mode vibe --force-reinstall

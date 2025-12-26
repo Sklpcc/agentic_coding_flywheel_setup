@@ -801,9 +801,9 @@ check_cloud() {
 
     check_optional_command "cloud.vault" "Vault" "vault"
     check_optional_command "cloud.postgres" "PostgreSQL" "psql"
-    check_optional_command "cloud.wrangler" "Wrangler" "wrangler" "bun install -g --trust wrangler"
-    check_optional_command "cloud.supabase" "Supabase CLI" "supabase" "bun install -g --trust supabase"
-    check_optional_command "cloud.vercel" "Vercel CLI" "vercel" "bun install -g --trust vercel"
+    check_optional_command "cloud.wrangler" "Wrangler" "wrangler" "bun install -g --trust wrangler@latest"
+    check_optional_command "cloud.supabase" "Supabase CLI" "supabase" "bun install -g --trust supabase@latest"
+    check_optional_command "cloud.vercel" "Vercel CLI" "vercel" "bun install -g --trust vercel@latest"
 
     # Tailscale VPN (bt5)
     if command -v tailscale &>/dev/null; then
@@ -1333,7 +1333,7 @@ check_gh_auth() {
 # Enhanced: Caching and timeout support (bead lz1)
 check_wrangler_auth() {
     if ! command -v wrangler &>/dev/null; then
-        check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare)" "warn" "not installed" "bun install -g --trust wrangler"
+        check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare)" "warn" "not installed" "bun install -g --trust wrangler@latest"
         return
     fi
 
@@ -1369,13 +1369,13 @@ check_wrangler_auth() {
 # Related: bead azw
 check_supabase_auth() {
     if ! command -v supabase &>/dev/null; then
-        check "deep.cloud.supabase" "Supabase CLI" "warn" "not installed" "bun install -g --trust supabase"
+        check "deep.cloud.supabase" "Supabase CLI" "warn" "not installed" "bun install -g --trust supabase@latest"
         return
     fi
 
     # Check if binary works
     if ! timeout 5 supabase --version &>/dev/null; then
-        check "deep.cloud.supabase" "Supabase CLI" "fail" "binary error" "Reinstall: bun install -g --trust supabase"
+        check "deep.cloud.supabase" "Supabase CLI" "fail" "binary error" "Reinstall: bun install -g --trust supabase@latest"
         return
     fi
 
@@ -1402,7 +1402,7 @@ check_supabase_auth() {
 # Enhanced: Caching and timeout support (bead lz1)
 check_vercel_auth() {
     if ! command -v vercel &>/dev/null; then
-        check "deep.cloud.vercel_auth" "Vercel CLI" "warn" "not installed" "bun install -g --trust vercel"
+        check "deep.cloud.vercel_auth" "Vercel CLI" "warn" "not installed" "bun install -g --trust vercel@latest"
         return
     fi
 
