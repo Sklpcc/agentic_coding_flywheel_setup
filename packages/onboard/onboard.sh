@@ -232,14 +232,15 @@ mark_completed() {
             echo -e "${YELLOW}Warning: could not save progress (mktemp failed).${NC}"
             return 0
         }
+
         if jq --argjson lesson "$lesson" '
-                .completed = (.completed + [$lesson] | unique | sort) |
-                . as $o |
-                .current = (
-                    [range(0;9) as $i | select(($o.completed | index($i)) == null) | $i] | first // 8
-                ) |
-                .last_accessed = (now | todateiso8601)
-            ' "$PROGRESS_FILE" > "$tmp"; then
+            .completed = (.completed + [$lesson] | unique | sort) |
+            . as $o |
+            .current = (
+                [range(0;9) as $i | select(($o.completed | index($i)) == null) | $i] | first // 8
+            ) |
+            .last_accessed = (now | todateiso8601)
+        ' "$PROGRESS_FILE" > "$tmp"; then
             mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
                 rm -f -- "$tmp" 2>/dev/null || true
                 echo -e "${YELLOW}Warning: could not save progress (mv failed).${NC}"
@@ -268,10 +269,11 @@ set_current() {
             echo -e "${YELLOW}Warning: could not update progress (mktemp failed).${NC}"
             return 0
         }
+
         if jq --argjson lesson "$lesson" '
-                .current = $lesson |
-                .last_accessed = (now | todateiso8601)
-            ' "$PROGRESS_FILE" > "$tmp"; then
+            .current = $lesson |
+            .last_accessed = (now | todateiso8601)
+        ' "$PROGRESS_FILE" > "$tmp"; then
             mv -- "$tmp" "$PROGRESS_FILE" 2>/dev/null || {
                 rm -f -- "$tmp" 2>/dev/null || true
                 echo -e "${YELLOW}Warning: could not update progress (mv failed).${NC}"
