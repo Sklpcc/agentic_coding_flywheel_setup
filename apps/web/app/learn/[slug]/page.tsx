@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { LESSONS, getLessonBySlug } from "@/lib/lessonProgress";
+import { LESSONS, getLessonBySlug } from "@/lib/lessons";
 import { LessonContent } from "./lesson-content";
 
 interface Props {
