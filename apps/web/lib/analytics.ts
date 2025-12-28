@@ -22,21 +22,31 @@ declare global {
 function sanitizeGaMeasurementId(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
 
-  let trimmed = value.trim();
-  if (!trimmed) return undefined;
+  let cleaned = value.trim();
+  if (!cleaned) return undefined;
 
   // Handle accidental quoting in env var values (common copy/paste mistake).
   if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
   ) {
-    trimmed = trimmed.slice(1, -1).trim();
+    cleaned = cleaned.slice(1, -1).trim();
   }
 
-  // GA4 measurement IDs typically look like: G-XXXXXXXXXX
-  // Support legacy UA format as well (gtag supports both).
-  if (/^G-[A-Z0-9]+$/i.test(trimmed) || /^UA-\d+-\d+$/i.test(trimmed)) {
-    return trimmed;
+  // Remove common trailing garbage (escaped newlines, whitespace sequences)
+  // that can appear from misconfigured env vars or Vercel CLI pulls.
+  cleaned = cleaned.replace(/\\n$/, '').replace(/\s+$/, '');
+
+  // Extract valid GA4 measurement ID (G-XXXXXXXXXX) or legacy UA format.
+  // Use extraction rather than strict matching to handle any remaining edge cases.
+  const ga4Match = cleaned.match(/^(G-[A-Z0-9]+)/i);
+  if (ga4Match) {
+    return ga4Match[1];
+  }
+
+  const uaMatch = cleaned.match(/^(UA-\d+-\d+)/i);
+  if (uaMatch) {
+    return uaMatch[1];
   }
 
   return undefined;
