@@ -36,9 +36,11 @@ export function FlywheelLoopLesson() {
 
       {/* The ACFS Flywheel */}
       <Section
-        title="The ACFS Flywheel"
-        icon={<RefreshCw className="h-5 w-5" />}
-        delay={0.1}
+        {...{
+          title: "The ACFS Flywheel",
+          icon: <RefreshCw className="h-5 w-5" />,
+          delay: 0.1,
+        }}
       >
         <Paragraph>
           This isn&apos;t just a collection of tools. It&apos;s a{" "}
@@ -56,128 +58,146 @@ export function FlywheelLoopLesson() {
 
       {/* The Eight Tools */}
       <Section
-        title="The Eight Tools (And When To Use Them)"
-        icon={<Zap className="h-5 w-5" />}
-        delay={0.15}
+        {...{
+          title: "The Eight Tools (And When To Use Them)",
+          icon: <Zap className="h-5 w-5" />,
+          delay: 0.15,
+        }}
       >
         <div className="space-y-6">
           <ToolCard
-            number={1}
-            name="NTM"
-            subtitle="Your Cockpit"
-            command="ntm"
-            icon={<Cpu className="h-5 w-5" />}
-            gradient="from-violet-500/20 to-purple-500/20"
-            useCases={[
-              "Spawn agent sessions",
-              "Send prompts to multiple agents",
-              "Orchestrate parallel work",
-            ]}
+            {...{
+              number: 1,
+              name: "NTM",
+              subtitle: "Your Cockpit",
+              command: "ntm",
+              icon: <Cpu className="h-5 w-5" />,
+              gradient: "from-violet-500/20 to-purple-500/20",
+              useCases: [
+                "Spawn agent sessions",
+                "Send prompts to multiple agents",
+                "Orchestrate parallel work",
+              ],
+            }}
           />
 
           <ToolCard
-            number={2}
-            name="MCP Agent Mail"
-            subtitle="Coordination"
-            command="am"
-            icon={<Mail className="h-5 w-5" />}
-            gradient="from-sky-500/20 to-blue-500/20"
-            useCases={[
-              "Multiple agents need to share context",
-              'You want agents to "talk" to each other',
-              "Coordinating complex multi-agent workflows",
-            ]}
+            {...{
+              number: 2,
+              name: "MCP Agent Mail",
+              subtitle: "Coordination",
+              command: "am",
+              icon: <Mail className="h-5 w-5" />,
+              gradient: "from-sky-500/20 to-blue-500/20",
+              useCases: [
+                "Multiple agents need to share context",
+                'You want agents to "talk" to each other',
+                "Coordinating complex multi-agent workflows",
+              ],
+            }}
           />
 
           <ToolCard
-            number={3}
-            name="UBS"
-            subtitle="Quality Guardrails"
-            command="ubs"
-            icon={<Shield className="h-5 w-5" />}
-            gradient="from-emerald-500/20 to-teal-500/20"
-            useCases={[
-              "Scan code for bugs before committing",
-              "Run comprehensive static analysis",
-              "Catch issues early",
-            ]}
-            example="ubs .  # Scan current directory"
+            {...{
+              number: 3,
+              name: "UBS",
+              subtitle: "Quality Guardrails",
+              command: "ubs",
+              icon: <Shield className="h-5 w-5" />,
+              gradient: "from-emerald-500/20 to-teal-500/20",
+              useCases: [
+                "Scan code for bugs before committing",
+                "Run comprehensive static analysis",
+                "Catch issues early",
+              ],
+              example: "ubs .  # Scan current directory",
+            }}
           />
 
           <ToolCard
-            number={4}
-            name="CASS"
-            subtitle="Session Search"
-            command="cass"
-            icon={<Search className="h-5 w-5" />}
-            gradient="from-amber-500/20 to-orange-500/20"
-            useCases={[
-              "Search across all agent session history",
-              "Find previous solutions",
-              "Review what agents have done",
-            ]}
-            example="cass  # Opens TUI"
+            {...{
+              number: 4,
+              name: "CASS",
+              subtitle: "Session Search",
+              command: "cass",
+              icon: <Search className="h-5 w-5" />,
+              gradient: "from-amber-500/20 to-orange-500/20",
+              useCases: [
+                "Search across all agent session history",
+                "Find previous solutions",
+                "Review what agents have done",
+              ],
+              example: 'cass search "authentication error" --robot --limit 5',
+            }}
           />
 
           <ToolCard
-            number={5}
-            name="CASS Memory (CM)"
-            subtitle="Procedural Memory"
-            command="cm"
-            icon={<Brain className="h-5 w-5" />}
-            gradient="from-rose-500/20 to-pink-500/20"
-            useCases={[
-              "Build persistent agent memory",
-              "Distill learnings from sessions",
-              "Give agents context from past work",
-            ]}
-            example={`cm context "Building an API"  # Get relevant memories
-cm reflect                     # Update procedural memory`}
+            {...{
+              number: 5,
+              name: "CASS Memory (CM)",
+              subtitle: "Procedural Memory",
+              command: "cm",
+              icon: <Brain className="h-5 w-5" />,
+              gradient: "from-rose-500/20 to-pink-500/20",
+              useCases: [
+                "Build persistent agent memory",
+                "Distill learnings from sessions",
+                "Give agents context from past work",
+              ],
+              example: `cm context "Building an API"  # Get relevant memories
+cm reflect                     # Update procedural memory`,
+            }}
           />
 
           <ToolCard
-            number={6}
-            name="Beads Viewer"
-            subtitle="Task Management"
-            command="bv"
-            icon={<LayoutDashboard className="h-5 w-5" />}
-            gradient="from-indigo-500/20 to-violet-500/20"
-            useCases={[
-              "Track tasks and issues",
-              "Kanban view of work",
-              "Keep agents focused on goals",
-            ]}
-            example="bv  # Opens TUI"
+            {...{
+              number: 6,
+              name: "Beads Viewer",
+              subtitle: "Task Management",
+              command: "bv",
+              icon: <LayoutDashboard className="h-5 w-5" />,
+              gradient: "from-indigo-500/20 to-violet-500/20",
+              useCases: [
+                "Track tasks and issues",
+                "Kanban view of work",
+                "Keep agents focused on goals",
+              ],
+              example: "bv --robot-triage  # Deterministic triage output",
+            }}
           />
 
           <ToolCard
-            number={7}
-            name="CAAM"
-            subtitle="Account Switching"
-            command="caam"
-            icon={<Users className="h-5 w-5" />}
-            gradient="from-teal-500/20 to-cyan-500/20"
-            useCases={[
-              "You hit rate limits",
-              "You want to switch between accounts",
-              "Testing with different credentials",
-            ]}
-            example={`caam status         # See current accounts
-caam activate claude backup-account`}
+            {...{
+              number: 7,
+              name: "CAAM",
+              subtitle: "Account Switching",
+              command: "caam",
+              icon: <Users className="h-5 w-5" />,
+              gradient: "from-teal-500/20 to-cyan-500/20",
+              useCases: [
+                "You hit rate limits",
+                "You want to switch between accounts",
+                "Testing with different credentials",
+              ],
+              example: `caam status         # See current accounts
+caam activate claude backup-account`,
+            }}
           />
 
           <ToolCard
-            number={8}
-            name="SLB"
-            subtitle="Safety Guardrails"
-            command="slb"
-            icon={<Shield className="h-5 w-5" />}
-            gradient="from-red-500/20 to-rose-500/20"
-            useCases={[
-              "Dangerous commands (when you want them reviewed)",
-              "Two-person rule for destructive operations",
-              "Optional safety layer",
-            ]}
+            {...{
+              number: 8,
+              name: "SLB",
+              subtitle: "Safety Guardrails",
+              command: "slb",
+              icon: <Shield className="h-5 w-5" />,
+              gradient: "from-red-500/20 to-rose-500/20",
+              useCases: [
+                "Dangerous commands (when you want them reviewed)",
+                "Two-person rule for destructive operations",
+                "Optional safety layer",
+              ],
+            }}
           />
         </div>
       </Section>
@@ -186,16 +206,19 @@ caam activate claude backup-account`}
 
       {/* A Complete Workflow */}
       <Section
-        title="A Complete Workflow"
-        icon={<Terminal className="h-5 w-5" />}
-        delay={0.2}
+        {...{
+          title: "A Complete Workflow",
+          icon: <Terminal className="h-5 w-5" />,
+          delay: 0.2,
+        }}
       >
         <Paragraph>Here&apos;s how a real session might look:</Paragraph>
 
         <div className="mt-6">
           <CodeBlock
-            code={`# 1. Plan your work
-bv                              # Check tasks
+            {...{
+              code: `# 1. Plan your work
+bv --robot-triage                # Check tasks
 bd ready                        # See what's ready to work on
 
 # 2. Start your agents
@@ -218,8 +241,9 @@ ubs .                           # Check for bugs
 cm reflect                      # Distill learnings
 
 # 8. Close the task
-bd close <task-id>`}
-            showLineNumbers
+bd close <task-id>`,
+              showLineNumbers: true,
+            }}
           />
         </div>
       </Section>
@@ -228,9 +252,11 @@ bd close <task-id>`}
 
       {/* The Flywheel Effect */}
       <Section
-        title="The Flywheel Effect"
-        icon={<Sparkles className="h-5 w-5" />}
-        delay={0.25}
+        {...{
+          title: "The Flywheel Effect",
+          icon: <Sparkles className="h-5 w-5" />,
+          delay: 0.25,
+        }}
       >
         <Paragraph>With each cycle:</Paragraph>
 
@@ -250,9 +276,11 @@ bd close <task-id>`}
 
       {/* Your First Real Task */}
       <Section
-        title="Your First Real Task"
-        icon={<Play className="h-5 w-5" />}
-        delay={0.3}
+        {...{
+          title: "Your First Real Task",
+          icon: <Play className="h-5 w-5" />,
+          delay: 0.3,
+        }}
       >
         <Paragraph>
           You&apos;re ready! Here&apos;s how to start your first project:
@@ -260,7 +288,8 @@ bd close <task-id>`}
 
         <div className="mt-6">
           <CodeBlock
-            code={`# 1. Create a project directory
+            {...{
+              code: `# 1. Create a project directory
 mkcd /data/projects/my-first-project
 
 # 2. Initialize git
@@ -281,8 +310,9 @@ ntm spawn my-first-project --cc=2 --cod=1 --gmi=1
 
 # 5. Start building!
 ntm send my-first-project "Let's build something awesome.
-What kind of project should we create?"`}
-            showLineNumbers
+What kind of project should we create?"`,
+              showLineNumbers: true,
+            }}
           />
         </div>
       </Section>
@@ -291,25 +321,33 @@ What kind of project should we create?"`}
 
       {/* Getting Help */}
       <Section
-        title="Getting Help"
-        icon={<Zap className="h-5 w-5" />}
-        delay={0.35}
+        {...{
+          title: "Getting Help",
+          icon: <Zap className="h-5 w-5" />,
+          delay: 0.35,
+        }}
       >
         <div className="grid gap-4 sm:grid-cols-3">
           <HelpCard
-            command="acfs doctor"
-            description="Check everything is working"
-            gradient="from-emerald-500/20 to-teal-500/20"
+            {...{
+              command: "acfs doctor",
+              description: "Check everything is working",
+              gradient: "from-emerald-500/20 to-teal-500/20",
+            }}
           />
           <HelpCard
-            command="ntm --help"
-            description="NTM help"
-            gradient="from-violet-500/20 to-purple-500/20"
+            {...{
+              command: "ntm --help",
+              description: "NTM help",
+              gradient: "from-violet-500/20 to-purple-500/20",
+            }}
           />
           <HelpCard
-            command="onboard"
-            description="Re-run this tutorial anytime"
-            gradient="from-amber-500/20 to-orange-500/20"
+            {...{
+              command: "onboard",
+              description: "Re-run this tutorial anytime",
+              gradient: "from-amber-500/20 to-orange-500/20",
+            }}
           />
         </div>
       </Section>
@@ -331,55 +369,68 @@ function FlywheelDiagram() {
         {/* Main flow */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 flex-wrap">
           <FlywheelNode
-            label="Plan"
-            sublabel="Beads"
-            icon={<LayoutDashboard className="h-5 w-5" />}
-            color="from-violet-500 to-purple-500"
-            delay={0.1}
+            {...{
+              label: "Plan",
+              sublabel: "Beads",
+              icon: <LayoutDashboard className="h-5 w-5" />,
+              color: "from-violet-500 to-purple-500",
+              delay: 0.1,
+            }}
           />
           <ArrowRight className="h-5 w-5 text-white/30 hidden md:block" />
           <FlywheelNode
-            label="Coordinate"
-            sublabel="Agent Mail"
-            icon={<Mail className="h-5 w-5" />}
-            color="from-sky-500 to-blue-500"
-            delay={0.2}
+            {...{
+              label: "Coordinate",
+              sublabel: "Agent Mail",
+              icon: <Mail className="h-5 w-5" />,
+              color: "from-sky-500 to-blue-500",
+              delay: 0.2,
+            }}
           />
           <ArrowRight className="h-5 w-5 text-white/30 hidden md:block" />
           <FlywheelNode
-            label="Execute"
-            sublabel="NTM + Agents"
-            icon={<Cpu className="h-5 w-5" />}
-            color="from-emerald-500 to-teal-500"
-            delay={0.3}
+            {...{
+              label: "Execute",
+              sublabel: "NTM + Agents",
+              icon: <Cpu className="h-5 w-5" />,
+              color: "from-emerald-500 to-teal-500",
+              delay: 0.3,
+            }}
           />
         </div>
 
         {/* Return flow */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mt-6 flex-wrap">
           <FlywheelNode
-            label="Remember"
-            sublabel="CASS Memory"
-            icon={<Brain className="h-5 w-5" />}
-            color="from-rose-500 to-pink-500"
-            delay={0.4}
+            {...{
+              label: "Remember",
+              sublabel: "CASS Memory",
+              icon: <Brain className="h-5 w-5" />,
+              color: "from-rose-500 to-pink-500",
+              delay: 0.4,
+            }}
           />
           <ArrowRight className="h-5 w-5 text-white/30 rotate-180 hidden md:block" />
           <FlywheelNode
-            label="Scan"
-            sublabel="UBS"
-            icon={<Shield className="h-5 w-5" />}
-            color="from-amber-500 to-orange-500"
-            delay={0.5}
+            {...{
+              label: "Scan",
+              sublabel: "UBS",
+              icon: <Shield className="h-5 w-5" />,
+              color: "from-amber-500 to-orange-500",
+              delay: 0.5,
+            }}
           />
         </div>
 
         {/* Circular arrow indicator */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="absolute -right-4 top-1/2 -translate-y-1/2 hidden lg:block"
+          {...{
+            initial: { opacity: 0 },
+            animate: { opacity: 1 },
+            transition: { delay: 0.6 },
+            className:
+              "absolute -right-4 top-1/2 -translate-y-1/2 hidden lg:block",
+          }}
         >
           <RefreshCw className="h-12 w-12 text-primary/30" />
         </motion.div>
@@ -403,11 +454,13 @@ function FlywheelNode({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay }}
-      whileHover={{ y: -4, scale: 1.05 }}
-      className={`group flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-br ${color} bg-opacity-20 border border-white/[0.1] backdrop-blur-xl transition-all duration-300 hover:border-white/[0.2]`}
+      {...{
+        initial: { opacity: 0, scale: 0.9 },
+        animate: { opacity: 1, scale: 1 },
+        transition: { delay },
+        whileHover: { y: -4, scale: 1.05 },
+        className: `group flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-br ${color} bg-opacity-20 border border-white/[0.1] backdrop-blur-xl transition-all duration-300 hover:border-white/[0.2]`,
+      }}
     >
       <div className="text-white group-hover:scale-110 transition-transform">{icon}</div>
       <div>
@@ -442,11 +495,13 @@ function ToolCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: number * 0.05 }}
-      whileHover={{ x: 4, scale: 1.01 }}
-      className={`group relative rounded-2xl border border-white/[0.08] bg-gradient-to-br ${gradient} p-6 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-white/[0.15]`}
+      {...{
+        initial: { opacity: 0, x: -20 },
+        animate: { opacity: 1, x: 0 },
+        transition: { delay: number * 0.05 },
+        whileHover: { x: 4, scale: 1.01 },
+        className: `group relative rounded-2xl border border-white/[0.08] bg-gradient-to-br ${gradient} p-6 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-white/[0.15]`,
+      }}
     >
       <div className="flex items-start gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white shadow-lg group-hover:bg-white/20 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
@@ -466,10 +521,7 @@ function ToolCard({
           <p className="text-sm text-white/60 mb-3">Use it to:</p>
           <ul className="space-y-1">
             {useCases.map((useCase, i) => (
-              <li
-                key={i}
-                className="text-sm text-white/50 flex items-center gap-2"
-              >
+              <li key={i} className="text-sm text-white/50 flex items-center gap-2">
                 <div className="h-1 w-1 rounded-full bg-white/40 shrink-0" />
                 {useCase}
               </li>
@@ -504,13 +556,15 @@ function FlywheelEffectList() {
   return (
     <div className="space-y-3">
       {effects.map((item, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.1 }}
-          whileHover={{ x: 6, scale: 1.01 }}
-          className="group flex items-center gap-4 p-4 rounded-xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.04]"
+        <motion.div key={i}
+          {...{
+            initial: { opacity: 0, x: -20 },
+            animate: { opacity: 1, x: 0 },
+            transition: { delay: i * 0.1 },
+            whileHover: { x: 6, scale: 1.01 },
+            className:
+              "group flex items-center gap-4 p-4 rounded-xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.04]",
+          }}
         >
           <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
           <span className="text-white/70 group-hover:text-white/90 transition-colors">
@@ -536,10 +590,12 @@ function HelpCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4, scale: 1.02 }}
-      className={`group relative rounded-xl border border-white/[0.08] bg-gradient-to-br ${gradient} p-4 backdrop-blur-xl text-center transition-all duration-300 hover:border-white/[0.15]`}
+      {...{
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0 },
+        whileHover: { y: -4, scale: 1.02 },
+        className: `group relative rounded-xl border border-white/[0.08] bg-gradient-to-br ${gradient} p-4 backdrop-blur-xl text-center transition-all duration-300 hover:border-white/[0.15]`,
+      }}
     >
       <code className="block px-3 py-2 rounded-lg bg-black/30 border border-white/[0.08] text-sm font-mono text-primary mb-2 group-hover:bg-black/40 transition-colors">
         {command}

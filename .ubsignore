@@ -17,6 +17,10 @@ apps/web/research_*.mjs
 # Generator embeds shell scripts in template strings (UBS JS heuristics produce false positives)
 packages/manifest/src/generate.ts
 
+# UBS currently mis-parses TSX JSX props as global assignments (false positives).
+# We rely on the website's lint + type-check for TSX.
+apps/web/**/*.tsx
+
 # Playwright artifacts
 apps/web/playwright-report/
 apps/web/test-results/

@@ -193,9 +193,9 @@ export const COMMANDS: CommandRef[] = [
   {
     name: "bv",
     fullName: "Beads Viewer",
-    description: "Issue and workflow viewer.",
+    description: "Issue and workflow viewer (use --robot-* flags).",
     category: "stack",
-    example: "bv",
+    example: "bv --robot-triage",
   },
   {
     name: "ubs",

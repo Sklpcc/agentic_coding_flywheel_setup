@@ -348,18 +348,14 @@ sanitize_session_export() {
         return 1
     }
 
-    # Sanitize all string values in the JSON
-    # This processes the transcript content, summary, key_prompts, etc.
-    # Using heredoc to avoid shell quoting issues with jq regex patterns
-    local optional_filters=""
-    if [[ "${ACFS_SANITIZE_OPTIONAL:-0}" == "1" ]]; then
-        optional_filters=' |
-        gsub("\\b[0-9]{1,3}(\\.[0-9]{1,3}){3}\\b"; "[REDACTED]") |
-        gsub("\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\b"; "[REDACTED]")'
-    fi
-
-    local jq_filter
-    read -r -d '' jq_filter <<'JQ_EOF' || true
+    # Sanitize all string values in the JSON.
+    # This processes transcript content, summary, key_prompts, etc.
+    #
+    # Keep this as heredocs to avoid shell quoting issues with jq regex patterns.
+    # Note: don't use bash parameter substitution with patterns starting with "#"
+    # (e.g. "##OPTIONAL##"), because `${var/#pattern/...}` is special-cased.
+    local jq_filter_base
+    read -r -d '' jq_filter_base <<'JQ_BASE' || true
 def sanitize_string:
     if type == "string" then
         gsub("sk-[a-zA-Z0-9_-]{20,}"; "[REDACTED]") |
@@ -378,7 +374,20 @@ def sanitize_string:
         gsub("(?i)api_key[\"\\s:=]+[^\\s\"']{8,}"; "[REDACTED]") |
         gsub("(?i)apikey[\"\\s:=]+[^\\s\"']{8,}"; "[REDACTED]") |
         gsub("(?i)auth_token[\"\\s:=]+[^\\s\"']{8,}"; "[REDACTED]") |
-        gsub("(?i)access_token[\"\\s:=]+[^\\s\"']{8,}"; "[REDACTED]")##OPTIONAL##
+        gsub("(?i)access_token[\"\\s:=]+[^\\s\"']{8,}"; "[REDACTED]")
+JQ_BASE
+
+    local jq_filter_optional=""
+    if [[ "${ACFS_SANITIZE_OPTIONAL:-0}" == "1" ]]; then
+        read -r -d '' jq_filter_optional <<'JQ_OPTIONAL' || true
+        |
+        gsub("\\b[0-9]{1,3}(\\.[0-9]{1,3}){3}\\b"; "[REDACTED]") |
+        gsub("\\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\b"; "[REDACTED]")
+JQ_OPTIONAL
+    fi
+
+    local jq_filter_tail
+    read -r -d '' jq_filter_tail <<'JQ_TAIL' || true
     elif type == "array" then
         map(sanitize_string)
     elif type == "object" then
@@ -387,8 +396,9 @@ def sanitize_string:
         .
     end;
 sanitize_string
-JQ_EOF
-    jq_filter="${jq_filter/##OPTIONAL##/$optional_filters}"
+JQ_TAIL
+
+    local jq_filter="${jq_filter_base}${jq_filter_optional}${jq_filter_tail}"
 
     if ! jq "$jq_filter" "$file" > "$tmpfile"; then
         rm -f -- "$tmpfile" 2>/dev/null || true
