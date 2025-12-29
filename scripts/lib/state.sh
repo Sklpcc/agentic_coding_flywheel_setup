@@ -463,38 +463,40 @@ state_step_update() {
 state_phase_complete() {
     local phase_id="$1"
 
-    if command -v jq &>/dev/null; then
-        local state
-        state=$(state_load) || return 1
-
-        # Calculate duration if start time was recorded
-        local start_time duration
-        start_time=$(echo "$state" | jq -r '.phase_start_time // empty')
-        if [[ -n "$start_time" ]]; then
-            duration=$(($(date +%s) - start_time))
-        else
-            duration=0
-        fi
-
-        # Add phase to completed list, record duration, clear current
-        local new_state
-        if ! new_state=$(echo "$state" | jq --arg phase "$phase_id" --argjson dur "$duration" '
-            # Preserve insertion order for resume UX while preventing duplicates.
-            # NOTE: `unique` sorts arrays, which breaks "last completed phase" reporting.
-            .completed_phases = (
-              (.completed_phases // []) as $phases |
-              if ($phases | index($phase)) == null then $phases + [$phase] else $phases end
-            ) |
-            .phase_durations[$phase] = $dur |
-            .current_phase = null |
-            .current_step = null |
-            del(.phase_start_time)
-        '); then
-            return 1
-        fi
-
-        state_save "$new_state"
+    if ! command -v jq &>/dev/null; then
+        return 1
     fi
+
+    local state
+    state=$(state_load) || return 1
+
+    # Calculate duration if start time was recorded
+    local start_time duration
+    start_time=$(echo "$state" | jq -r '.phase_start_time // empty')
+    if [[ -n "$start_time" ]]; then
+        duration=$(($(date +%s) - start_time))
+    else
+        duration=0
+    fi
+
+    # Add phase to completed list, record duration, clear current
+    local new_state
+    if ! new_state=$(echo "$state" | jq --arg phase "$phase_id" --argjson dur "$duration" '
+        # Preserve insertion order for resume UX while preventing duplicates.
+        # NOTE: `unique` sorts arrays, which breaks "last completed phase" reporting.
+        .completed_phases = (
+          (.completed_phases // []) as $phases |
+          if ($phases | index($phase)) == null then $phases + [$phase] else $phases end
+        ) |
+        .phase_durations[$phase] = $dur |
+        .current_phase = null |
+        .current_step = null |
+        del(.phase_start_time)
+    '); then
+        return 1
+    fi
+
+    state_save "$new_state"
 }
 
 # Mark a phase as failed
@@ -504,27 +506,29 @@ state_phase_fail() {
     local step="$2"
     local error="$3"
 
-    if command -v jq &>/dev/null; then
-        # Use jq's --arg for proper JSON escaping (handles quotes, backslashes, newlines)
-        local state
-        state=$(state_load) || return 1
-
-        local new_state
-        if ! new_state=$(echo "$state" | jq \
-            --arg phase "$phase_id" \
-            --arg step "$step" \
-            --arg err "$error" '
-            .failed_phase = $phase |
-            .failed_step = $step |
-            .failed_error = $err |
-            .current_phase = null |
-            .current_step = null
-        '); then
-            return 1
-        fi
-
-        state_save "$new_state"
+    if ! command -v jq &>/dev/null; then
+        return 1
     fi
+
+    # Use jq's --arg for proper JSON escaping (handles quotes, backslashes, newlines)
+    local state
+    state=$(state_load) || return 1
+
+    local new_state
+    if ! new_state=$(echo "$state" | jq \
+        --arg phase "$phase_id" \
+        --arg step "$step" \
+        --arg err "$error" '
+        .failed_phase = $phase |
+        .failed_step = $step |
+        .failed_error = $err |
+        .current_phase = null |
+        .current_step = null
+    '); then
+        return 1
+    fi
+
+    state_save "$new_state"
 }
 
 # Mark a phase as skipped
