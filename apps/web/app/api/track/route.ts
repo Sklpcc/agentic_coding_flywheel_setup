@@ -396,8 +396,12 @@ export async function POST(request: NextRequest) {
       sanitizedEvents.push({ name: event.name, params: sanitizeEventParams(event.params) });
     }
 
-    const rawSessionId = clientId.split('.')[0] || '';
-    const sessionId = /^\d{1,16}$/.test(rawSessionId) ? rawSessionId : Date.now().toString();
+    const rawSessionId = clientId.split('.')[1] || '';
+    const parsedSessionId = Number(rawSessionId);
+    const sessionId =
+      Number.isSafeInteger(parsedSessionId) && parsedSessionId > 0
+        ? parsedSessionId
+        : Math.floor(Date.now() / 1000);
 
     if (sanitizedEvents.length === 0) {
       return NextResponse.json({ error: 'No valid events' }, { status: 400 });

@@ -61,15 +61,78 @@ export const isAnalyticsEnabled = (): boolean => {
   return typeof window !== 'undefined' && !!GA_MEASUREMENT_ID && !!window.gtag;
 };
 
+const GA_CLIENT_ID_STORAGE_KEY = 'ga_client_id';
+const MAX_GA_CLIENT_ID_LENGTH = 100;
+
+function isNumericGaClientId(value: string): boolean {
+  if (!value || value.length > MAX_GA_CLIENT_ID_LENGTH) return false;
+  return /^\d{1,16}\.\d{1,16}$/.test(value);
+}
+
+function fnv1a32(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+function randomDigits10(): string {
+  const digits = 10;
+
+  try {
+    if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+      const values = new Uint32Array(2);
+      crypto.getRandomValues(values);
+      // Combine into a 53-bit safe integer (avoid BigInt; TS target < ES2020).
+      const combined = (values[0] & 0x001fffff) * 0x100000000 + values[1];
+      return (combined % 10_000_000_000).toString().padStart(digits, '0');
+    }
+  } catch {
+    // Fall back to Math.random for older/locked-down environments.
+  }
+
+  return Math.floor(Math.random() * 10 ** digits)
+    .toString()
+    .padStart(digits, '0');
+}
+
+function generateNumericClientId(): string {
+  const randomPart = randomDigits10();
+  const timestampSeconds = Math.floor(Date.now() / 1000);
+  return `${randomPart}.${timestampSeconds}`;
+}
+
+function normalizeClientId(raw: string): string {
+  if (isNumericGaClientId(raw)) return raw;
+
+  // Migrate legacy format: "<timestamp_ms>.<base36>" → "<randomDigits>.<timestamp_seconds>"
+  const legacyMatch = /^(\d{1,16})\.([a-z0-9]{1,32})$/i.exec(raw);
+  if (legacyMatch) {
+    const legacyTimestamp = Number(legacyMatch[1]);
+    const legacySuffix = legacyMatch[2];
+    if (Number.isSafeInteger(legacyTimestamp) && legacyTimestamp > 0) {
+      const timestampSeconds =
+        legacyMatch[1].length > 10 ? Math.floor(legacyTimestamp / 1000) : legacyTimestamp;
+      const randomPart = (fnv1a32(legacySuffix) % 10 ** 10).toString().padStart(10, '0');
+      const migrated = `${randomPart}.${timestampSeconds}`;
+      if (isNumericGaClientId(migrated)) return migrated;
+    }
+  }
+
+  return generateNumericClientId();
+}
+
 // Get or create a persistent client ID for server-side tracking
 const getClientId = (): string => {
   if (typeof window === 'undefined') return '';
-  let clientId = safeGetItem('ga_client_id');
-  if (!clientId) {
-    clientId = `${Date.now()}.${Math.random().toString(36).slice(2, 11)}`;
-    safeSetItem('ga_client_id', clientId);
+  const existing = safeGetItem(GA_CLIENT_ID_STORAGE_KEY);
+  const normalized = existing ? normalizeClientId(existing) : generateNumericClientId();
+  if (!existing || normalized !== existing) {
+    safeSetItem(GA_CLIENT_ID_STORAGE_KEY, normalized);
   }
-  return clientId;
+  return normalized;
 };
 
 /**
