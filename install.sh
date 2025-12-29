@@ -1068,6 +1068,42 @@ acfs_calculate_file_sha256() {
     return 1
 }
 
+acfs_download_file_and_verify_sha256() {
+    local url="$1"
+    local output_path="$2"
+    local expected_sha256="$3"
+    local label="${4:-download}"
+
+    if [[ -z "$url" || -z "$output_path" || -z "$expected_sha256" ]]; then
+        log_error "acfs_download_file_and_verify_sha256: missing url, output path, or expected sha256"
+        return 1
+    fi
+
+    if [[ "$url" != https://* ]]; then
+        log_error "Security error: upstream URL is not HTTPS: $url"
+        return 1
+    fi
+
+    if ! acfs_curl_with_retry "$url" "$output_path"; then
+        log_error "Failed to download $label"
+        log_detail "URL: $url"
+        return 1
+    fi
+
+    local actual_sha256=""
+    actual_sha256="$(acfs_calculate_file_sha256 "$output_path")" || actual_sha256=""
+
+    if [[ -z "$actual_sha256" ]] || [[ "$actual_sha256" != "$expected_sha256" ]]; then
+        log_error "Security error: checksum mismatch for $label"
+        log_detail "URL: $url"
+        log_detail "Expected: $expected_sha256"
+        log_detail "Actual:   ${actual_sha256:-<missing>}"
+        return 1
+    fi
+
+    return 0
+}
+
 bootstrap_repo_archive() {
     if [[ -n "${SCRIPT_DIR:-}" ]]; then
         return 0
@@ -2420,13 +2456,29 @@ install_cli_tools() {
             if [[ -n "$arch" ]]; then
                 local lg_ver="0.44.1"
                 local lg_url="https://github.com/jesseduffield/lazygit/releases/download/v${lg_ver}/lazygit_${lg_ver}_Linux_${arch}.tar.gz"
+                local lg_sha256=""
+                case "$arch" in
+                    x86_64) lg_sha256="84682f4ad5a449d0a3ffbc8332200fe8651aee9dd91dcd8d87197ba6c2450dbc" ;;
+                    arm64) lg_sha256="26a435f47b691325c086dad2f84daa6556df5af8efc52b6ed624fa657605c976" ;;
+                esac
                 local lg_tmp=""
                 if command -v mktemp &>/dev/null; then
                     lg_tmp="$(mktemp "${TMPDIR:-/tmp}/acfs-lazygit.XXXXXX" 2>/dev/null)" || lg_tmp=""
                 fi
-                if [[ -n "$lg_tmp" ]] && acfs_curl "$lg_url" -o "$lg_tmp" 2>/dev/null; then
-                    $SUDO tar -xzf "$lg_tmp" -C /usr/local/bin lazygit
-                    rm -f "$lg_tmp"
+                if [[ -n "$lg_tmp" ]]; then
+                    if acfs_download_file_and_verify_sha256 "$lg_url" "$lg_tmp" "$lg_sha256" "lazygit ${lg_ver} (${arch})"; then
+                        if $SUDO tar -xzf "$lg_tmp" -C /usr/local/bin --no-same-owner --no-same-permissions lazygit 2>/dev/null; then
+                            $SUDO chmod 0755 /usr/local/bin/lazygit 2>/dev/null || true
+                            if command_exists lazygit; then
+                                log_detail "lazygit installed from GitHub release"
+                            else
+                                log_warn "lazygit: extracted but binary not found in PATH (skipping)"
+                            fi
+                        else
+                            log_warn "lazygit: failed to extract tarball (skipping)"
+                        fi
+                    fi
+                    rm -f "$lg_tmp" 2>/dev/null || true
                 fi
             fi
         fi
@@ -2443,13 +2495,29 @@ install_cli_tools() {
         if [[ -n "$arch" ]]; then
             local ld_ver="0.23.3"
             local ld_url="https://github.com/jesseduffield/lazydocker/releases/download/v${ld_ver}/lazydocker_${ld_ver}_Linux_${arch}.tar.gz"
+            local ld_sha256=""
+            case "$arch" in
+                x86_64) ld_sha256="1f3c7037326973b85cb85447b2574595103185f8ed067b605dd43cc201bc8786" ;;
+                arm64) ld_sha256="ae7bed0309289396d396b8502b2d78d153a4f8ce8add042f655332241e7eac31" ;;
+            esac
             local ld_tmp=""
             if command -v mktemp &>/dev/null; then
                 ld_tmp="$(mktemp "${TMPDIR:-/tmp}/acfs-lazydocker.XXXXXX" 2>/dev/null)" || ld_tmp=""
             fi
-            if [[ -n "$ld_tmp" ]] && acfs_curl "$ld_url" -o "$ld_tmp" 2>/dev/null; then
-                $SUDO tar -xzf "$ld_tmp" -C /usr/local/bin lazydocker
-                rm -f "$ld_tmp"
+            if [[ -n "$ld_tmp" ]]; then
+                if acfs_download_file_and_verify_sha256 "$ld_url" "$ld_tmp" "$ld_sha256" "lazydocker ${ld_ver} (${arch})"; then
+                    if $SUDO tar -xzf "$ld_tmp" -C /usr/local/bin --no-same-owner --no-same-permissions lazydocker 2>/dev/null; then
+                        $SUDO chmod 0755 /usr/local/bin/lazydocker 2>/dev/null || true
+                        if command_exists lazydocker; then
+                            log_detail "lazydocker installed from GitHub release"
+                        else
+                            log_warn "lazydocker: extracted but binary not found in PATH (skipping)"
+                        fi
+                    else
+                        log_warn "lazydocker: failed to extract tarball (skipping)"
+                    fi
+                fi
+                rm -f "$ld_tmp" 2>/dev/null || true
             fi
         fi
     fi
@@ -2912,7 +2980,7 @@ install_supabase_cli_release() {
     fi
 
     local actual_sha=""
-    actual_sha="$(calculate_sha256 < "$tmp_tgz" 2>/dev/null)" || actual_sha=""
+    actual_sha="$(acfs_calculate_file_sha256 "$tmp_tgz" 2>/dev/null)" || actual_sha=""
     if [[ -z "$actual_sha" ]] || [[ "$actual_sha" != "$expected_sha" ]]; then
         log_error "Supabase CLI: checksum mismatch"
         log_error "  Expected: $expected_sha"
