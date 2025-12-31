@@ -1602,7 +1602,8 @@ acfs_load_upstream_checksums() {
             }
             checksums_source="raw-cdn"
         }
-        checksums_source="${checksums_source:-github-api}"
+        # If we didn't fall back to raw-cdn, the API succeeded
+        [[ "$checksums_source" == "unknown" ]] && checksums_source="github-api"
     fi
 
     # Store source for debugging
@@ -1697,8 +1698,7 @@ acfs_run_verified_upstream_script_as_target() {
         # Re-verify with fresh checksum
         if [[ "$actual_sha256" == "$fresh_expected_sha256" ]]; then
             log_success "Verified '$tool' with fresh checksums from GitHub API"
-            # Update the stored expected hash for any future checks
-            expected_sha256="$fresh_expected_sha256"
+            # Note: ACFS_UPSTREAM_SHA256 already updated by acfs_parse_checksums_content above
         else
             # Still doesn't match even with fresh checksums - this is a real problem
             log_error "Security error: checksum mismatch for '$tool' (verified with fresh checksums)"
