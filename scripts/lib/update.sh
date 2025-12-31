@@ -1059,12 +1059,36 @@ ensure_cass_robot_compat_wrapper() {
         return 0
     fi
 
+    # Safety: if cass is already our wrapper but cass.real is missing, do not
+    # "move" the wrapper into place (it would create an infinite exec loop).
+    if [[ ! -e "$cass_real" ]] && head -n 2 "$cass_path" 2>/dev/null | grep -q "ACFS CASS WRAPPER"; then
+        log_item "warn" "CASS robot wrapper" "cass wrapper present but cass.real missing (skipping)"
+        return 0
+    fi
+
+    # Move the real binary aside, then install the wrapper at the original path.
+    # Handle both fresh install and the case where CASS was updated (replaced wrapper with new binary).
     if [[ ! -e "$cass_real" ]]; then
+        # First time: move original binary to cass.real
         if ! mv "$cass_path" "$cass_real" 2>/dev/null; then
             log_item "warn" "CASS robot wrapper" "failed to move cass to cass.real"
             return 0
         fi
         chmod +x "$cass_real" 2>/dev/null || true
+    elif ! head -n 2 "$cass_path" 2>/dev/null | grep -q "ACFS CASS WRAPPER"; then
+        # cass.real exists but current cass is NOT our wrapper.
+        # Only update cass.real if cass is a binary (not a script).
+        # Safety: if it's a script (starts with #!), don't overwrite the real binary.
+        if [[ "$(head -c 2 "$cass_path" 2>/dev/null || true)" == "#!" ]]; then
+            log_item "warn" "CASS robot wrapper" "cass is a script but not our wrapper (skipping cass.real update)"
+        else
+            # cass is a binary - safe to update cass.real
+            if ! mv "$cass_path" "$cass_real" 2>/dev/null; then
+                log_item "warn" "CASS robot wrapper" "failed to update cass.real with new binary"
+                return 0
+            fi
+            chmod +x "$cass_real" 2>/dev/null || true
+        fi
     fi
 
     cat > "$cass_path" <<'EOF'
