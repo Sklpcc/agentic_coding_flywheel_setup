@@ -477,7 +477,48 @@ venv/
 EOF
         CREATED_ITEMS+=(".gitignore")
 
-        git add README.md .gitignore
+        # Create universal .ubsignore (patterns for UBS bug scanner)
+        cat > .ubsignore << 'EOF'
+# UBS ignore globs (keep bug scanner focused on source code)
+# Patterns are evaluated relative to the project root.
+
+# Dependencies / vendored (never scan third-party code)
+node_modules/
+**/node_modules/
+
+# Python virtual environments
+.venv/
+venv/
+.tox/
+
+# Build outputs (scan source, not artifacts)
+dist/
+build/
+.next/
+out/
+target/
+*.egg-info/
+
+# Test artifacts
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+playwright-report/
+test-results/
+
+# IDE/Editor
+.idea/
+.vscode/
+
+# Package manager caches
+.npm/
+.pnpm-store/
+.yarn/
+EOF
+        CREATED_ITEMS+=(".ubsignore")
+
+        git add README.md .gitignore .ubsignore
 
         # Check if git user is configured before committing
         if git config user.name &>/dev/null && git config user.email &>/dev/null; then
