@@ -311,6 +311,53 @@ modules:
       Then log in with your Google account at the URL shown.
       Once connected, you can access your VPS via its Tailscale IP or hostname.
 
+  - id: network.ssh_keepalive
+    description: Configure SSH server keepalive to prevent VPN/NAT disconnects
+    category: network
+    phase: 5
+    run_as: root
+    optional: true
+    enabled_by_default: true
+    tags: [networking, remote-dev, ssh]
+    dependencies:
+      - base.system
+    installed_check:
+      run_as: current
+      command: |
+        # Check if ClientAliveInterval is configured (non-zero)
+        grep -qE '^ClientAliveInterval[[:space:]]+[1-9]' /etc/ssh/sshd_config 2>/dev/null
+    install:
+      - |
+        # Backup original sshd_config if not already backed up
+        if [[ ! -f /etc/ssh/sshd_config.acfs.bak ]]; then
+          cp /etc/ssh/sshd_config /etc/ssh/sshd_config.acfs.bak
+        fi
+
+        # Configure SSH keepalive settings
+        # ClientAliveInterval: send keepalive every 60 seconds
+        # ClientAliveCountMax: disconnect after 3 missed (3 minutes of real disconnect)
+
+        # Remove any existing ClientAlive settings
+        sed -i '/^#*ClientAliveInterval/d' /etc/ssh/sshd_config
+        sed -i '/^#*ClientAliveCountMax/d' /etc/ssh/sshd_config
+
+        # Add new settings at the end
+        echo "" >> /etc/ssh/sshd_config
+        echo "# ACFS: SSH keepalive for VPN/NAT resilience" >> /etc/ssh/sshd_config
+        echo "ClientAliveInterval 60" >> /etc/ssh/sshd_config
+        echo "ClientAliveCountMax 3" >> /etc/ssh/sshd_config
+
+        # Reload sshd (doesn't kill existing connections)
+        systemctl reload sshd || systemctl reload ssh || true
+    verify:
+      - grep -E '^ClientAliveInterval[[:space:]]+60' /etc/ssh/sshd_config
+      - grep -E '^ClientAliveCountMax[[:space:]]+3' /etc/ssh/sshd_config
+    docs_url: https://man.openbsd.org/sshd_config#ClientAliveInterval
+    post_install_message: |
+      SSH keepalive configured! Your connections will now survive VPN/NAT timeouts.
+      Settings: ClientAliveInterval 60, ClientAliveCountMax 3
+      Original config backed up to /etc/ssh/sshd_config.acfs.bak
+
   # ============================================================
   # PHASE 6: Language runtimes
   # ============================================================

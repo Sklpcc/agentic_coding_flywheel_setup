@@ -93,7 +93,7 @@ acfs_security_init() {
 }
 
 # Category: network
-# Modules: 1
+# Modules: 2
 
 # Zero-config mesh VPN for secure remote VPS access
 install_network_tailscale() {
@@ -156,10 +156,91 @@ INSTALL_NETWORK_TAILSCALE
     log_success "network.tailscale installed"
 }
 
+# Configure SSH server keepalive to prevent VPN/NAT disconnects
+install_network_ssh_keepalive() {
+    local module_id="network.ssh_keepalive"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing network.ssh_keepalive"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: install: # Backup original sshd_config if not already backed up (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_NETWORK_SSH_KEEPALIVE'
+# Backup original sshd_config if not already backed up
+if [[ ! -f /etc/ssh/sshd_config.acfs.bak ]]; then
+  cp /etc/ssh/sshd_config /etc/ssh/sshd_config.acfs.bak
+fi
+
+# Configure SSH keepalive settings
+# ClientAliveInterval: send keepalive every 60 seconds
+# ClientAliveCountMax: disconnect after 3 missed (3 minutes of real disconnect)
+
+# Remove any existing ClientAlive settings
+sed -i '/^#*ClientAliveInterval/d' /etc/ssh/sshd_config
+sed -i '/^#*ClientAliveCountMax/d' /etc/ssh/sshd_config
+
+# Add new settings at the end
+echo "" >> /etc/ssh/sshd_config
+echo "# ACFS: SSH keepalive for VPN/NAT resilience" >> /etc/ssh/sshd_config
+echo "ClientAliveInterval 60" >> /etc/ssh/sshd_config
+echo "ClientAliveCountMax 3" >> /etc/ssh/sshd_config
+
+# Reload sshd (doesn't kill existing connections)
+systemctl reload sshd || systemctl reload ssh || true
+INSTALL_NETWORK_SSH_KEEPALIVE
+        then
+            log_warn "network.ssh_keepalive: install command failed: # Backup original sshd_config if not already backed up"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "network.ssh_keepalive" "install command failed: # Backup original sshd_config if not already backed up"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "network.ssh_keepalive"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: grep -E '^ClientAliveInterval[[:space:]]+60' /etc/ssh/sshd_config (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_NETWORK_SSH_KEEPALIVE'
+grep -E '^ClientAliveInterval[[:space:]]+60' /etc/ssh/sshd_config
+INSTALL_NETWORK_SSH_KEEPALIVE
+        then
+            log_warn "network.ssh_keepalive: verify failed: grep -E '^ClientAliveInterval[[:space:]]+60' /etc/ssh/sshd_config"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "network.ssh_keepalive" "verify failed: grep -E '^ClientAliveInterval[[:space:]]+60' /etc/ssh/sshd_config"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "network.ssh_keepalive"
+            fi
+            return 0
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: grep -E '^ClientAliveCountMax[[:space:]]+3' /etc/ssh/sshd_config (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_NETWORK_SSH_KEEPALIVE'
+grep -E '^ClientAliveCountMax[[:space:]]+3' /etc/ssh/sshd_config
+INSTALL_NETWORK_SSH_KEEPALIVE
+        then
+            log_warn "network.ssh_keepalive: verify failed: grep -E '^ClientAliveCountMax[[:space:]]+3' /etc/ssh/sshd_config"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "network.ssh_keepalive" "verify failed: grep -E '^ClientAliveCountMax[[:space:]]+3' /etc/ssh/sshd_config"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "network.ssh_keepalive"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "network.ssh_keepalive installed"
+}
+
 # Install all network modules
 install_network() {
     log_section "Installing network modules"
     install_network_tailscale
+    install_network_ssh_keepalive
 }
 
 # Run if executed directly

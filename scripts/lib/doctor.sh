@@ -144,6 +144,7 @@ print_acfs_help() {
     echo "  cheatsheet          Command reference (aliases, shortcuts)"
     echo "  continue [options]  View installation/upgrade progress"
     echo "  dashboard <command> Generate/view a static HTML dashboard"
+    echo "  newproj <name>      Create new project with git, bd, claude settings"
     echo "  update [options]    Update ACFS tools to latest versions"
     echo "  services-setup      Configure AI agents and cloud services"
     echo "  session <command>   Export/import/share agent sessions"
@@ -841,6 +842,21 @@ check_cloud() {
         fi
     fi
 
+    # SSH keepalive configuration (prevents VPN/NAT disconnects)
+    if [[ -f /etc/ssh/sshd_config ]]; then
+        local keepalive_interval
+        keepalive_interval=$(grep -E '^ClientAliveInterval[[:space:]]+[0-9]+' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo "0")
+        if [[ "$keepalive_interval" -gt 0 ]]; then
+            check "network.ssh_keepalive" "SSH keepalive" "pass" "ClientAliveInterval ${keepalive_interval}s"
+        else
+            if [[ "$doctor_ci" == "true" ]]; then
+                check "network.ssh_keepalive" "SSH keepalive (not configured)" "pass" "ok in CI"
+            else
+                check "network.ssh_keepalive" "SSH keepalive" "warn" "not configured (optional)" "Install: curl --proto '=https' --proto-redir '=https' -fsSL https://agent-flywheel.com/install | bash -s -- --yes --only network.ssh_keepalive"
+            fi
+        fi
+    fi
+
     blank_line
 }
 
@@ -1086,6 +1102,8 @@ deep_check_agent_auth() {
 # check_claude_auth - Thorough Claude Code authentication check
 # Returns via check(): pass (auth OK), warn (partial/skipped), fail (auth broken)
 # Related: bead 325
+# Fixed: Check correct credentials file (.credentials.json, not config.json)
+# Fixed: Removed non-existent --print-system-info flag
 check_claude_auth() {
     # Skip if not installed
     if ! command -v claude &>/dev/null; then
@@ -1099,19 +1117,32 @@ check_claude_auth() {
         return
     fi
 
-    # Check for config file (indicates previous auth)
-    local config_file="$HOME/.claude/config.json"
-    if [[ ! -f "$config_file" ]]; then
-        check "deep.agent.claude_auth" "Claude Code auth" "warn" "no config file" "Run: claude to authenticate"
+    # Check for credentials file (indicates previous auth)
+    # Claude Code stores OAuth credentials in ~/.claude/.credentials.json (note leading dot)
+    local creds_file="$HOME/.claude/.credentials.json"
+    if [[ ! -f "$creds_file" ]]; then
+        check "deep.agent.claude_auth" "Claude Code auth" "warn" "not authenticated" "Run: claude to authenticate"
         return
     fi
 
-    # Try low-cost API check: --print-system-info doesn't make API calls but verifies setup
-    if timeout 5 claude --print-system-info &>/dev/null; then
-        check "deep.agent.claude_auth" "Claude Code auth" "pass" "authenticated"
+    # Verify OAuth token exists in credentials file
+    local has_token=false
+    if command -v jq &>/dev/null; then
+        # Use jq for reliable JSON parsing
+        if jq -e '.claudeAiOauth.accessToken // empty' "$creds_file" >/dev/null 2>&1; then
+            has_token=true
+        fi
     else
-        # Config exists but system info fails - partial setup
-        check "deep.agent.claude_auth" "Claude Code auth" "warn" "config exists, verify failed" "Run: claude to re-authenticate"
+        # Fallback: basic grep check (less reliable but works without jq)
+        if grep -q '"accessToken"' "$creds_file" 2>/dev/null; then
+            has_token=true
+        fi
+    fi
+
+    if [[ "$has_token" == "true" ]]; then
+        check "deep.agent.claude_auth" "Claude Code auth" "pass" "OAuth authenticated"
+    else
+        check "deep.agent.claude_auth" "Claude Code auth" "warn" "credentials file exists but no valid token" "Run: claude to re-authenticate"
     fi
 }
 
@@ -1254,6 +1285,8 @@ check_postgres_connection() {
 
 # check_postgres_role - Verify target user role exists in PostgreSQL
 # Related: bead azw
+# Fixed: Try current user first before postgres user (pg_roles is readable by any authenticated user)
+# Fixed: Provide actionable fix message (createuser, not systemctl status)
 check_postgres_role() {
     # Skip if not installed
     if ! command -v psql &>/dev/null; then
@@ -1261,13 +1294,18 @@ check_postgres_role() {
     fi
 
     # Try to check if target user role exists
+    # pg_roles view is readable by any authenticated user - no superuser required
     local role_check
     local connect_success=false
 
-    # Try localhost first
-    if role_check=$(timeout 5 psql -w -h localhost -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${ACFS_TARGET_USER}'" 2>/dev/null); then
+    # Try connecting as current user first (mirrors check_postgres_connection behavior)
+    # This works when pg_hba.conf allows peer auth for local users
+    if role_check=$(timeout 5 psql -w -tAc "SELECT 1 FROM pg_roles WHERE rolname='${ACFS_TARGET_USER}'" 2>/dev/null); then
         connect_success=true
-    # Try unix socket fallback
+    # Try localhost with postgres user as fallback
+    elif role_check=$(timeout 5 psql -w -h localhost -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${ACFS_TARGET_USER}'" 2>/dev/null); then
+        connect_success=true
+    # Try unix socket with postgres user as last resort
     elif role_check=$(timeout 5 psql -w -h /var/run/postgresql -U postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='${ACFS_TARGET_USER}'" 2>/dev/null); then
         connect_success=true
     fi
@@ -1279,8 +1317,8 @@ check_postgres_role() {
             check "deep.db.postgres_role" "PostgreSQL ${ACFS_TARGET_USER} role" "warn" "role missing" "sudo -u postgres createuser -s ${ACFS_TARGET_USER}"
         fi
     else
-        # Connection failed
-        check "deep.db.postgres_role" "PostgreSQL ${ACFS_TARGET_USER} role" "warn" "could not verify (connection failed)" "sudo systemctl status postgresql"
+        # Connection failed - provide actionable fix
+        check "deep.db.postgres_role" "PostgreSQL ${ACFS_TARGET_USER} role" "warn" "could not verify (connection failed)" "sudo -u postgres createuser -s ${ACFS_TARGET_USER}"
     fi
 }
 
@@ -1740,6 +1778,22 @@ main() {
             fi
 
             echo "Error: update.sh not found" >&2
+            return 1
+            ;;
+        newproj|new-project|new)
+            shift
+            local newproj_script=""
+            if [[ -f "$HOME/.acfs/scripts/lib/newproj.sh" ]]; then
+                newproj_script="$HOME/.acfs/scripts/lib/newproj.sh"
+            elif [[ -f "$SCRIPT_DIR/newproj.sh" ]]; then
+                newproj_script="$SCRIPT_DIR/newproj.sh"
+            fi
+
+            if [[ -n "$newproj_script" ]]; then
+                exec bash "$newproj_script" "$@"
+            fi
+
+            echo "Error: newproj.sh not found" >&2
             return 1
             ;;
         services-setup|services|setup)

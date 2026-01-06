@@ -123,6 +123,8 @@ declare -a MANIFEST_CHECKS=(
     "cli.modern.11	Modern CLI tools referenced by the zshrc intent	command -v lsd || command -v eza	optional"
     "network.tailscale.1	Zero-config mesh VPN for secure remote VPS access	tailscale version	required"
     "network.tailscale.2	Zero-config mesh VPN for secure remote VPS access	systemctl is-enabled tailscaled	required"
+    "network.ssh_keepalive.1	Configure SSH server keepalive to prevent VPN/NAT disconnects	grep -E '^ClientAliveInterval[[:space:]]+60' /etc/ssh/sshd_config	required"
+    "network.ssh_keepalive.2	Configure SSH server keepalive to prevent VPN/NAT disconnects	grep -E '^ClientAliveCountMax[[:space:]]+3' /etc/ssh/sshd_config	required"
     "lang.bun	Bun runtime for JS tooling and global CLIs	~/.bun/bin/bun --version	required"
     "lang.uv	uv Python tooling (fast venvs)	~/.local/bin/uv --version	required"
     "lang.rust.1	Rust nightly + cargo	~/.cargo/bin/cargo --version	required"

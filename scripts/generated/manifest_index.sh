@@ -6,7 +6,7 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="817312c99cd140d93634cd649f53406b19a8544f366aeaa4f2f07250cde04c08"
+ACFS_MANIFEST_SHA256="bdbe7703f6c77b8dcbf78580f0bd5bd8d061abb8dbb32a35dd0743e39015bb19"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
@@ -16,6 +16,7 @@ ACFS_MODULES_IN_ORDER=(
   "shell.omz"
   "cli.modern"
   "network.tailscale"
+  "network.ssh_keepalive"
   "lang.bun"
   "lang.uv"
   "lang.rust"
@@ -54,6 +55,7 @@ declare -gA ACFS_MODULE_PHASE=(
   [shell.omz]="4"
   [cli.modern]="5"
   [network.tailscale]="5"
+  [network.ssh_keepalive]="5"
   [lang.bun]="6"
   [lang.uv]="6"
   [lang.rust]="6"
@@ -92,6 +94,7 @@ declare -gA ACFS_MODULE_DEPS=(
   [shell.omz]="shell.zsh"
   [cli.modern]="base.system"
   [network.tailscale]="base.system"
+  [network.ssh_keepalive]="base.system"
   [lang.bun]="base.system"
   [lang.uv]="base.system"
   [lang.rust]="base.system"
@@ -130,6 +133,7 @@ declare -gA ACFS_MODULE_FUNC=(
   [shell.omz]="install_shell_omz"
   [cli.modern]="install_cli_modern"
   [network.tailscale]="install_network_tailscale"
+  [network.ssh_keepalive]="install_network_ssh_keepalive"
   [lang.bun]="install_lang_bun"
   [lang.uv]="install_lang_uv"
   [lang.rust]="install_lang_rust"
@@ -168,6 +172,7 @@ declare -gA ACFS_MODULE_CATEGORY=(
   [shell.omz]="shell"
   [cli.modern]="cli"
   [network.tailscale]="network"
+  [network.ssh_keepalive]="network"
   [lang.bun]="lang"
   [lang.uv]="lang"
   [lang.rust]="lang"
@@ -206,6 +211,7 @@ declare -gA ACFS_MODULE_TAGS=(
   [shell.omz]="critical,shell-ux"
   [cli.modern]="recommended,cli-modern"
   [network.tailscale]="networking,vpn,security,google-sso"
+  [network.ssh_keepalive]="networking,remote-dev,ssh"
   [lang.bun]="critical,runtime"
   [lang.uv]="critical,runtime"
   [lang.rust]="critical,runtime"
@@ -244,6 +250,7 @@ declare -gA ACFS_MODULE_DEFAULT=(
   [shell.omz]="1"
   [cli.modern]="1"
   [network.tailscale]="1"
+  [network.ssh_keepalive]="1"
   [lang.bun]="1"
   [lang.uv]="1"
   [lang.rust]="1"
