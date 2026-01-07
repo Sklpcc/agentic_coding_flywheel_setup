@@ -146,7 +146,9 @@ render_progress_screen() {
     local total=${#STEP_ORDER[@]}
     local completed=0
     for step in "${STEP_ORDER[@]}"; do
-        [[ "${STEP_STATUS[$step]}" == "success" ]] && ((completed++))
+        if [[ "${STEP_STATUS[$step]}" == "success" ]]; then
+            completed=$((completed + 1))
+        fi
     done
 
     # Progress bar
