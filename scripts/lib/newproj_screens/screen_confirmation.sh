@@ -51,8 +51,9 @@ get_files_to_create() {
         files+=("$project_dir/.ubsignore")
     fi
 
-    # Always create a basic README
+    # Always create a basic README and .gitignore
     files+=("$project_dir/README.md")
+    files+=("$project_dir/.gitignore")
 
     printf '%s\n' "${files[@]}"
 }
