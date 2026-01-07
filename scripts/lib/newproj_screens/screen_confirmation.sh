@@ -70,7 +70,6 @@ render_file_tree() {
 
     echo -e "${TUI_PRIMARY}$project_name/${TUI_NC}"
 
-    local prev_depth=0
     for file in "${files[@]}"; do
         # Skip the project dir itself
         [[ "$file" == "$project_dir/" ]] && continue
@@ -78,26 +77,25 @@ render_file_tree() {
         # Get relative path
         local rel="${file#$project_dir/}"
 
-        # Calculate depth
-        local depth=$(echo "$rel" | tr -cd '/' | wc -c)
+        # Calculate depth - strip trailing slash first so directories
+        # don't appear deeper than their contents
+        local clean_rel="${rel%/}"
+        local depth=$(echo "$clean_rel" | tr -cd '/' | wc -c)
 
-        # Build prefix
+        # Build prefix - all items need at least "├── " for tree structure
         local prefix=""
-        for ((i = 0; i < depth; i++)); do
-            if [[ $i -eq $((depth - 1)) ]]; then
-                if [[ "$TERM_HAS_UNICODE" == "true" ]]; then
-                    prefix+="├── "
-                else
-                    prefix+="|-- "
-                fi
-            else
-                if [[ "$TERM_HAS_UNICODE" == "true" ]]; then
-                    prefix+="│   "
-                else
-                    prefix+="|   "
-                fi
-            fi
-        done
+        if [[ "$TERM_HAS_UNICODE" == "true" ]]; then
+            # Add indentation for nested items
+            for ((i = 0; i < depth; i++)); do
+                prefix+="│   "
+            done
+            prefix+="├── "
+        else
+            for ((i = 0; i < depth; i++)); do
+                prefix+="|   "
+            done
+            prefix+="|-- "
+        fi
 
         # Get filename
         local name
