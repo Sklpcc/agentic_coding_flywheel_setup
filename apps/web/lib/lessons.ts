@@ -192,6 +192,14 @@ export const LESSONS: Lesson[] = [
     duration: "10 min",
     file: "20_ru.md",
   },
+  {
+    id: 21,
+    slug: "dcg",
+    title: "DCG: Pre-Execution Safety",
+    description: "Block dangerous commands before they cause damage",
+    duration: "8 min",
+    file: "21_dcg.md",
+  },
 ];
 
 /** Total number of lessons */

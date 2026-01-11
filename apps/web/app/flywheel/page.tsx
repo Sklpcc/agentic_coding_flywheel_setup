@@ -13,6 +13,7 @@ import {
   Workflow,
   ExternalLink,
   LayoutGrid,
+  ShieldAlert,
   ShieldCheck,
   Mail,
   Bug,
@@ -31,6 +32,7 @@ import {
   Code2,
   ChevronDown,
   ArrowRight,
+  GitMerge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FlywheelVisualization from "@/components/flywheel-visualization";
@@ -50,9 +52,11 @@ import {
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutGrid,
+  ShieldAlert,
   ShieldCheck,
   Mail,
   GitBranch,
+  GitMerge,
   Bug,
   Brain,
   Search,

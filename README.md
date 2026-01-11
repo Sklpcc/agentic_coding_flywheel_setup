@@ -661,10 +661,41 @@ acfs info                    # Lightning-fast system overview
 acfs cheatsheet              # Discover installed aliases
 acfs dashboard generate      # Generate HTML status page
 acfs doctor                  # Health checks
+acfs newproj                 # Create a new project (TUI or CLI)
 acfs update                  # Update all tools
 acfs services-setup          # Configure agent credentials
 acfs continue                # View upgrade progress after reboot
 ```
+
+### `acfs newproj` — New Project Wizard
+
+Create a new project directory with ACFS defaults (git init, optional bd, Claude settings, AGENTS.md).
+The interactive wizard is recommended for beginners.
+
+Interactive wizard (recommended):
+```bash
+acfs newproj --interactive
+acfs newproj -i
+acfs newproj -i myapp         # Prefill project name
+```
+
+The wizard guides you through:
+- Project naming and location
+- Tech stack detection/selection
+- Feature selection (bd, Claude settings, AGENTS.md, UBS ignore)
+- AGENTS.md customization preview
+
+CLI mode (automation):
+```bash
+acfs newproj myapp
+acfs newproj myapp /custom/path
+acfs newproj myapp --no-bd
+```
+
+Notes:
+- The TUI uses gum when available (arrow keys, Space to toggle, Enter to confirm). Without gum, it falls back to numbered prompts.
+- Minimum terminal size: 60x15.
+- If AGENTS.md already exists, the wizard will not overwrite it; move it aside to regenerate.
 
 ### `acfs info` — System Overview
 

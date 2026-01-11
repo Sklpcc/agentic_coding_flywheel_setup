@@ -514,7 +514,7 @@ show_error_with_recovery() {
         exists)
             echo "How to fix:"
             echo "  1. Choose a different project name"
-            echo "  2. Or remove the existing directory first"
+            echo "  2. Or move/rename the existing directory first"
             ;;
         no_parent)
             echo "How to fix:"
@@ -540,6 +540,9 @@ show_error_with_recovery() {
             echo "For more details, check the log file."
             ;;
     esac
+
+    echo ""
+    echo "Need help? Run: acfs newproj --help"
 
     # Show log location if available
     if [[ -n "${ACFS_SESSION_LOG:-}" && -f "${ACFS_SESSION_LOG:-}" ]]; then
