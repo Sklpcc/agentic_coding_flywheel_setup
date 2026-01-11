@@ -263,8 +263,8 @@ test_command_edge_cases() {
     fi
 
     # Command with special characters (single quotes intentional - testing literal $USER)
-    # shellcheck disable=SC2016
     local special_test
+    # shellcheck disable=SC2016
     if special_test=$(dcg test 'echo "hello $USER"' 2>&1); then
         pass "Special characters handled gracefully"
     elif [[ -n "$special_test" ]]; then
