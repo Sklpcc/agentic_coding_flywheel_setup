@@ -100,14 +100,29 @@ get_slb_tier() {
 test_both_tools_available() {
     log "Testing both DCG and SLB are available..."
 
-    local dcg_version slb_version
-    dcg_version=$(dcg --version 2>/dev/null | head -1) || dcg_version="unknown"
-    slb_version=$(slb --version 2>/dev/null | head -1) || slb_version="unknown"
+    # Check if binaries exist in PATH
+    local dcg_installed slb_installed
+    dcg_installed=$(command -v dcg 2>/dev/null) || dcg_installed=""
+    slb_installed=$(command -v slb 2>/dev/null) || slb_installed=""
 
-    detail "DCG version: $dcg_version"
-    detail "SLB version: $slb_version"
+    # Verify DCG can run basic commands
+    local dcg_works=0
+    if dcg packs >/dev/null 2>&1; then
+        dcg_works=1
+    fi
 
-    if [[ "$dcg_version" != "unknown" ]] && [[ "$slb_version" != "unknown" ]]; then
+    # Verify SLB responds to --help (status may have no output)
+    local slb_works=0
+    if slb --help >/dev/null 2>&1; then
+        slb_works=1
+    fi
+
+    detail "DCG path: $dcg_installed"
+    detail "SLB path: $slb_installed"
+    detail "DCG works: $dcg_works"
+    detail "SLB works: $slb_works"
+
+    if [[ -n "$dcg_installed" ]] && [[ -n "$slb_installed" ]] && [[ $dcg_works -eq 1 ]] && [[ $slb_works -eq 1 ]]; then
         pass "Both DCG and SLB are available"
         return 0
     else
