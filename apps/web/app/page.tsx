@@ -320,6 +320,7 @@ const FLYWHEEL_TOOLS = [
   { name: "CM", color: "from-pink-400 to-fuchsia-500", desc: "Memory" },
   { name: "CAAM", color: "from-amber-400 to-orange-500", desc: "Auth" },
   { name: "SLB", color: "from-yellow-400 to-amber-500", desc: "Safety" },
+  { name: "DCG", color: "from-red-400 to-rose-500", desc: "Command Guard" },
   { name: "RU", color: "from-indigo-400 to-blue-500", desc: "Repo Sync" },
 ];
 
@@ -351,7 +352,7 @@ function FlywheelSection() {
 
         {/* Tool preview grid */}
         <motion.div
-          className="grid grid-cols-2 gap-4 mb-8 xs:grid-cols-4 sm:grid-cols-8"
+          className="grid grid-cols-2 gap-4 mb-8 xs:grid-cols-5 sm:grid-cols-5 lg:grid-cols-10"
           variants={staggerContainer}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}

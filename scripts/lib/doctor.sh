@@ -794,6 +794,44 @@ check_git_safety_guard() {
     fi
 }
 
+# Check DCG hook registration status
+check_dcg_hook_status() {
+    if ! command -v dcg &>/dev/null; then
+        check "stack.dcg" "DCG" "warn" "not installed" \
+            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/master/install.sh | bash && dcg install"
+        return
+    fi
+
+    local version
+    version=$(get_version_line "dcg")
+
+    if ! command -v claude &>/dev/null; then
+        check "stack.dcg" "DCG ($version)" "warn" "Claude Code not found for hook registration" \
+            "Install Claude Code, then run: dcg install"
+        return
+    fi
+
+    local settings_file=""
+    if [[ -f "$HOME/.claude/settings.json" ]]; then
+        settings_file="$HOME/.claude/settings.json"
+    elif [[ -f "$HOME/.config/claude/settings.json" ]]; then
+        settings_file="$HOME/.config/claude/settings.json"
+    fi
+
+    if [[ -z "$settings_file" ]]; then
+        check "stack.dcg" "DCG ($version)" "warn" "hook not registered (settings.json missing)" \
+            "Run: dcg install"
+        return
+    fi
+
+    if grep -q "dcg" "$settings_file" 2>/dev/null; then
+        check "stack.dcg" "DCG ($version)" "pass" "installed + hook registered"
+    else
+        check "stack.dcg" "DCG ($version)" "warn" "binary installed but hook not registered" \
+            "Run: dcg install"
+    fi
+}
+
 # Check cloud tools
 check_cloud() {
     section "Cloud/DB"
@@ -917,21 +955,7 @@ check_stack() {
     fi
 
     # Check DCG (Destructive Command Guard)
-    if command -v dcg &>/dev/null; then
-        local version
-        version=$(get_version_line "dcg")
-        # Check if hook is registered with Claude Code
-        local settings_file="$HOME/.claude/settings.json"
-        if [[ -f "$settings_file" ]] && grep -q "dcg" "$settings_file" 2>/dev/null; then
-            check "stack.dcg" "DCG ($version)" "pass" "installed + hook registered"
-        else
-            check "stack.dcg" "DCG ($version)" "warn" "binary installed but hook not registered" \
-                "Run: dcg install"
-        fi
-    else
-        check "stack.dcg" "DCG" "warn" "not installed" \
-            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/master/install.sh | bash && dcg install"
-    fi
+    check_dcg_hook_status
 
     blank_line
 }

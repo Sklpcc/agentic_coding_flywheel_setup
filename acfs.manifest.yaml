@@ -1059,6 +1059,16 @@ modules:
     install: []
     verify:
       - dcg --version
+      - |
+          settings="$HOME/.claude/settings.json"
+          alt_settings="$HOME/.config/claude/settings.json"
+          if [[ -f "$settings" ]]; then
+            grep -q "dcg" "$settings"
+          elif [[ -f "$alt_settings" ]]; then
+            grep -q "dcg" "$alt_settings"
+          else
+            exit 1
+          fi
 
   - id: stack.ru
     description: Repo Updater - multi-repo sync + AI-driven commit automation

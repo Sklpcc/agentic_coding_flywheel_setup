@@ -792,6 +792,25 @@ INSTALL_STACK_DCG
             return 1
         fi
     fi
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: settings=\"\$HOME/.claude/settings.json\" (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_STACK_DCG'
+settings="$HOME/.claude/settings.json"
+alt_settings="$HOME/.config/claude/settings.json"
+if [[ -f "$settings" ]]; then
+  grep -q "dcg" "$settings"
+elif [[ -f "$alt_settings" ]]; then
+  grep -q "dcg" "$alt_settings"
+else
+  exit 1
+fi
+INSTALL_STACK_DCG
+        then
+            log_error "stack.dcg: verify failed: settings=\"\$HOME/.claude/settings.json\""
+            return 1
+        fi
+    fi
 
     log_success "stack.dcg installed"
 }

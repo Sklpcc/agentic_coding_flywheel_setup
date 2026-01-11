@@ -214,6 +214,46 @@ const COMMANDS: CommandEntry[] = [
     category: "stack",
     learnMoreHref: "/learn/tools/slb",
   },
+  {
+    name: "dcg",
+    fullName: "Destructive Command Guard",
+    description: "Pre-execution guard blocking dangerous commands",
+    example: "dcg --help",
+    category: "stack",
+    learnMoreHref: "/learn/tools/dcg",
+  },
+  {
+    name: "dcg test",
+    fullName: "DCG Test Command",
+    description: "Check if a command would be blocked without running it",
+    example: "dcg test 'git reset --hard' --explain",
+    category: "stack",
+    learnMoreHref: "/learn/tools/dcg",
+  },
+  {
+    name: "dcg packs",
+    fullName: "DCG Pack List",
+    description: "List available protection packs (git, database, k8s, cloud)",
+    example: "dcg packs --enabled",
+    category: "stack",
+    learnMoreHref: "/learn/tools/dcg",
+  },
+  {
+    name: "dcg allow-once",
+    fullName: "DCG Allow Once",
+    description: "Bypass a block using the short code from denial message",
+    example: "dcg allow-once ABC-123",
+    category: "stack",
+    learnMoreHref: "/learn/tools/dcg",
+  },
+  {
+    name: "dcg doctor",
+    fullName: "DCG Doctor",
+    description: "Check DCG installation and hook registration status",
+    example: "dcg doctor --fix",
+    category: "stack",
+    learnMoreHref: "/learn/tools/dcg",
+  },
 
   // Search
   {

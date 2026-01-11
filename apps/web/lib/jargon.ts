@@ -950,6 +950,28 @@ export const jargonDictionary: Record<string, JargonTerm> = {
     why: "Cloning is how you start working on any Git-hosted project. The AI coding assistants often clone repositories to work on them. When the wizard mentions 'cloning a repo,' it means downloading a complete copy of a project to your VPS.",
     related: ["repository", "git", "github"],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // DICKLESWORTHSTONE STACK TOOLS
+  // ═══════════════════════════════════════════════════════════════
+
+  dcg: {
+    term: "DCG",
+    short: "Destructive Command Guard, a Claude Code hook that blocks dangerous commands before execution",
+    long: "DCG (Destructive Command Guard) is a safety tool that intercepts commands in Claude Code before they execute. It checks commands against 50+ protection packs covering git operations (like hard resets and force pushes), filesystem operations (like rm -rf), database commands (like DROP TABLE), Kubernetes operations, and cloud provider commands. When a dangerous command is detected, DCG blocks it immediately and suggests safer alternatives. It uses a fail-open design, meaning if DCG itself encounters an error or timeout, your workflow continues unblocked.",
+    analogy: "Think of DCG like a safety guard at a factory machine. Before the machine (your AI agent) can operate, the guard checks if the action would be dangerous. If someone tries to stick their hand in the gears (run rm -rf /), the guard stops them and suggests using proper safety equipment (a safer command). But if the guard takes a break (DCG errors or times out), the machine keeps running rather than stopping everything.",
+    why: "AI coding agents occasionally make mistakes or misunderstand instructions, leading to destructive commands that can destroy hours of uncommitted work in seconds. DCG provides a sub-50ms safety net that catches these mistakes before any damage occurs. It's especially important in 'vibe mode' where agents have more autonomy. DCG works alongside SLB (Simultaneous Launch Button) to provide layered safety: DCG blocks obvious destructive patterns instantly, while SLB handles contextual risks that need human judgment.",
+    related: ["slb", "claude-code", "hook"],
+  },
+
+  "protection-pack": {
+    term: "Protection Pack",
+    short: "A collection of DCG rules targeting a specific category of dangerous commands",
+    long: "Protection packs are modular sets of rules in DCG that each protect against a category of dangerous operations. The 'git' pack blocks hard resets and force pushes. The 'filesystem' pack blocks recursive force deletes. The 'database' pack catches DROP TABLE and TRUNCATE. Other packs cover Kubernetes, Terraform, Docker, AWS, and more. You can enable or disable packs based on what's relevant to your workflow. For example, if you never use Kubernetes, you can disable those packs to reduce false positives.",
+    analogy: "Like different safety regulations for different industries. A construction site has rules about hard hats and fall protection. A chemical plant has rules about protective suits and ventilation. You apply the rules relevant to your work environment. DCG's protection packs work the same way: enable the packs for the technologies you use.",
+    why: "Different projects use different technologies. A web project might need git and filesystem protection but not Kubernetes rules. A DevOps project might need everything. Protection packs let you customize DCG to your specific needs, reducing false positives while maintaining safety where it matters.",
+    related: ["dcg", "hook"],
+  },
 };
 
 /**

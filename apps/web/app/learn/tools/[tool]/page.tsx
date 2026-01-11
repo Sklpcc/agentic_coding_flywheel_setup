@@ -14,6 +14,7 @@ import {
   KeyRound,
   LayoutGrid,
   Search,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Terminal,
@@ -32,7 +33,8 @@ type ToolId =
   | "cass"
   | "cm"
   | "caam"
-  | "slb";
+  | "slb"
+  | "dcg";
 
 type ToolCard = {
   id: ToolId;
@@ -178,7 +180,19 @@ const TOOLS: Record<ToolId, ToolCard> = {
     glowColor: "rgba(251,191,36,0.4)",
     docsUrl: "https://github.com/Dicklesworthstone/simultaneous_launch_button",
     docsLabel: "GitHub",
-    relatedTools: ["ubs", "beads"],
+    relatedTools: ["ubs", "beads", "dcg"],
+  },
+  dcg: {
+    id: "dcg",
+    title: "DCG",
+    tagline: "Pre-execution safety net - blocks dangerous commands before damage",
+    icon: <ShieldAlert className="h-8 w-8" />,
+    gradient: "from-red-500/20 via-rose-500/20 to-red-500/20",
+    glowColor: "rgba(244,63,94,0.4)",
+    docsUrl: "https://github.com/Dicklesworthstone/destructive_command_guard",
+    docsLabel: "GitHub",
+    quickCommand: "dcg test 'rm -rf /' --explain",
+    relatedTools: ["slb", "claude-code", "ntm"],
   },
 };
 

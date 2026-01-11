@@ -1034,6 +1034,31 @@ update_stack() {
         return 0
     fi
 
+    # DCG migration: offer install for existing users who don't have it yet
+    if ! cmd_exists dcg; then
+        log_item "warn" "DCG not installed" "new safety tool available in the ACFS stack"
+
+        if [[ "$YES_MODE" == "true" || "$FORCE_MODE" == "true" ]]; then
+            run_cmd "DCG (install)" update_run_verified_installer dcg
+            if cmd_exists dcg && cmd_exists claude; then
+                run_cmd "DCG Hook" dcg install --force 2>/dev/null || true
+            fi
+        elif [[ -t 0 ]]; then
+            [[ "$QUIET" != "true" ]] && echo ""
+            read -r -p "Install DCG now? [Y/n] " response
+            if [[ -z "$response" || "$response" =~ ^[Yy] ]]; then
+                run_cmd "DCG (install)" update_run_verified_installer dcg
+                if cmd_exists dcg && cmd_exists claude; then
+                    run_cmd "DCG Hook" dcg install --force 2>/dev/null || true
+                fi
+            else
+                log_item "skip" "DCG" "skipped (install later: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/master/install.sh | bash)"
+            fi
+        else
+            log_item "skip" "DCG" "not installed (non-interactive; run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/master/install.sh | bash)"
+        fi
+    fi
+
     # NTM
     if cmd_exists ntm; then
         run_cmd "NTM" update_run_verified_installer ntm
@@ -1119,6 +1144,35 @@ update_stack() {
     # RU (Repo Updater)
     if cmd_exists ru; then
         run_cmd "RU" update_run_verified_installer ru --easy-mode
+    fi
+
+    # DCG migration: install if missing
+    if ! cmd_exists dcg; then
+        [[ "$QUIET" != "true" ]] && echo ""
+        [[ "$QUIET" != "true" ]] && echo -e "${BOLD}DCG (Destructive Command Guard)${NC}"
+        [[ "$QUIET" != "true" ]] && echo "DCG is now part of the ACFS stack and blocks dangerous commands."
+
+        local install_dcg="false"
+        if [[ "$YES_MODE" == "true" ]]; then
+            install_dcg="true"
+        else
+            local response=""
+            read -r -p "Install DCG now? [Y/n] " response || true
+            if [[ -z "$response" || "$response" =~ ^[Yy] ]]; then
+                install_dcg="true"
+            fi
+        fi
+
+        if [[ "$install_dcg" == "true" ]]; then
+            run_cmd "DCG (install)" update_run_verified_installer dcg --easy-mode
+            if cmd_exists dcg && cmd_exists claude; then
+                run_cmd "DCG Hook" dcg install --force 2>/dev/null || true
+            fi
+        else
+            log_item "skip" "DCG" "not installed (user declined)"
+            [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}To install later: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/dangerous_command_guard/main/install.sh | bash${NC}"
+            log_to_file "DCG install skipped by user"
+        fi
     fi
 
     # DCG (Destructive Command Guard)
