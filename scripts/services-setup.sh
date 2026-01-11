@@ -686,6 +686,20 @@ It also supports optional protection packs (database, Kubernetes, cloud)."
         gum_detail "Install Claude Code, then run: dcg install"
     fi
 
+    if user_command_exists claude && ! run_as_user "$dcg_bin" doctor &>/dev/null; then
+        gum_warn "DCG doctor reported issues"
+        if [[ "$SERVICES_SETUP_NONINTERACTIVE" == "true" ]]; then
+            gum_detail "Attempting DCG repair (noninteractive)"
+            run_as_user "$dcg_bin" install --force || gum_warn "DCG repair failed"
+        else
+            if gum_confirm "Attempt DCG repair by re-registering the hook?"; then
+                run_as_user "$dcg_bin" install --force || gum_warn "DCG repair failed"
+            else
+                gum_warn "Skipped DCG repair"
+            fi
+        fi
+    fi
+
     if [[ "$SERVICES_SETUP_NONINTERACTIVE" == "true" ]]; then
         gum_detail "Skipping pack selection (noninteractive)"
         return 0

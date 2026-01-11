@@ -1145,7 +1145,7 @@ show_status() {
 
     if has_gum; then
         # Styled progress display with gum
-        local percent=$((completed_count * 100 / 9))
+        local percent=$((completed_count * 100 / 11))
         local filled=$((percent / 2))
         local empty=$((50 - filled))
 
@@ -1181,7 +1181,7 @@ $(gum style --foreground "$ACFS_PRIMARY" "$bar") $(gum style --foreground "$ACFS
 
         echo ""
 
-        if [[ $completed_count -eq 9 ]]; then
+        if [[ $completed_count -eq 11 ]]; then
             gum style \
                 --foreground "$ACFS_SUCCESS" \
                 --bold \
@@ -1195,7 +1195,7 @@ $(gum style --foreground "$ACFS_PRIMARY" "$bar") $(gum style --foreground "$ACFS
         echo ""
         gum confirm --affirmative "Continue" --negative "" "Ready to continue?" || true
     else
-        echo -e "${BOLD}Progress: $completed_count/9 lessons completed${NC}"
+        echo -e "${BOLD}Progress: $completed_count/11 lessons completed${NC}"
         echo ""
 
         # Progress bar
@@ -1207,16 +1207,16 @@ $(gum style --foreground "$ACFS_PRIMARY" "$bar") $(gum style --foreground "$ACFS
         printf '%s' "${DIM}"
         for ((i = 0; i < empty; i++)); do printf '░'; done
         printf '%s' "${NC}"
-        echo " $((completed_count * 100 / 9))%"
+        echo " $((completed_count * 100 / 11))%"
         echo ""
 
-        for i in {0..8}; do
+        for i in {0..10}; do
             echo -e "  $(format_lesson "$i")"
         done
 
         echo ""
 
-        if [[ $completed_count -eq 9 ]]; then
+        if [[ $completed_count -eq 11 ]]; then
             echo -e "${GREEN}${BOLD}All lessons complete! You're ready to fly!${NC}"
         else
             local next_idx
@@ -1245,7 +1245,7 @@ main_menu() {
         fi
 
         case "$choice" in
-            [1-9])
+            [1-9]|1[01])
                 local idx=$((choice - 1))
                 set_current "$idx"
                 show_lesson "$idx"
