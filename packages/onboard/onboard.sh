@@ -255,11 +255,11 @@ mark_completed() {
             return 0
         }
 
-        if jq --argjson lesson "$lesson" '
+        if jq --argjson lesson "$lesson" --argjson num_lessons "$NUM_LESSONS" '
             .completed = (.completed + [$lesson] | unique | sort) |
             . as $o |
             .current = (
-                [range(0;11) as $i | select(($o.completed | index($i)) == null) | $i] | first // 10
+                [range(0;$num_lessons) as $i | select(($o.completed | index($i)) == null) | $i] | first // ($num_lessons - 1)
             ) |
             .last_accessed = (now | todateiso8601)
         ' "$PROGRESS_FILE" > "$tmp"; then
