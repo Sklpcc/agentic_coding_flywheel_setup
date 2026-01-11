@@ -131,6 +131,9 @@ export function setVPSIP(ip: string): boolean {
 
 /**
  * Validate an IP address (IPv4 or IPv6).
+ *
+ * For VPS addresses intended for remote SSH connections, zone IDs (like %eth0)
+ * are rejected since they only make sense for local link-local addresses.
  */
 export function isValidIP(ip: string): boolean {
   const normalized = ip.trim();
@@ -145,13 +148,18 @@ export function isValidIP(ip: string): boolean {
     });
   }
 
-  // IPv6 validation (full, compressed, and mixed formats)
-  // Matches: 2001:db8::1, ::1, fe80::1%eth0, 2001:db8:85a3::8a2e:370:7334, etc.
-  const ipv6Pattern = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))$/;
+  // Reject IPv6 addresses with zone IDs (e.g., %eth0, %br-abc123)
+  // Zone IDs are only meaningful for link-local addresses on local interfaces,
+  // not for remote VPS connections over the internet.
+  if (normalized.includes("%")) {
+    return false;
+  }
 
-  // Remove zone ID (e.g., %eth0, %br-abc123, %my_iface) for validation
-  const ipWithoutZone = normalized.replace(/%[a-zA-Z0-9_-]+$/, "");
-  return ipv6Pattern.test(ipWithoutZone);
+  // IPv6 validation (full, compressed, and mixed formats)
+  // Matches: 2001:db8::1, ::1, 2001:db8:85a3::8a2e:370:7334, etc.
+  const ipv6Pattern = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))$/;
+
+  return ipv6Pattern.test(normalized);
 }
 
 // --- React Hooks for User Preferences ---
