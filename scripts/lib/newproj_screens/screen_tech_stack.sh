@@ -82,7 +82,7 @@ detect_initial_tech_stack() {
             ruby)
                 selected+=("ruby")
                 ;;
-            java-maven|java-gradle)
+            java|java-maven|java-gradle)
                 [[ ! " ${selected[*]} " =~ " java " ]] && selected+=("java")
                 ;;
             php)
