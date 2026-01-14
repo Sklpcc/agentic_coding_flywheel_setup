@@ -131,7 +131,7 @@ function FooterCTA({ id }: { id?: string }) {
           <p className="text-xs text-muted-foreground">
             Or use the{" "}
             <a
-              href="/"
+              href="/wizard/os-selection"
               className="text-primary underline hover:text-primary/80"
             >
               step-by-step wizard
