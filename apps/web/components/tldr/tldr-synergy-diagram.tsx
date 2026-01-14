@@ -230,6 +230,7 @@ export function TldrSynergyDiagram({
             initial={reducedMotion ? {} : { opacity: 0, scale: 0.8 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: reducedMotion ? 0 : 0.5, delay: reducedMotion ? 0 : 0.2 }}
+            style={{ transformOrigin: "200px 200px" }}
           >
             {/* Center glow effect */}
             <circle
@@ -305,6 +306,7 @@ export function TldrSynergyDiagram({
                   type: "spring",
                   stiffness: 200,
                 }}
+                style={{ transformOrigin: `${pos.x}px ${pos.y}px` }}
               >
                 {/* Outer glow */}
                 <circle
