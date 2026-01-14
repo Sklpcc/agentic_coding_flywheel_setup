@@ -842,9 +842,10 @@ export const flywheelTools: FlywheelTool[] = [
       "Converts public ChatGPT, Gemini, Grok, and Claude share links into clean Markdown + HTML transcripts with preserved code fences and stable filenames.",
     deepDescription:
       "CSCTF uses Playwright to scrape AI chat share pages, extracting conversations with proper code block formatting. Outputs both Markdown and static HTML with syntax highlighting. Optional GitHub Pages publishing for instant sharing.",
-    connectsTo: ["cass"],
+    connectsTo: ["cass", "cm"],
     connectionDescriptions: {
       cass: "Archived conversations can be indexed by CASS",
+      cm: "Valuable insights from chats can become memories",
     },
     stars: 20,
     features: [

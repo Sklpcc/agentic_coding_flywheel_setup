@@ -151,15 +151,15 @@ export function TldrSynergyDiagram({
               );
             })}
 
-            {/* Connection-specific gradients */}
+            {/* Connection-specific gradients - coordinates match line positions */}
             {connections.map((conn) => (
               <linearGradient
                 key={`line-gradient-${conn.from}-${conn.to}`}
                 id={`line-gradient-${conn.from}-${conn.to}`}
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
+                x1={conn.fromPos.x}
+                y1={conn.fromPos.y}
+                x2={conn.toPos.x}
+                y2={conn.toPos.y}
                 gradientUnits="userSpaceOnUse"
               >
                 <stop offset="0%" stopColor={conn.fromColor.from} stopOpacity="0.7" />
