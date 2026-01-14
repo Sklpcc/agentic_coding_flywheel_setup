@@ -9,6 +9,7 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Wrench,
 } from "lucide-react";
 
@@ -25,7 +26,8 @@ export type ToolId =
   | "caam"
   | "slb"
   | "dcg"
-  | "ru";
+  | "ru"
+  | "ms";
 
 export type ToolCard = {
   id: ToolId;
@@ -193,6 +195,18 @@ export const TOOLS: Record<ToolId, ToolCard> = {
     docsLabel: "GitHub",
     quickCommand: "ru sync --parallel 4",
     relatedTools: ["ntm", "beads", "agent-mail"],
+  },
+  ms: {
+    id: "ms",
+    title: "Meta Skill",
+    tagline: "Mine CASS sessions into reusable production-grade skills",
+    icon: <Sparkles className="h-8 w-8" aria-hidden="true" />,
+    gradient: "from-teal-500/20 via-emerald-500/20 to-teal-500/20",
+    glowColor: "rgba(20,184,166,0.4)",
+    docsUrl: "https://github.com/Dicklesworthstone/meta_skill",
+    docsLabel: "GitHub",
+    quickCommand: "ms search 'error handling'",
+    relatedTools: ["cass", "cm", "beads"],
   },
 };
 

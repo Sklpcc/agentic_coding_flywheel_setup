@@ -537,13 +537,14 @@ export const flywheelTools: FlywheelTool[] = [
       "Transforms task tracking with DAG-based analysis. Nine graph metrics, robot protocol for AI, time-travel diffing. Agents use BV to figure out what to work on next.",
     deepDescription:
       "BV treats your project as a Directed Acyclic Graph. Computes PageRank, Betweenness Centrality, HITS, Critical Path, and more. Robot protocol (--robot-*) outputs structured JSON for agents. Time-travel lets you diff across git history.",
-    connectsTo: ["mail", "ubs", "cass", "cm", "ru"],
+    connectsTo: ["mail", "ubs", "cass", "cm", "ru", "ms"],
     connectionDescriptions: {
       mail: "Task updates trigger notifications",
       ubs: "Bug scan results create blocking issues",
       cass: "Search prior sessions for task context",
       cm: "Remembers successful approaches",
       ru: "RU integrates with beads for multi-repo task tracking",
+      ms: "Skills can be linked to beads for guidance",
     },
     stars: 546,
     demoUrl: "https://dicklesworthstone.github.io/beads_viewer-pages/",
@@ -577,11 +578,12 @@ export const flywheelTools: FlywheelTool[] = [
       "Unified search for all AI coding sessions. Indexes Claude, Codex, Cursor, Gemini, ChatGPT, Cline, and more. Tantivy-powered <60ms prefix queries.",
     deepDescription:
       "CASS unifies session history from 10 agent formats into a single searchable timeline. Edge n-gram indexing for instant prefix matching. Six ranking modes balance relevance, recency, and match quality. Robot mode with cursor pagination and token budgeting.",
-    connectsTo: ["cm", "ntm", "bv"],
+    connectsTo: ["cm", "ntm", "bv", "ms"],
     connectionDescriptions: {
       cm: "Indexes stored memories for retrieval",
       ntm: "Searches all NTM-managed session histories",
       bv: "Links search results to related tasks",
+      ms: "Provides session data for skill extraction",
     },
     stars: 145,
     features: [
@@ -614,11 +616,12 @@ export const flywheelTools: FlywheelTool[] = [
       "Human-like memory for AI agents. Procedural playbooks, episodic session logs, semantic facts. Agents learn from experience and never repeat mistakes.",
     deepDescription:
       "CM implements the ACE (Agentic Context Engineering) framework. Four-stage pipeline: Generator → Reflector → Validator → Curator. Playbook bullets with 90-day decay half-life. Evidence validation against CASS history. The Curator has NO LLM to prevent context collapse.",
-    connectsTo: ["mail", "cass", "bv"],
+    connectsTo: ["mail", "cass", "bv", "ms"],
     connectionDescriptions: {
       mail: "Stores conversation summaries",
       cass: "Semantic search over memories",
       bv: "Remembers successful approaches",
+      ms: "Skills and memories complement each other",
     },
     stars: 71,
     demoUrl: "https://dicklesworthstone.github.io/cass-memory-system-agent-mailbox-viewer/viewer/",
@@ -790,6 +793,43 @@ export const flywheelTools: FlywheelTool[] = [
       'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh" | bash',
     language: "Bash",
   },
+  {
+    id: "ms",
+    name: "Meta Skill",
+    shortName: "MS",
+    href: "https://github.com/Dicklesworthstone/meta_skill",
+    icon: "Sparkles",
+    color: "from-teal-400 to-emerald-500",
+    tagline: "Mine sessions into skills",
+    description:
+      "Local-first CLI that mines CASS sessions into durable, production-grade skills. Dual persistence (SQLite + Git), hybrid search, and safety boundaries during extraction.",
+    deepDescription:
+      "MS transforms raw agent sessions into reusable skill specifications. The hybrid search (BM25 + hash embeddings with RRF fusion) finds relevant patterns. ACIP prompt-injection quarantine keeps extracted skills safe. Skills are stored as structured SKILL.md files with deterministic round-trip parsing.",
+    connectsTo: ["cass", "cm", "bv"],
+    connectionDescriptions: {
+      cass: "Mines CASS-indexed sessions for pattern extraction",
+      cm: "Skills complement CM's procedural memory",
+      bv: "Skills can be linked to beads for task-specific guidance",
+    },
+    stars: 10,
+    features: [
+      "Dual persistence: SQLite for queries + Git for auditability",
+      "Hybrid search: BM25 + hash embeddings with RRF fusion",
+      "Robot mode: --robot for JSON output",
+      "ACIP quarantine: Prompt-injection safety",
+      "Structured skills: SKILL.md ↔ spec round-trip",
+      "Priority layers: base/org/project/user",
+    ],
+    cliCommands: [
+      "ms init                    # Initialize .ms/ root",
+      "ms index                   # Index SKILL.md files",
+      "ms search 'error handling' # Find relevant skills",
+      "ms show <skill-id>         # Inspect a skill",
+      "ms list                    # List all skills",
+    ],
+    installCommand: "cargo install --git https://github.com/Dicklesworthstone/meta_skill",
+    language: "Rust",
+  },
 ];
 
 // ============================================================
@@ -798,7 +838,7 @@ export const flywheelTools: FlywheelTool[] = [
 
 export const flywheelDescription = {
   title: "The Agentic Coding Flywheel",
-  subtitle: "Ten tools plus utilities that create unheard-of velocity",
+  subtitle: "Eleven tools plus utilities that create unheard-of velocity",
   description:
     "A self-reinforcing system that enables multiple AI agents to work in parallel across 10+ projects, reviewing each other's work, creating and executing tasks, and making incredible autonomous progress while you're away.",
   philosophy: [
@@ -825,7 +865,7 @@ export const flywheelDescription = {
   ],
   metrics: {
     totalStars: "2K+",
-    toolCount: 10,
+    toolCount: 11,
     languages: ["Go", "Rust", "TypeScript", "Python", "Bash"],
     avgInstallTime: "< 30s each",
     projectsSimultaneous: "8+",

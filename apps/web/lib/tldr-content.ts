@@ -108,6 +108,10 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
         toolId: "cass",
         description: "Search prior sessions for task context",
       },
+      {
+        toolId: "ms",
+        description: "Skills can be linked to beads for guidance",
+      },
     ],
     techStack: ["Go", "Bubble Tea", "Lip Gloss", "Graph algorithms"],
     keyFeatures: [
@@ -153,6 +157,10 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
       {
         toolId: "bv",
         description: "Links search results to related Beads tasks",
+      },
+      {
+        toolId: "ms",
+        description: "Provides session data for skill extraction",
       },
     ],
     techStack: ["Rust", "Tantivy", "Ratatui", "JSONL parsing"],
@@ -373,6 +381,10 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
         toolId: "bv",
         description: "Task patterns and solutions remembered",
       },
+      {
+        toolId: "ms",
+        description: "Skills and memories complement each other",
+      },
     ],
     techStack: ["TypeScript", "Bun", "MCP Protocol", "SQLite"],
     keyFeatures: [
@@ -479,6 +491,52 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
       "Requiring approval for rm -rf and git reset operations",
       "Adding safety gates to autonomous agent workflows",
       "Audit trail of dangerous command approvals",
+    ],
+  },
+  {
+    id: "ms",
+    name: "Meta Skill",
+    shortName: "MS",
+    href: "https://github.com/Dicklesworthstone/meta_skill",
+    icon: "Sparkles",
+    color: "from-teal-500 to-emerald-600",
+    category: "core",
+    stars: 10,
+    whatItDoes:
+      "Local-first CLI that mines CASS sessions into durable, production-grade skills. Stores skills with dual persistence (SQLite + Git), supports hybrid search, and enforces safety boundaries during extraction.",
+    whyItsUseful:
+      "Agent workflows get rediscovered repeatedly. CASS captures raw sessions, but MS distills them into reusable skill specs that can be searched, loaded, and reused - turning tribal knowledge into institutional knowledge.",
+    implementationHighlights: [
+      "Dual persistence: SQLite for fast queries + Git for auditability",
+      "Hybrid search: BM25 + hash embeddings fused with RRF",
+      "ACIP prompt-injection quarantine for safety",
+      "Structured SKILL.md ↔ spec deterministic round-trip",
+    ],
+    synergies: [
+      {
+        toolId: "cass",
+        description: "Mines CASS-indexed sessions for pattern extraction",
+      },
+      {
+        toolId: "cm",
+        description: "Skills and CM memories complement each other",
+      },
+      {
+        toolId: "bv",
+        description: "Skills can be linked to beads for task guidance",
+      },
+    ],
+    techStack: ["Rust", "SQLite", "Tantivy", "Git"],
+    keyFeatures: [
+      "Mine sessions into reusable skills",
+      "Hybrid BM25 + semantic search",
+      "Robot mode for automation",
+      "Priority layering (base/org/project/user)",
+    ],
+    useCases: [
+      "Extracting reusable patterns from successful sessions",
+      "Building team-wide skill libraries",
+      "Onboarding new agents with proven playbooks",
     ],
   },
   // ===========================================================================
@@ -617,15 +675,15 @@ export const tldrPageData = {
     title: "The Agentic Coding Flywheel",
     subtitle: "TL;DR Edition",
     description:
-      "10 core tools and 3 supporting utilities that transform multi-agent AI coding workflows. Each tool makes the others more powerful - the more you use it, the faster it spins. While others argue about agentic coding, we're just over here building as fast as we can.",
+      "11 core tools and 3 supporting utilities that transform multi-agent AI coding workflows. Each tool makes the others more powerful - the more you use it, the faster it spins. While others argue about agentic coding, we're just over here building as fast as we can.",
     stats: [
-      { label: "Ecosystem Tools", value: "13" },
+      { label: "Ecosystem Tools", value: "14" },
       { label: "GitHub Stars", value: "3,800+" },
       { label: "Languages", value: "5" },
     ],
   },
   coreDescription:
-    "The core flywheel tools form the backbone: Agent Mail for coordination, BV for graph-based prioritization, CASS for instant session search, CM for persistent memory, UBS for bug detection, plus session management, safety guards, and automated setup.",
+    "The core flywheel tools form the backbone: Agent Mail for coordination, BV for graph-based prioritization, CASS for instant session search, CM for persistent memory, MS for skill extraction, UBS for bug detection, plus session management, safety guards, and automated setup.",
   supportingDescription:
     "Supporting tools extend the ecosystem: GIIL for remote image debugging, XF for searching your X archive, and S2P for crafting prompts from source code.",
   flywheelExplanation: {

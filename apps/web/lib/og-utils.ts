@@ -78,6 +78,7 @@ export const LESSON_COLORS: Record<string, string> = {
   slb: "#f59e0b", // amber
   dcg: "#ef4444", // red
   ru: "#6366f1", // indigo
+  ms: "#14b8a6", // teal
   case: "#8b5cf6", // violet
   default: "#22d3ee", // cyan
 };
@@ -114,6 +115,7 @@ export const TOOL_COLORS: Record<string, { primary: string; secondary: string }>
   slb: { primary: "#fbbf24", secondary: "#f59e0b" },
   dcg: { primary: "#f43f5e", secondary: "#ef4444" },
   ru: { primary: "#6366f1", secondary: "#3b82f6" },
+  ms: { primary: "#14b8a6", secondary: "#10b981" },
 };
 
 // Common background gradient
