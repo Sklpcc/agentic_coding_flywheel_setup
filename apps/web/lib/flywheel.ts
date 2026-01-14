@@ -430,7 +430,7 @@ export const flywheelTools: FlywheelTool[] = [
       caam: "Quick-switches credentials when spawning new agents",
       ru: "RU agent-sweep uses ntm robot mode for orchestration",
     },
-    stars: 16,
+    stars: 71,
     features: [
       "Spawn multiple agents: ntm spawn project --cc=3 --cod=2 --gmi=1",
       "Broadcast to agent types: ntm send project --cc 'prompt'",
@@ -469,7 +469,7 @@ export const flywheelTools: FlywheelTool[] = [
       ntm: "NTM-spawned agents auto-register",
       ru: "RU can coordinate repo claims via Mail",
     },
-    stars: 1015,
+    stars: 1433,
     demoUrl: "https://dicklesworthstone.github.io/cass-memory-system-agent-mailbox-viewer/viewer/",
     features: [
       "Agent identities with auto-generated names",
@@ -506,7 +506,7 @@ export const flywheelTools: FlywheelTool[] = [
       bv: "Creates Beads issues for discovered bugs",
       slb: "Pre-validates code before risky operations",
     },
-    stars: 91,
+    stars: 132,
     features: [
       "7 languages: JS/TS, Python, Go, Rust, C/C++, Java, Ruby",
       "18 detection categories: security, async bugs, null safety",
@@ -546,7 +546,7 @@ export const flywheelTools: FlywheelTool[] = [
       ru: "RU integrates with beads for multi-repo task tracking",
       ms: "Skills can be linked to beads for guidance",
     },
-    stars: 546,
+    stars: 927,
     demoUrl: "https://dicklesworthstone.github.io/beads_viewer-pages/",
     features: [
       "9 graph metrics: PageRank, Betweenness, HITS, Critical Path",
@@ -585,7 +585,7 @@ export const flywheelTools: FlywheelTool[] = [
       bv: "Links search results to related tasks",
       ms: "Provides session data for skill extraction",
     },
-    stars: 145,
+    stars: 312,
     features: [
       "10 agent formats: Claude Code, Codex, Cursor, Gemini, ChatGPT",
       "Tantivy search with <60ms prefix queries",
@@ -623,7 +623,7 @@ export const flywheelTools: FlywheelTool[] = [
       bv: "Remembers successful approaches",
       ms: "Skills and memories complement each other",
     },
-    stars: 71,
+    stars: 152,
     demoUrl: "https://dicklesworthstone.github.io/cass-memory-system-agent-mailbox-viewer/viewer/",
     features: [
       "ACE pipeline: Generator → Reflector → Validator → Curator",
@@ -696,7 +696,7 @@ export const flywheelTools: FlywheelTool[] = [
       ubs: "Pre-flight scans before execution",
       ntm: "Coordinates quorum across agents",
     },
-    stars: 23,
+    stars: 49,
     features: [
       "3-tier: CRITICAL (2+), DANGEROUS (1), CAUTION (auto-30s)",
       "SHA-256 command binding (raw + cwd + argv)",
@@ -900,8 +900,8 @@ export const flywheelDescription = {
     },
   ],
   metrics: {
-    totalStars: "2K+",
-    toolCount: 11,
+    totalStars: "3.8K+",
+    toolCount: 12,
     languages: ["Go", "Rust", "TypeScript", "Python", "Bash"],
     avgInstallTime: "< 30s each",
     projectsSimultaneous: "8+",
