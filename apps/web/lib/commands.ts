@@ -198,6 +198,14 @@ export const COMMANDS: CommandRef[] = [
     example: "bv --robot-triage",
   },
   {
+    name: "ms",
+    fullName: "Meta Skill",
+    description: "Local skill management and sharing for agents.",
+    category: "stack",
+    example: 'ms create "refactor"',
+    aliases: ["meta-skill"],
+  },
+  {
     name: "ubs",
     fullName: "Ultimate Bug Scanner",
     description: "Static analysis with guardrails.",
