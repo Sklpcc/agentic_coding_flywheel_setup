@@ -2232,6 +2232,11 @@ This ensures:
 - **Velocity**: Internal tool updates are deployed automatically
 - **Auditability**: All changes tracked via git commits
 
+**Upstream Repo Dispatch (Fast Path):**
+- ACFS-owned tool repos emit a `repository_dispatch` event (`upstream-changed`) when their `install.sh` changes or a release is published.
+- Requires a PAT secret named `ACFS_REPO_DISPATCH_TOKEN` in each tool repo (repo scope for this org/user).
+- If dispatch fails, the 2-hour scheduled monitor still catches drift (but slower).
+
 ### Production Smoke Tests (`production-smoke.yml`)
 
 Validates deployments on real environments:
@@ -2244,6 +2249,18 @@ jobs:
     - Verifies checksum matches repository
     - Validates shell syntax
     - Confirms no uncommitted drift
+```
+
+### Installer Canary (Docker) (`installer-canary.yml`)
+
+Runs the **full installer end-to-end** inside fresh Ubuntu containers on a daily schedule.
+
+```yaml
+schedule: "30 7 * * *" # daily
+jobs:
+  canary:
+    - Run tests/vm/test_install_ubuntu.sh (vibe mode)
+    - Uses ACFS_CHECKSUMS_REF=main for freshest hashes
 ```
 
 ### Playwright E2E Tests (`playwright.yml`)
