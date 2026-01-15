@@ -1252,8 +1252,10 @@ Happy coding!"
 
 # Run main if not sourced
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    if maybe_run_cli_action "$@"; then
-        exit 0
+    maybe_run_cli_action "$@"
+    if [[ -n "${SERVICES_SETUP_ACTION:-}" ]]; then
+        run_cli_action
+        exit $?
     fi
     main "$@"
 fi
