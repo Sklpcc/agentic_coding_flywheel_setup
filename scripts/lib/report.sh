@@ -33,6 +33,36 @@ REPORT_NC="${REPORT_NC:-\033[0m}"
 ACFS_LOG_FILE="${ACFS_LOG_FILE:-/var/log/acfs/install.log}"
 
 # ============================================================
+# Log helpers
+# ============================================================
+
+_acfs_append_log_entry() {
+    local entry="$1"
+    local log_file="$ACFS_LOG_FILE"
+    local log_dir
+    log_dir="$(dirname "$log_file")"
+
+    if [[ ! -d "$log_dir" ]]; then
+        mkdir -p "$log_dir" 2>/dev/null || {
+            if command -v sudo &>/dev/null; then
+                sudo mkdir -p "$log_dir" 2>/dev/null || return 0
+            else
+                return 0
+            fi
+        }
+    fi
+
+    if [[ -w "$log_file" || ( -e "$log_file" && -w "$log_dir" ) || ( ! -e "$log_file" && -w "$log_dir" ) ]]; then
+        printf '%s\n' "$entry" >> "$log_file" 2>/dev/null || true
+        return 0
+    fi
+
+    if command -v sudo &>/dev/null; then
+        printf '%s\n' "$entry" | sudo tee -a "$log_file" >/dev/null 2>&1 || true
+    fi
+}
+
+# ============================================================
 # Box Drawing
 # ============================================================
 
@@ -383,7 +413,7 @@ EOF
     fi
 
     # Append to log file
-    echo "$json_entry" >> "$ACFS_LOG_FILE" 2>/dev/null || true
+    _acfs_append_log_entry "$json_entry"
 }
 
 # ============================================================
@@ -474,7 +504,7 @@ report_success() {
     else
         json_entry="{\"type\":\"success\",\"timestamp\":\"$(date -Iseconds)\",\"version\":\"${ACFS_VERSION:-0.1.0}\",\"mode\":\"${MODE:-unknown}\",\"phases\":${phase_count},\"duration\":${total_time}}"
     fi
-    echo "$json_entry" >> "$ACFS_LOG_FILE" 2>/dev/null || true
+    _acfs_append_log_entry "$json_entry"
 }
 
 # ============================================================
