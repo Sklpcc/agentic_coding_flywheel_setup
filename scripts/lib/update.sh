@@ -1149,6 +1149,11 @@ update_stack() {
         fi
     fi
 
+    # Meta Skill (ms)
+    if cmd_exists ms; then
+        run_cmd "Meta Skill" update_run_verified_installer ms --easy-mode
+    fi
+
     # UBS
     if cmd_exists ubs; then
         run_cmd "Ultimate Bug Scanner" update_run_verified_installer ubs --easy-mode
