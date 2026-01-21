@@ -904,6 +904,53 @@ Key capabilities:
       "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/system_resource_protection_script/main/install.sh | bash -s -- --install",
     language: "Go + C++ + Bash",
   },
+  {
+    id: "apr",
+    name: "Automated Plan Reviser Pro",
+    shortName: "APR",
+    href: "https://github.com/Dicklesworthstone/automated_plan_reviser_pro",
+    icon: "FileText",
+    color: "from-amber-500 to-yellow-600",
+    tagline: "Automated iterative spec refinement with extended AI reasoning",
+    description:
+      "Takes rough plans and runs multiple review cycles using GPT Pro 5.2 Extended Reasoning via Oracle to identify architectural issues, edge cases, and security flaws.",
+    deepDescription: `Complex specifications require multiple review cycles to catch all issues.
+Instead of manually running 15-20 AI review rounds, APR automates the refinement process.
+Early rounds fix major issues, middle rounds refine structure, and later rounds polish
+abstractions until you have a production-ready specification.
+
+APR uses GPT Pro 5.2 Extended Reasoning via Oracle for deep analysis. Each pass adds:
+- Better structure and organization
+- Identified dependencies between components
+- Edge cases and error scenarios
+- Security considerations
+- More actionable implementation steps
+
+Key capabilities:
+- Multi-pass iterative refinement with configurable depth
+- Markdown plan file processing with preserved formatting
+- Output comparison between versions to see improvements
+- Integration with beads for converting refined specs to tasks`,
+    connectsTo: ["jfp", "cm", "bv"],
+    connectionDescriptions: {
+      jfp: "Battle-tested prompts from JFP can be refined into comprehensive specifications via APR",
+      cm: "Refined plans become searchable procedural memory - find what worked before",
+      bv: "Well-refined specifications become granular, dependency-tracked beads for execution",
+    },
+    stars: 85,
+    features: [
+      "Automated multi-pass specification refinement",
+      "Extended AI reasoning via GPT Pro 5.2 + Oracle",
+      "Markdown-based plan processing",
+      "Progressive structure and detail improvement",
+      "Dependency identification and edge case detection",
+      "Robot mode for AI agent integration",
+    ],
+    cliCommands: ["apr refine <file>", "apr --help", "apr --version"],
+    installCommand:
+      "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/automated_plan_reviser_pro/main/install.sh | bash --easy-mode",
+    language: "Bash",
+  },
 ];
 
 // ============================================================

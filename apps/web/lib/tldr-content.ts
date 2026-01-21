@@ -705,6 +705,53 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
       "Managing context window budget",
     ],
   },
+  {
+    id: "apr",
+    name: "Automated Plan Reviser Pro",
+    shortName: "APR",
+    href: "https://github.com/Dicklesworthstone/automated_plan_reviser_pro",
+    icon: "FileText",
+    color: "from-amber-500 to-yellow-600",
+    category: "supporting",
+    stars: 85,
+    whatItDoes:
+      "Automated iterative specification refinement using extended AI reasoning. Takes rough plans and runs multiple review cycles to identify architectural issues, edge cases, and security flaws.",
+    whyItsUseful:
+      "Complex specifications need 15-20 review cycles to catch all issues. Instead of manually prompting each round, APR automates the refinement loop, progressively improving structure and detail.",
+    implementationHighlights: [
+      "Uses GPT Pro 5.2 Extended Reasoning via Oracle",
+      "Iterative multi-pass refinement algorithm",
+      "Markdown plan file processing",
+      "Configurable refinement depth",
+    ],
+    synergies: [
+      {
+        toolId: "jfp",
+        description: "Battle-tested prompts can be refined into specifications",
+      },
+      {
+        toolId: "cm",
+        description: "Refined plans become searchable memories",
+      },
+      {
+        toolId: "bv",
+        description: "Refined specs generate well-structured beads",
+      },
+    ],
+    techStack: ["Bash", "Oracle CLI", "GPT Pro 5.2", "Markdown"],
+    keyFeatures: [
+      "Automated multi-pass refinement",
+      "Extended AI reasoning integration",
+      "Markdown-based plan processing",
+      "Progressive structure improvement",
+    ],
+    useCases: [
+      "Turning rough ideas into detailed specifications",
+      "Catching architectural flaws early",
+      "Creating implementation-ready plans for agents",
+      "Iterative requirement refinement",
+    ],
+  },
 ];
 
 export const tldrPageData = {
