@@ -1531,25 +1531,104 @@ check_wrangler_auth() {
     if ((status == 124)); then
         check_with_timeout_status "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "timeout" "check timed out" "Check network, then: wrangler login"
     elif ((status == 0)); then
-        # Get the authenticated user/team for more detail
+        # Extract account info from wrangler whoami output
+        local wrangler_account="authenticated"
+        if echo "$result" | grep -q "Account ID"; then
+            wrangler_account="authenticated"
+        fi
+        cache_result "wrangler_auth" "$wrangler_account"
+        check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "pass" "$wrangler_account"
+    else
+        # Check for CLOUDFLARE_API_TOKEN as alternative
+        if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            cache_result "wrangler_auth" "CLOUDFLARE_API_TOKEN"
+            check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "pass" "CLOUDFLARE_API_TOKEN set"
+            return
+        fi
+
+        # Fallback: detect auth file if offline
+        if [[ -f "$HOME/.wrangler/config/default.toml" ]]; then
+            cache_result "wrangler_auth" "config file present"
+            check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "pass" "config file present"
+        else
+            check "deep.cloud.wrangler_auth" "Wrangler (Cloudflare) auth" "warn" "not authenticated" "wrangler login (or set CLOUDFLARE_API_TOKEN)"
+        fi
+    fi
+}
+
+# check_supabase_auth - Supabase CLI authentication check
+# Related: bead azw
+check_supabase_auth() {
+    if ! command -v supabase &>/dev/null; then
+        check "deep.cloud.supabase_auth" "Supabase CLI" "warn" "not installed" "acfs update --cloud-only --force"
+        return
+    fi
+
+    # Try cache first (bead lz1)
+    local cached_result
+    if cached_result=$(get_cached_result "supabase_auth"); then
+        check "deep.cloud.supabase_auth" "Supabase CLI auth" "pass" "$cached_result (cached)"
+        return
+    fi
+
+    # Check for SUPABASE_ACCESS_TOKEN (headless auth)
+    if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+        cache_result "supabase_auth" "SUPABASE_ACCESS_TOKEN"
+        check "deep.cloud.supabase_auth" "Supabase CLI auth" "pass" "SUPABASE_ACCESS_TOKEN set"
+        return
+    fi
+
+    # Check for local auth file
+    if [[ -f "$HOME/.supabase/access-token" ]]; then
+        cache_result "supabase_auth" "access-token file"
+        check "deep.cloud.supabase_auth" "Supabase CLI auth" "pass" "access-token file present"
+    else
+        check "deep.cloud.supabase_auth" "Supabase CLI auth" "warn" "not authenticated" "supabase login (or set SUPABASE_ACCESS_TOKEN)"
+    fi
+}
+
+# check_vercel_auth - Vercel CLI authentication check
+# Related: bead azw
+check_vercel_auth() {
+    if ! command -v vercel &>/dev/null; then
+        check "deep.cloud.vercel_auth" "Vercel CLI" "warn" "not installed" "bun install -g --trust vercel@latest"
+        return
+    fi
+
+    # Try cache first (bead lz1)
+    local cached_result
+    if cached_result=$(get_cached_result "vercel_auth"); then
+        check "deep.cloud.vercel_auth" "Vercel CLI auth" "pass" "$cached_result (cached)"
+        return
+    fi
+
+    # Run with timeout
+    local result
+    result=$(run_with_timeout "$DEEP_CHECK_TIMEOUT" "Vercel auth" vercel whoami 2>&1)
+    local status=$?
+
+    if ((status == 124)); then
+        check_with_timeout_status "deep.cloud.vercel_auth" "Vercel CLI auth" "timeout" "check timed out" "Check network, then: vercel login"
+    elif ((status == 0)); then
         local vercel_user
-        vercel_user=$(timeout 5 vercel whoami 2>/dev/null) || vercel_user="authenticated"
+        vercel_user=$(echo "$result" | head -n1 | tr -d ' ')
+        [[ -z "$vercel_user" ]] && vercel_user="authenticated"
         cache_result "vercel_auth" "$vercel_user"
-        check "deep.cloud.vercel_auth" "Vercel auth" "pass" "$vercel_user"
+        check "deep.cloud.vercel_auth" "Vercel CLI auth" "pass" "$vercel_user"
     else
         # Check for VERCEL_TOKEN as alternative
         if [[ -n "${VERCEL_TOKEN:-}" ]]; then
             cache_result "vercel_auth" "VERCEL_TOKEN"
-            check "deep.cloud.vercel_auth" "Vercel auth" "pass" "VERCEL_TOKEN set"
+            check "deep.cloud.vercel_auth" "Vercel CLI auth" "pass" "VERCEL_TOKEN set"
             return
         fi
 
         # Fallback: detect auth file if offline
         if [[ -f "$HOME/.config/vercel/auth.json" || -f "$HOME/.vercel/auth.json" ]]; then
             cache_result "vercel_auth" "auth file present"
-            check "deep.cloud.vercel_auth" "Vercel auth" "pass" "auth file present"
+            check "deep.cloud.vercel_auth" "Vercel CLI auth" "pass" "auth file present"
         else
-            check "deep.cloud.vercel_auth" "Vercel auth" "warn" "not authenticated" "vercel login (or set SUPABASE_ACCESS_TOKEN for headless)"
+            check "deep.cloud.vercel_auth" "Vercel CLI auth" "warn" "not authenticated" "vercel login (or set VERCEL_TOKEN)"
         fi
     fi
 }
@@ -1564,8 +1643,7 @@ print_summary() {
         if [[ "$HAS_GUM" == "true" ]]; then
             gum style --foreground "$ACFS_MUTED" "  Legend: $(gum style --foreground "$ACFS_SUCCESS" "✓") installed  $(gum style --foreground "$ACFS_MUTED" "○") skipped  $(gum style --foreground "$ACFS_ERROR" "✖") missing  $(gum style --foreground "$ACFS_WARNING" "⚠") warning  $(gum style --foreground "$ACFS_WARNING" "?") timeout"
         else
-            echo -e "  ${CYAN}○ SKIP${NC} $label"
-            echo -e "        Reason: $reason"
+            echo -e "  Legend: ${GREEN}✓${NC} installed  ${CYAN}○${NC} skipped  ${RED}✖${NC} missing  ${YELLOW}⚠${NC} warning  ${YELLOW}?${NC} timeout"
         fi
     fi
 }
