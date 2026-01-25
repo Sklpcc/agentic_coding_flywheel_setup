@@ -31,9 +31,7 @@ const RunAsSchema = z.enum(['target_user', 'root', 'current']);
  * Expand only if there is a concrete, vetted need.
  */
 const VerifiedInstallerRunnerSchema = z.enum(['bash', 'sh'], {
-  errorMap: () => ({
-    message: 'verified_installer.runner must be "bash" or "sh" (security: runner allowlist)',
-  }),
+  error: 'verified_installer.runner must be "bash" or "sh" (security: runner allowlist)',
 });
 
 export const ModuleSchema = z
