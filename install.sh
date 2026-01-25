@@ -2349,7 +2349,7 @@ ensure_base_deps() {
         fi
 
         log_detail "dry-run: would run: ${sudo_prefix}apt-get update -y"
-        log_detail "dry-run: would install: curl git ca-certificates unzip tar xz-utils jq build-essential sudo gnupg"
+        log_detail "dry-run: would install: curl git ca-certificates unzip tar xz-utils jq build-essential sudo gnupg libssl-dev pkg-config"
         return 0
     fi
 
@@ -2357,7 +2357,7 @@ ensure_base_deps() {
     try_step "Updating apt package index" $SUDO apt-get update -y || return 1
 
     log_detail "Installing base packages"
-    try_step "Installing base packages" $SUDO apt-get install -y curl git ca-certificates unzip tar xz-utils jq build-essential sudo gnupg || return 1
+    try_step "Installing base packages" $SUDO apt-get install -y curl git ca-certificates unzip tar xz-utils jq build-essential sudo gnupg libssl-dev pkg-config || return 1
 }
 
 # ============================================================
@@ -2536,6 +2536,11 @@ setup_filesystem() {
 
     # Ensure workspace directories are owned by target user (avoid over-broad recursive chown).
     try_step "Setting /data ownership" $SUDO chown -h "$TARGET_USER:$TARGET_USER" /data /data/projects /data/cache || true
+
+    # Install AGENTS.md template to /data/projects for agent guidance
+    log_detail "Installing AGENTS.md template"
+    try_step "Installing AGENTS.md" install_asset "acfs/AGENTS.md" "/data/projects/AGENTS.md" || true
+    try_step "Setting AGENTS.md ownership" $SUDO chown "$TARGET_USER:$TARGET_USER" "/data/projects/AGENTS.md" || true
 
     # CRITICAL: Fix home directory ownership FIRST, before any run_as_target calls
     # Some cloud images (e.g., Hetzner) have /home/ubuntu owned by root after user creation

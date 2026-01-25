@@ -86,6 +86,15 @@ modules:
           mkdir -p /data/projects /data/cache
           chown -h "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" /data /data/projects /data/cache
       - |
+          # Install AGENTS.md template to workspace root for agent guidance
+          ACFS_RAW="${ACFS_RAW:-https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main}"
+          CURL_ARGS=(-fsSL)
+          if curl --help all 2>/dev/null | grep -q -- '--proto'; then
+            CURL_ARGS=(--proto '=https' --proto-redir '=https' -fsSL)
+          fi
+          curl "${CURL_ARGS[@]}" -o /data/projects/AGENTS.md "${ACFS_RAW}/acfs/AGENTS.md" || true
+          chown "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" /data/projects/AGENTS.md 2>/dev/null || true
+      - |
           target_home="${TARGET_HOME:-/home/ubuntu}"
           if [[ -z "$target_home" || "$target_home" == "/" || "$target_home" != /* ]]; then
             echo "ERROR: Invalid TARGET_HOME: '${target_home:-<empty>}'" >&2
@@ -100,9 +109,11 @@ modules:
           chown -hR "${TARGET_USER:-ubuntu}:${TARGET_USER:-ubuntu}" "$target_home/.acfs"
     verify:
       - test -d /data/projects
+      - test -f /data/projects/AGENTS.md
       - test -d "${TARGET_HOME:-/home/ubuntu}/.acfs"
     notes:
       - "~/.acfs created during filesystem phase"
+      - "AGENTS.md template installed to /data/projects for agent guidance"
 
   # ============================================================
   # PHASE 4: Shell setup (zsh + oh-my-zsh + p10k)

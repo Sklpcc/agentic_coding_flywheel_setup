@@ -845,18 +845,38 @@ check_cloud() {
     fi
 
     # SSH keepalive configuration (prevents VPN/NAT disconnects)
+    # Check both main config and sshd_config.d includes for ClientAliveInterval
+    local keepalive_interval=""
+    local keepalive_source=""
+
+    # Check main sshd_config (allow leading whitespace, handle commented lines)
     if [[ -f /etc/ssh/sshd_config ]]; then
-        local keepalive_interval
-        keepalive_interval=$(grep -E '^ClientAliveInterval[[:space:]]+[0-9]+' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
-        keepalive_interval="${keepalive_interval:-0}"
-        if [[ "$keepalive_interval" -gt 0 ]] 2>/dev/null; then
-            check "network.ssh_keepalive" "SSH keepalive" "pass" "ClientAliveInterval ${keepalive_interval}s"
-        else
-            if [[ "$doctor_ci" == "true" ]]; then
-                check "network.ssh_keepalive" "SSH keepalive (not configured)" "pass" "ok in CI"
-            else
-                check "network.ssh_keepalive" "SSH keepalive" "warn" "not configured (optional)" "Install: curl --proto '=https' --proto-redir '=https' -fsSL https://agent-flywheel.com/install | bash -s -- --yes --only network.ssh_keepalive"
+        keepalive_interval=$(grep -E '^[[:space:]]*ClientAliveInterval[[:space:]]+[0-9]+' /etc/ssh/sshd_config 2>/dev/null | grep -v '^[[:space:]]*#' | tail -n1 | awk '{print $2}')
+        [[ -n "$keepalive_interval" ]] && keepalive_source="sshd_config"
+    fi
+
+    # Check sshd_config.d includes (common on Ubuntu 22.04+)
+    if [[ -z "$keepalive_interval" ]] && [[ -d /etc/ssh/sshd_config.d ]]; then
+        for conf_file in /etc/ssh/sshd_config.d/*.conf; do
+            [[ -f "$conf_file" ]] || continue
+            local val
+            val=$(grep -E '^[[:space:]]*ClientAliveInterval[[:space:]]+[0-9]+' "$conf_file" 2>/dev/null | grep -v '^[[:space:]]*#' | tail -n1 | awk '{print $2}')
+            if [[ -n "$val" ]]; then
+                keepalive_interval="$val"
+                keepalive_source="$(basename "$conf_file")"
+                break
             fi
+        done
+    fi
+
+    keepalive_interval="${keepalive_interval:-0}"
+    if [[ "$keepalive_interval" -gt 0 ]] 2>/dev/null; then
+        check "network.ssh_keepalive" "SSH keepalive" "pass" "ClientAliveInterval ${keepalive_interval}s (${keepalive_source})"
+    else
+        if [[ "$doctor_ci" == "true" ]]; then
+            check "network.ssh_keepalive" "SSH keepalive (not configured)" "pass" "ok in CI"
+        else
+            check "network.ssh_keepalive" "SSH keepalive" "warn" "not configured (optional)" "Install: curl --proto '=https' --proto-redir '=https' -fsSL https://agent-flywheel.com/install | bash -s -- --yes --only network.ssh_keepalive"
         fi
     fi
 
@@ -939,13 +959,32 @@ check_stack() {
     fi
 
     # Check rch (Remote Compilation Helper)
+    # RCH can be installed in several locations: PATH, ~/.local/bin, ~/.cargo/bin, or ~/remote_compilation_helper
+    local rch_bin=""
+    local rch_version=""
+
     if command -v rch &>/dev/null; then
-        local version
-        version=$(get_version_line "rch")
-        check "stack.rch" "rch ($version)" "pass" "installed"
+        rch_bin="$(command -v rch)"
+    elif [[ -x "$HOME/.local/bin/rch" ]]; then
+        rch_bin="$HOME/.local/bin/rch"
+    elif [[ -x "$HOME/.cargo/bin/rch" ]]; then
+        rch_bin="$HOME/.cargo/bin/rch"
+    elif [[ -x "$HOME/remote_compilation_helper/rch" ]]; then
+        rch_bin="$HOME/remote_compilation_helper/rch"
+    fi
+
+    if [[ -n "$rch_bin" ]] && [[ -x "$rch_bin" ]]; then
+        rch_version=$("$rch_bin" --version 2>/dev/null | head -n1) || rch_version="installed"
+        check "stack.rch" "rch ($rch_version)" "pass" "installed"
     else
-        check "stack.rch" "rch (Remote Compilation Helper)" "warn" "not installed" \
-            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh | bash"
+        # Also check if RCH config exists (indicates partial/previous install)
+        if [[ -f "$HOME/.config/rch/config.toml" ]] || [[ -d "$HOME/remote_compilation_helper" ]]; then
+            check "stack.rch" "rch (Remote Compilation Helper)" "warn" "config exists but binary not in PATH" \
+                "Add rch to PATH or re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh | bash"
+        else
+            check "stack.rch" "rch (Remote Compilation Helper)" "warn" "not installed" \
+                "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/remote_compilation_helper/master/install.sh | bash"
+        fi
     fi
 
     # Check wa (WezTerm Automata) - optional
