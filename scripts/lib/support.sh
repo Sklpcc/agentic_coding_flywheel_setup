@@ -337,6 +337,12 @@ redact_file() {
         -e 's/eyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}/<REDACTED:jwt>/g' \
         "$file" 2>/dev/null || return 0
 
+    # JSON-style secrets: "key_name": "value"
+    sed -E -i \
+        -e 's/"(api_key|API_KEY|ApiKey|api_secret|API_SECRET|secret_key|SECRET_KEY|access_token|ACCESS_TOKEN|refresh_token|REFRESH_TOKEN|auth_token|AUTH_TOKEN|client_secret|CLIENT_SECRET|private_key|PRIVATE_KEY)"[ ]*:[ ]*"([^"]{8,})"/"\1": "<REDACTED:\1>"/g' \
+        -e 's/"(password|PASSWORD|passwd|PASSWD)"[ ]*:[ ]*"([^"]{4,})"/"\1": "<REDACTED:password>"/g' \
+        "$file" 2>/dev/null || return 0
+
     # Generic key=value secrets (case-insensitive would need per-line processing;
     # instead match common casings)
     sed -E -i \
