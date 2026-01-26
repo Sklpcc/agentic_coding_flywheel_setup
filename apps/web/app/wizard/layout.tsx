@@ -7,6 +7,7 @@ import { Terminal, Home, ChevronLeft, ChevronRight, AlertCircle } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Stepper, StepperMobile } from "@/components/stepper";
 import { HelpPanel } from "@/components/wizard/HelpPanel";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { WIZARD_STEPS, getStepBySlug } from "@/lib/wizardSteps";
 import { useStepValidation } from "@/lib/hooks/useStepValidation";
 import { withCurrentSearch } from "@/lib/utils";
@@ -92,18 +93,21 @@ export default function WizardLayout({
             </div>
 
             {/* Sidebar footer */}
-            <div className="border-t border-border/50 p-4">
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-muted-foreground hover:text-foreground"
-              >
-                <Link href="/">
-                  <Home className="mr-2 h-4 w-4" />
-                  Back to Home
-                </Link>
-              </Button>
+            <div className="border-t border-border/50 p-4 space-y-1">
+              <div className="flex items-center justify-between">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start text-muted-foreground hover:text-foreground"
+                >
+                  <Link href="/">
+                    <Home className="mr-2 h-4 w-4" />
+                    Back to Home
+                  </Link>
+                </Button>
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </aside>
@@ -118,8 +122,9 @@ export default function WizardLayout({
               </div>
               <span className="font-mono text-sm font-bold">Agent Flywheel</span>
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <HelpPanel currentStep={currentStep} />
+              <ThemeToggle />
               <Link
                 href="/"
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
