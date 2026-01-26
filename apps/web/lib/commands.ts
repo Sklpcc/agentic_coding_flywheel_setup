@@ -1,3 +1,5 @@
+import { manifestCommands } from './generated/manifest-web-index';
+
 export type CommandCategory =
   | "agents"
   | "search"
@@ -376,3 +378,21 @@ export const COMMANDS: CommandRef[] = [
     example: "vault status",
   },
 ];
+
+// Auto-merge any manifest-defined commands not already in the hand-maintained list.
+// This ensures new tools added to acfs.manifest.yaml appear automatically.
+const _handMaintainedNames = new Set(COMMANDS.map((c) => c.name));
+const _generatedExtras: CommandRef[] = manifestCommands
+  .filter((mc) => !_handMaintainedNames.has(mc.cliName))
+  .map((mc) => ({
+    name: mc.cliName,
+    fullName: mc.description.split(" - ")[0] || mc.cliName,
+    description: mc.description,
+    category: "stack" as CommandCategory,
+    example: mc.commandExample ?? `${mc.cliName} --help`,
+    aliases: mc.cliAliases.length > 0 ? mc.cliAliases : undefined,
+    docsUrl: mc.docsUrl,
+  }));
+
+/** All commands: hand-maintained + auto-discovered from manifest. */
+export const ALL_COMMANDS: CommandRef[] = [...COMMANDS, ..._generatedExtras];

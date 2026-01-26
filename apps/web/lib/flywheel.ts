@@ -12,6 +12,8 @@
 // deliver 10x what any single tool can achieve alone.
 // ============================================================
 
+import { getManifestTool } from './manifest-adapter';
+
 export type FlywheelTool = {
   id: string;
   name: string;
@@ -439,7 +441,7 @@ export const synergyExplanations = [
 // TOOL DEFINITIONS - Detailed info about each tool
 // ============================================================
 
-export const flywheelTools: FlywheelTool[] = [
+const _flywheelTools: FlywheelTool[] = [
   {
     id: "ntm",
     name: "Named Tmux Manager",
@@ -1268,6 +1270,24 @@ Key capabilities:
     language: "Rust",
   },
 ];
+
+// Merge basic metadata from manifest (source of truth for names, taglines,
+// stars, language, href). Rich UI data (deepDescription, connectsTo,
+// connectionDescriptions, icon, color) stays hand-maintained.
+export const flywheelTools: FlywheelTool[] = _flywheelTools.map((tool) => {
+  const gen = getManifestTool(tool.id);
+  if (!gen) return tool;
+  return {
+    ...tool,
+    name: gen.displayName,
+    shortName: gen.shortName,
+    href: gen.href ?? tool.href,
+    tagline: gen.tagline,
+    stars: gen.stars ?? tool.stars,
+    language: gen.language ?? tool.language,
+    features: gen.features.length > 0 ? gen.features : tool.features,
+  };
+});
 
 // ============================================================
 // FLYWHEEL DESCRIPTION - The big picture

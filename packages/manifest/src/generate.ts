@@ -35,6 +35,7 @@ const SCRIPT_FILE = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = resolve(dirname(SCRIPT_FILE), '../../..');
 const MANIFEST_PATH = join(PROJECT_ROOT, 'acfs.manifest.yaml');
 const OUTPUT_DIR = join(PROJECT_ROOT, 'scripts/generated');
+const WEB_OUTPUT_DIR = join(PROJECT_ROOT, 'apps/web/lib/generated');
 const CHECKSUMS_PATH = join(PROJECT_ROOT, 'checksums.yaml');
 
 const HEADER = `#!/usr/bin/env bash
@@ -1119,6 +1120,307 @@ function generateMasterInstaller(manifest: Manifest): string {
 }
 
 // ============================================================
+// Web Data Generators
+// ============================================================
+
+const TS_HEADER = `// ============================================================
+// AUTO-GENERATED FROM acfs.manifest.yaml — DO NOT EDIT
+// Regenerate: bun run generate (from packages/manifest)
+// ============================================================
+`;
+
+/**
+ * Escape a string for use inside a TypeScript string literal (double-quoted).
+ */
+function escapeTs(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
+/**
+ * Format a string array as a TypeScript literal, one item per line.
+ */
+function formatTsArray(items: string[], indent: number): string {
+  if (items.length === 0) return '[]';
+  const pad = ' '.repeat(indent);
+  const inner = items.map((item) => `${pad}  "${escapeTs(item)}",`).join('\n');
+  return `[\n${inner}\n${pad}]`;
+}
+
+/**
+ * Get all web-visible modules, sorted by ID for deterministic output.
+ */
+function getWebVisibleModules(manifest: Manifest): Module[] {
+  return manifest.modules
+    .filter((m) => m.web && m.web.visible !== false)
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * Generate manifest-tools.ts — web tool data from manifest web metadata.
+ * Pure data file, no React imports, tree-shakable.
+ */
+function generateWebTools(manifest: Manifest): string {
+  const modules = getWebVisibleModules(manifest);
+  const lines: string[] = [TS_HEADER];
+
+  // Type definition
+  lines.push('export interface ManifestWebTool {');
+  lines.push('  id: string;');
+  lines.push('  moduleId: string;');
+  lines.push('  displayName: string;');
+  lines.push('  shortName: string;');
+  lines.push('  tagline: string;');
+  lines.push('  shortDesc: string;');
+  lines.push('  icon: string;');
+  lines.push('  color: string;');
+  lines.push('  categoryLabel?: string;');
+  lines.push('  href?: string;');
+  lines.push('  features: string[];');
+  lines.push('  techStack: string[];');
+  lines.push('  useCases: string[];');
+  lines.push('  language?: string;');
+  lines.push('  stars?: number;');
+  lines.push('  cliName?: string;');
+  lines.push('  cliAliases: string[];');
+  lines.push('  commandExample?: string;');
+  lines.push('  lessonSlug?: string;');
+  lines.push('  tldrSnippet?: string;');
+  lines.push('}');
+  lines.push('');
+
+  lines.push('export const manifestTools: ManifestWebTool[] = [');
+
+  for (const module of modules) {
+    const web = module.web!;
+    lines.push('  {');
+    lines.push(`    id: "${escapeTs(module.id.replace(/\./g, '-'))}",`);
+    lines.push(`    moduleId: "${escapeTs(module.id)}",`);
+    lines.push(`    displayName: "${escapeTs(web.display_name ?? module.description)}",`);
+    lines.push(`    shortName: "${escapeTs(web.short_name ?? module.id.split('.').pop() ?? module.id)}",`);
+    lines.push(`    tagline: "${escapeTs(web.tagline ?? module.description)}",`);
+    lines.push(`    shortDesc: "${escapeTs(web.short_desc ?? module.description)}",`);
+    lines.push(`    icon: "${escapeTs(web.icon ?? 'box')}",`);
+    lines.push(`    color: "${escapeTs(web.color ?? '#6B7280')}",`);
+    if (web.category_label) {
+      lines.push(`    categoryLabel: "${escapeTs(web.category_label)}",`);
+    }
+    if (web.href) {
+      lines.push(`    href: "${escapeTs(web.href)}",`);
+    }
+    lines.push(`    features: ${formatTsArray(web.features ?? [], 4)},`);
+    lines.push(`    techStack: ${formatTsArray(web.tech_stack ?? [], 4)},`);
+    lines.push(`    useCases: ${formatTsArray(web.use_cases ?? [], 4)},`);
+    if (web.language) {
+      lines.push(`    language: "${escapeTs(web.language)}",`);
+    }
+    if (web.stars !== undefined) {
+      lines.push(`    stars: ${web.stars},`);
+    }
+    if (web.cli_name) {
+      lines.push(`    cliName: "${escapeTs(web.cli_name)}",`);
+    }
+    lines.push(`    cliAliases: ${formatTsArray(web.cli_aliases ?? [], 4)},`);
+    if (web.command_example) {
+      lines.push(`    commandExample: "${escapeTs(web.command_example)}",`);
+    }
+    if (web.lesson_slug) {
+      lines.push(`    lessonSlug: "${escapeTs(web.lesson_slug)}",`);
+    }
+    if (web.tldr_snippet) {
+      lines.push(`    tldrSnippet: "${escapeTs(web.tldr_snippet)}",`);
+    }
+    lines.push('  },');
+  }
+
+  lines.push('];');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate manifest-commands.ts — CLI command references from manifest web metadata.
+ */
+function generateWebCommands(manifest: Manifest): string {
+  const modules = manifest.modules
+    .filter((m) => m.web && m.web.visible !== false && m.web.cli_name)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const lines: string[] = [TS_HEADER];
+
+  lines.push('export interface ManifestCommand {');
+  lines.push('  moduleId: string;');
+  lines.push('  cliName: string;');
+  lines.push('  cliAliases: string[];');
+  lines.push('  description: string;');
+  lines.push('  commandExample?: string;');
+  lines.push('  docsUrl?: string;');
+  lines.push('}');
+  lines.push('');
+
+  lines.push('export const manifestCommands: ManifestCommand[] = [');
+
+  for (const module of modules) {
+    const web = module.web!;
+    lines.push('  {');
+    lines.push(`    moduleId: "${escapeTs(module.id)}",`);
+    lines.push(`    cliName: "${escapeTs(web.cli_name!)}",`);
+    lines.push(`    cliAliases: ${formatTsArray(web.cli_aliases ?? [], 4)},`);
+    lines.push(`    description: "${escapeTs(web.short_desc ?? module.description)}",`);
+    if (web.command_example) {
+      lines.push(`    commandExample: "${escapeTs(web.command_example)}",`);
+    }
+    if (module.docs_url) {
+      lines.push(`    docsUrl: "${escapeTs(module.docs_url)}",`);
+    }
+    lines.push('  },');
+  }
+
+  lines.push('];');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate manifest-tldr.ts — TL;DR card data from manifest web metadata.
+ * Focused subset for the TL;DR summary page.
+ */
+function generateWebTldr(manifest: Manifest): string {
+  const modules = getWebVisibleModules(manifest);
+  const lines: string[] = [TS_HEADER];
+
+  // Type definition
+  lines.push('export interface ManifestTldrTool {');
+  lines.push('  id: string;');
+  lines.push('  moduleId: string;');
+  lines.push('  displayName: string;');
+  lines.push('  shortName: string;');
+  lines.push('  tagline: string;');
+  lines.push('  tldrSnippet: string;');
+  lines.push('  icon: string;');
+  lines.push('  color: string;');
+  lines.push('  href?: string;');
+  lines.push('  features: string[];');
+  lines.push('  techStack: string[];');
+  lines.push('  useCases: string[];');
+  lines.push('  language?: string;');
+  lines.push('  stars?: number;');
+  lines.push('}');
+  lines.push('');
+
+  lines.push('export const manifestTldrTools: ManifestTldrTool[] = [');
+
+  for (const module of modules) {
+    const web = module.web!;
+    // Only include modules that have a tldr_snippet or tagline (enough content for a TL;DR card)
+    const snippet = web.tldr_snippet ?? web.tagline ?? '';
+    if (!snippet && !web.tagline) continue;
+
+    lines.push('  {');
+    lines.push(`    id: "${escapeTs(module.id.replace(/\./g, '-'))}",`);
+    lines.push(`    moduleId: "${escapeTs(module.id)}",`);
+    lines.push(`    displayName: "${escapeTs(web.display_name ?? module.description)}",`);
+    lines.push(`    shortName: "${escapeTs(web.short_name ?? module.id.split('.').pop() ?? module.id)}",`);
+    lines.push(`    tagline: "${escapeTs(web.tagline ?? module.description)}",`);
+    lines.push(`    tldrSnippet: "${escapeTs(web.tldr_snippet ?? web.short_desc ?? module.description)}",`);
+    lines.push(`    icon: "${escapeTs(web.icon ?? 'box')}",`);
+    lines.push(`    color: "${escapeTs(web.color ?? '#6B7280')}",`);
+    if (web.href) {
+      lines.push(`    href: "${escapeTs(web.href)}",`);
+    }
+    lines.push(`    features: ${formatTsArray(web.features ?? [], 4)},`);
+    lines.push(`    techStack: ${formatTsArray(web.tech_stack ?? [], 4)},`);
+    lines.push(`    useCases: ${formatTsArray(web.use_cases ?? [], 4)},`);
+    if (web.language) {
+      lines.push(`    language: "${escapeTs(web.language)}",`);
+    }
+    if (web.stars !== undefined) {
+      lines.push(`    stars: ${web.stars},`);
+    }
+    lines.push('  },');
+  }
+
+  lines.push('];');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate manifest-lessons-index.ts — mapping from module IDs to lesson slugs.
+ * Used to link module detail pages to onboarding lessons.
+ */
+function generateWebLessonsIndex(manifest: Manifest): string {
+  const modules = manifest.modules
+    .filter((m) => m.web && m.web.visible !== false && m.web.lesson_slug)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const lines: string[] = [TS_HEADER];
+
+  // Type definition
+  lines.push('export interface ManifestLessonLink {');
+  lines.push('  moduleId: string;');
+  lines.push('  lessonSlug: string;');
+  lines.push('  displayName: string;');
+  lines.push('}');
+  lines.push('');
+
+  lines.push('export const manifestLessonLinks: ManifestLessonLink[] = [');
+
+  for (const module of modules) {
+    const web = module.web!;
+    lines.push('  {');
+    lines.push(`    moduleId: "${escapeTs(module.id)}",`);
+    lines.push(`    lessonSlug: "${escapeTs(web.lesson_slug!)}",`);
+    lines.push(`    displayName: "${escapeTs(web.display_name ?? module.description)}",`);
+    lines.push('  },');
+  }
+
+  lines.push('];');
+  lines.push('');
+
+  // Convenience lookup map
+  lines.push('/** Lookup lesson slug by module ID */');
+  lines.push('export const lessonSlugByModuleId: Record<string, string> = {');
+  for (const module of modules) {
+    const web = module.web!;
+    lines.push(`  "${escapeTs(module.id)}": "${escapeTs(web.lesson_slug!)}",`);
+  }
+  lines.push('};');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generate manifest-web-index.ts — barrel re-export for all web generated data.
+ */
+function generateWebIndex(): string {
+  const lines: string[] = [TS_HEADER];
+
+  lines.push("export { manifestTools } from './manifest-tools.js';");
+  lines.push("export type { ManifestWebTool } from './manifest-tools.js';");
+  lines.push('');
+  lines.push("export { manifestTldrTools } from './manifest-tldr.js';");
+  lines.push("export type { ManifestTldrTool } from './manifest-tldr.js';");
+  lines.push('');
+  lines.push("export { manifestCommands } from './manifest-commands.js';");
+  lines.push("export type { ManifestCommand } from './manifest-commands.js';");
+  lines.push('');
+  lines.push("export { manifestLessonLinks, lessonSlugByModuleId } from './manifest-lessons-index.js';");
+  lines.push("export type { ManifestLessonLink } from './manifest-lessons-index.js';");
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ============================================================
 // Main
 // ============================================================
 
@@ -1290,6 +1592,24 @@ async function main(): Promise<void> {
     filesToGenerate.set(filepath, { content, mode: 0o644 });
   }
 
+  // Web data: TypeScript modules for apps/web
+  {
+    const toolsPath = join(WEB_OUTPUT_DIR, 'manifest-tools.ts');
+    filesToGenerate.set(toolsPath, { content: generateWebTools(manifest), mode: 0o644 });
+
+    const commandsPath = join(WEB_OUTPUT_DIR, 'manifest-commands.ts');
+    filesToGenerate.set(commandsPath, { content: generateWebCommands(manifest), mode: 0o644 });
+
+    const tldrPath = join(WEB_OUTPUT_DIR, 'manifest-tldr.ts');
+    filesToGenerate.set(tldrPath, { content: generateWebTldr(manifest), mode: 0o644 });
+
+    const lessonsPath = join(WEB_OUTPUT_DIR, 'manifest-lessons-index.ts');
+    filesToGenerate.set(lessonsPath, { content: generateWebLessonsIndex(manifest), mode: 0o644 });
+
+    const indexPath = join(WEB_OUTPUT_DIR, 'manifest-web-index.ts');
+    filesToGenerate.set(indexPath, { content: generateWebIndex(), mode: 0o644 });
+  }
+
   // --diff mode: compare against existing files
   if (diffMode) {
     let hasDiff = false;
@@ -1297,7 +1617,9 @@ async function main(): Promise<void> {
     console.log('');
 
     for (const [filepath, { content }] of filesToGenerate) {
-      const filename = filepath.replace(OUTPUT_DIR + '/', '');
+      const filename = filepath.startsWith(WEB_OUTPUT_DIR)
+        ? 'web/' + filepath.replace(WEB_OUTPUT_DIR + '/', '')
+        : filepath.replace(OUTPUT_DIR + '/', '');
       if (existsSync(filepath)) {
         const existing = readFileSync(filepath, 'utf-8');
         if (existing !== content) {
@@ -1331,7 +1653,9 @@ async function main(): Promise<void> {
   // --dry-run mode: just show what would be generated
   if (dryRun) {
     for (const [filepath, { content }] of filesToGenerate) {
-      const filename = filepath.replace(OUTPUT_DIR + '/', '');
+      const filename = filepath.startsWith(WEB_OUTPUT_DIR)
+        ? 'web/' + filepath.replace(WEB_OUTPUT_DIR + '/', '')
+        : filepath.replace(OUTPUT_DIR + '/', '');
       console.log(`[DRY-RUN] Would generate: ${filename}`);
       if (verbose) {
         console.log('---');
@@ -1346,17 +1670,20 @@ async function main(): Promise<void> {
 
   // Normal generation mode: write all files
   mkdirSync(OUTPUT_DIR, { recursive: true });
+  mkdirSync(WEB_OUTPUT_DIR, { recursive: true });
 
   const generatedFiles: string[] = [];
   for (const [filepath, { content, mode }] of filesToGenerate) {
     writeFileSync(filepath, content, { mode });
-    const filename = filepath.replace(OUTPUT_DIR + '/', '');
+    const filename = filepath.startsWith(WEB_OUTPUT_DIR)
+      ? 'web/' + filepath.replace(WEB_OUTPUT_DIR + '/', '')
+      : filepath.replace(OUTPUT_DIR + '/', '');
     console.log(`Generated: ${filename}`);
     generatedFiles.push(filepath);
   }
 
   console.log('');
-  console.log(`Generated ${generatedFiles.length} files in ${OUTPUT_DIR}`);
+  console.log(`Generated ${generatedFiles.length} files (${OUTPUT_DIR} + ${WEB_OUTPUT_DIR})`);
 }
 
 main().catch((err) => {

@@ -3,6 +3,8 @@
  * comprehensive descriptions, implementation highlights, and synergies.
  */
 
+import { getManifestTldr } from './manifest-adapter';
+
 export type TldrToolCategory = "core" | "supporting";
 
 export type TldrFlywheelTool = {
@@ -26,7 +28,7 @@ export type TldrFlywheelTool = {
   useCases: string[];
 };
 
-export const tldrFlywheelTools: TldrFlywheelTool[] = [
+const _tldrFlywheelTools: TldrFlywheelTool[] = [
   // ===========================================================================
   // CORE FLYWHEEL TOOLS - Ordered by importance for workflow
   // ===========================================================================
@@ -1073,6 +1075,27 @@ export const tldrFlywheelTools: TldrFlywheelTool[] = [
     ],
   },
 ];
+
+// Merge basic metadata from manifest (source of truth for names, shortNames,
+// hrefs, stars, techStack, keyFeatures, useCases). Rich UI data (whatItDoes,
+// whyItsUseful, implementationHighlights, synergies, category, color, icon)
+// stays hand-maintained.
+export const tldrFlywheelTools: TldrFlywheelTool[] = _tldrFlywheelTools.map(
+  (tool) => {
+    const gen = getManifestTldr(tool.id);
+    if (!gen) return tool;
+    return {
+      ...tool,
+      name: gen.displayName,
+      shortName: gen.shortName,
+      href: gen.href ?? tool.href,
+      stars: gen.stars ?? tool.stars,
+      techStack: gen.techStack.length > 0 ? gen.techStack : tool.techStack,
+      keyFeatures: gen.features.length > 0 ? gen.features : tool.keyFeatures,
+      useCases: gen.useCases.length > 0 ? gen.useCases : tool.useCases,
+    };
+  },
+);
 
 export const tldrPageData = {
   hero: {
