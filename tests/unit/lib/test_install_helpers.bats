@@ -109,3 +109,48 @@ teardown() {
         fail "Did not include command"
     fi
 }
+
+# ============================================================
+# Skip-if-installed tests (bd-1eop)
+# ============================================================
+
+@test "_acfs_force_reinstall_enabled: returns 0 when true" {
+    export ACFS_FORCE_REINSTALL="true"
+    run _acfs_force_reinstall_enabled
+    assert_success
+}
+
+@test "_acfs_force_reinstall_enabled: returns 1 when false" {
+    export ACFS_FORCE_REINSTALL="false"
+    run _acfs_force_reinstall_enabled
+    assert_failure
+}
+
+@test "acfs_module_is_installed: returns 1 if no check defined" {
+    declare -gA ACFS_MODULE_INSTALLED_CHECK=()
+    run acfs_module_is_installed "mod1"
+    assert_failure
+}
+
+@test "acfs_module_is_installed: runs check command" {
+    declare -gA ACFS_MODULE_INSTALLED_CHECK=( ["mod1"]="true" )
+    declare -gA ACFS_MODULE_INSTALLED_CHECK_RUN_AS=( ["mod1"]="current" )
+    run acfs_module_is_installed "mod1"
+    assert_success
+}
+
+@test "acfs_should_skip_module: skips when installed" {
+    export ACFS_FORCE_REINSTALL="false"
+    declare -gA ACFS_MODULE_INSTALLED_CHECK=( ["mod1"]="true" )
+    declare -gA ACFS_MODULE_INSTALLED_CHECK_RUN_AS=( ["mod1"]="current" )
+    run acfs_should_skip_module "mod1"
+    assert_success
+}
+
+@test "acfs_should_skip_module: does not skip when force reinstall" {
+    export ACFS_FORCE_REINSTALL="true"
+    declare -gA ACFS_MODULE_INSTALLED_CHECK=( ["mod1"]="true" )
+    declare -gA ACFS_MODULE_INSTALLED_CHECK_RUN_AS=( ["mod1"]="current" )
+    run acfs_should_skip_module "mod1"
+    assert_failure
+}

@@ -737,6 +737,100 @@ run_as_current_shell() {
 }
 
 # ------------------------------------------------------------
+# Skip-if-installed logic (bd-1eop)
+# ------------------------------------------------------------
+# These functions check whether a module is already installed
+# using the installed_check field from the manifest.
+#
+# Set ACFS_FORCE_REINSTALL=true (or 1) to bypass these checks.
+# The install.sh --force-reinstall flag sets this.
+# ------------------------------------------------------------
+
+: "${ACFS_FORCE_REINSTALL:=false}"
+
+# Helper to check if force reinstall is enabled (handles true/1/yes)
+_acfs_force_reinstall_enabled() {
+    case "${ACFS_FORCE_REINSTALL:-false}" in
+        true|1|yes|on) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Check if a module is already installed
+# Returns 0 (true) if installed, 1 (false) if not installed or check fails
+acfs_module_is_installed() {
+    local module_id="$1"
+
+    # If force reinstall is enabled, always return "not installed"
+    if _acfs_force_reinstall_enabled; then
+        return 1
+    fi
+
+    # Check if manifest index is loaded
+    if [[ "${ACFS_MANIFEST_INDEX_LOADED:-false}" != "true" ]]; then
+        return 1
+    fi
+
+    # Get the installed_check command for this module
+    local check_cmd="${ACFS_MODULE_INSTALLED_CHECK[$module_id]:-}"
+    if [[ -z "$check_cmd" ]]; then
+        # No check defined - assume not installed
+        return 1
+    fi
+
+    # Get execution context (default: current)
+    local run_as="${ACFS_MODULE_INSTALLED_CHECK_RUN_AS[$module_id]:-current}"
+
+    # Run the check in the appropriate context
+    case "$run_as" in
+        target_user|target)
+            if declare -f run_as_target >/dev/null 2>&1; then
+                run_as_target bash -c "$check_cmd" >/dev/null 2>&1
+                return $?
+            fi
+            # Fallback to current user if run_as_target not available
+            bash -c "$check_cmd" >/dev/null 2>&1
+            return $?
+            ;;
+        root)
+            if [[ "$EUID" -eq 0 ]]; then
+                bash -c "$check_cmd" >/dev/null 2>&1
+                return $?
+            fi
+            if command -v sudo >/dev/null 2>&1; then
+                sudo bash -c "$check_cmd" >/dev/null 2>&1
+                return $?
+            fi
+            # Fallback
+            bash -c "$check_cmd" >/dev/null 2>&1
+            return $?
+            ;;
+        current|*)
+            bash -c "$check_cmd" >/dev/null 2>&1
+            return $?
+            ;;
+    esac
+}
+
+# Check if a module should be skipped (already installed)
+# Returns 0 (true) if should skip, 1 (false) if should install
+acfs_should_skip_module() {
+    local module_id="$1"
+
+    # If force reinstall, don't skip
+    if _acfs_force_reinstall_enabled; then
+        return 1
+    fi
+
+    # Check if installed
+    if acfs_module_is_installed "$module_id"; then
+        return 0
+    fi
+
+    return 1
+}
+
+# ------------------------------------------------------------
 # Command existence helpers
 # ------------------------------------------------------------
 
@@ -804,6 +898,14 @@ acfs_run_generated_category_phase() {
             log_error "Generated function not found: $func (module $module)"
             return 1
         fi
+
+        # Skip-if-installed check (bd-1eop)
+        if acfs_should_skip_module "$module"; then
+            log_info "Skipping $module (already installed)"
+            ran_any=true
+            continue
+        fi
+
         if ! "$func"; then
             log_error "Generated module failed: $module"
             return 1
