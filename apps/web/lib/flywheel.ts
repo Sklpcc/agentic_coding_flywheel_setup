@@ -608,9 +608,22 @@ const _flywheelTools: FlywheelTool[] = [
     color: "from-amber-400 to-orange-500",
     tagline: "Rust-powered issue tracking CLI",
     description:
-      "Local-first issue tracking for AI agents. Stores issues in .beads/*.jsonl files that commit with code. Dependencies, labels, priorities, blocking relationships. The bd alias provides backward compatibility.",
-    deepDescription:
-      "beads_rust (br) is the Rust port of the beads issue tracker, replacing the original Go version. Issues live in .beads/*.jsonl - they travel with your repo. Full dependency graph with blocking/blocked-by relationships. Labels, priorities, comments, time tracking. Auto-flush syncs state to disk. Works offline, syncs on commit.",
+      "Local-first issue tracking for AI agents. SQLite + JSONL hybrid: fast queries locally, git-friendly export for collaboration. Non-invasive - never auto-commits or touches source code.",
+    deepDescription: `beads_rust (br) is a ~20K-line Rust port of Steve Yegge's beads, frozen at the
+"classic" SQLite + JSONL architecture. Issues live in .beads/ - they travel with your repo.
+
+Key architecture:
+- SQLite for fast local queries (list, ready, blocked, search)
+- JSONL export (br sync --flush-only) for git-friendly commits
+- Non-invasive: never runs git commands or installs hooks automatically
+- Agent-first: every command supports --json for machine consumption
+
+JSONL schema fields: id, title, description, status, priority (0-4), issue_type,
+created_at, created_by, updated_at, close_reason, closed_at, source_repo,
+compaction_level, dependencies, labels, owner
+
+40 commands including: create, list, ready, blocked, dep, label, epic,
+defer/undefer, search, stats, doctor, changelog, orphans, audit, history, graph`,
     connectsTo: ["bv", "mail", "ntm", "ru"],
     connectionDescriptions: {
       bv: "BV visualizes and analyzes beads from br",
@@ -620,19 +633,19 @@ const _flywheelTools: FlywheelTool[] = [
     },
     stars: 128,
     features: [
-      "Local-first: .beads/*.jsonl commits with code",
-      "Full dependency graph: blocks/blocked-by relationships",
-      "Labels, priorities (P0-P3), comments, time tracking",
-      "Auto-flush: changes sync to disk automatically",
-      "bd alias for backward compatibility with golang beads",
-      "JSON output for robot/agent consumption",
+      "SQLite + JSONL hybrid: fast queries + git-friendly export",
+      "Non-invasive: never auto-commits or touches source code",
+      "Full dependency graph: blocks/blocked-by with br dep",
+      "br ready: shows unblocked, non-deferred work",
+      "br stats: lead time, activity, status breakdown",
+      "40 commands, all support --json for agents",
     ],
     cliCommands: [
-      "br create --title 'Fix bug' --priority 1 --label backend",
-      "br list --status open --json",
-      "br update <id> --status in_progress",
-      "br close <id> --reason 'Fixed in commit abc123'",
+      "br create 'Fix bug' -p 1 --type bug",
       "br ready --json",
+      "br dep add <child> <parent>",
+      "br sync --flush-only",
+      "br stats",
     ],
     installCommand:
       'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/beads_rust/main/install.sh" | bash',
@@ -1236,20 +1249,22 @@ Key capabilities:
     tagline: "Ultra-fast search over your X/Twitter archive",
     description:
       "Hybrid BM25 + semantic search over X/Twitter data exports. Zero-dependency local processing with Reciprocal Rank Fusion.",
-    deepDescription: `Your X/Twitter archive is a goldmine of bookmarks, threads, and ideas - but Twitter's
-search is notoriously terrible. XF makes your entire archive instantly searchable with both
-keyword (BM25) and semantic matching, fused together using Reciprocal Rank Fusion.
-
-The hybrid approach means you can search by exact terms ("that thread about async/await")
-or by concept ("discussions about concurrent programming patterns"). Results are ranked by
-combining both signals.
+    deepDescription: `XF indexes your X (Twitter) data export and provides sub-millisecond full-text search
+across tweets, likes, DMs, and Grok conversations. Three search modes: hybrid (default),
+lexical (BM25 keyword matching), and semantic (vector similarity via hash embedder or
+optional MiniLM with --semantic flag).
 
 Key capabilities:
-- Rust implementation for maximum performance (sub-second searches)
-- Hybrid BM25 + semantic search with RRF fusion
-- Zero-dependency hash embedder (no Python/API calls needed)
-- Fully local, privacy-preserving processing
-- Parses all X archive formats (tweets, DMs, bookmarks, likes)`,
+- Tantivy-powered BM25 search with phrase queries, boolean operators, and wildcards
+- Reciprocal Rank Fusion combines keyword and semantic results optimally
+- Hash-based embeddings by default (zero dependencies, ~0ms per embedding)
+- Optional MiniLM embeddings for true semantic synonym matching
+- Parses window.YTD.* JavaScript format from X data exports
+- Data types: tweet, like, dm, grok, follower, following, block, mute
+- SQLite storage with FTS5, memory-mapped Tantivy index
+- SIMD-accelerated vector operations, F16 quantization (50% storage reduction)
+- All data stays local - no network calls during search
+- 13 commands: import, index, search, stats, tweet, list, export, config, doctor, shell, benchmark`,
     connectsTo: ["cass", "cm"],
     connectionDescriptions: {
       cass: "Similar search architecture - hybrid retrieval patterns",
@@ -1257,14 +1272,22 @@ Key capabilities:
     },
     stars: 156,
     features: [
-      "Sub-second search over large archives",
-      "Hybrid BM25 + semantic search",
+      "Sub-millisecond lexical search (<10ms hybrid)",
+      "Three search modes: hybrid, lexical, semantic",
       "Reciprocal Rank Fusion scoring",
-      "Zero external API dependencies",
-      "Privacy-preserving local processing",
-      "Parses tweets, DMs, bookmarks, likes",
+      "Zero external API dependencies (hash mode)",
+      "DM context view with full conversation threads",
+      "Parses tweets, likes, DMs, Grok chats",
+      "Interactive REPL shell for exploration",
     ],
-    cliCommands: ["xf search 'query'", "xf index /path/to/archive", "xf --help"],
+    cliCommands: [
+      "xf index ~/x-archive",
+      "xf search 'query' --format json",
+      "xf search 'term' --mode semantic",
+      "xf stats",
+      "xf doctor",
+      "xf shell",
+    ],
     installCommand:
       "curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/xf/main/install.sh | bash",
     language: "Rust",

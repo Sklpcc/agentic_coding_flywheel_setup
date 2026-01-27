@@ -134,14 +134,14 @@ const _tldrFlywheelTools: TldrFlywheelTool[] = [
     category: "core",
     stars: 128,
     whatItDoes:
-      "Local-first issue tracking for AI agents. Issues live in .beads/*.jsonl files that commit with your code. Full dependency graph with blocking/blocked-by relationships.",
+      "Local-first issue tracking for AI agents. SQLite + JSONL hybrid: fast queries locally, git-friendly export for collaboration. Non-invasive - never auto-commits or touches source code.",
     whyItsUseful:
-      "Your issues travel with your repo - no external service required. Agents can create, update, and close issues with simple CLI commands. The bd alias provides backward compatibility with the original Go version.",
+      "Your issues travel with your repo - no external service required. ~20K lines of Rust focused on one thing: tracking issues without getting in your way. br ready shows actionable work; br sync --flush-only exports for git commit.",
     implementationHighlights: [
-      "Rust port of the original Go beads CLI",
-      "Issues stored in JSONL - human readable, git friendly",
-      "Auto-flush syncs state to disk automatically",
-      "Full dependency graph with blocks/blocked-by",
+      "SQLite for fast queries, JSONL for git-friendly export",
+      "Non-invasive: never runs git commands automatically",
+      "40 commands, all support --json for agents",
+      "br ready/blocked for dependency-aware work queues",
     ],
     synergies: [
       {
@@ -157,16 +157,16 @@ const _tldrFlywheelTools: TldrFlywheelTool[] = [
         description: "NTM spawns agents that pick work from beads",
       },
     ],
-    techStack: ["Rust", "Serde", "JSONL"],
+    techStack: ["Rust", "SQLite", "JSONL", "Serde"],
     keyFeatures: [
-      "Local-first issue storage",
-      "Dependency graph tracking",
-      "Labels, priorities, comments",
-      "JSON output for agents",
+      "SQLite + JSONL hybrid architecture",
+      "br ready: unblocked, non-deferred work",
+      "br dep: full dependency graph management",
+      "br stats: lead time and activity metrics",
     ],
     useCases: [
       "Tracking tasks that travel with the code",
-      "Building dependency graphs for complex projects",
+      "Finding actionable work with br ready --json",
       "Enabling agents to manage their own work queues",
     ],
   },
@@ -863,14 +863,14 @@ const _tldrFlywheelTools: TldrFlywheelTool[] = [
     category: "supporting",
     stars: 156,
     whatItDoes:
-      "Ultra-fast search over X/Twitter data archives. Uses hybrid BM25 + semantic search with Reciprocal Rank Fusion.",
+      "Ultra-fast search over X/Twitter data archives. Indexes tweets, likes, DMs, and Grok chats with hybrid BM25 + semantic search using Reciprocal Rank Fusion.",
     whyItsUseful:
-      "Your X archive is a goldmine of bookmarks, threads, and ideas, but Twitter's search is terrible. XF makes your archive instantly searchable with both keyword and semantic matching.",
+      "Your X archive is a goldmine of bookmarks, threads, and ideas. XF makes your archive instantly searchable with three modes: hybrid (default), lexical (BM25), and semantic (vector similarity).",
     implementationHighlights: [
-      "Rust implementation for maximum performance",
-      "Hybrid BM25 + semantic search with RRF fusion",
-      "Zero-dependency hash embedder (no Python/API calls)",
-      "Privacy-first, fully local processing",
+      "Tantivy-powered BM25 with phrase queries and boolean operators",
+      "Hash-based embeddings (zero deps) or optional MiniLM semantic",
+      "SIMD-accelerated vector ops with F16 quantization",
+      "Parses window.YTD.* JavaScript format from X exports",
     ],
     synergies: [
       {
@@ -882,17 +882,17 @@ const _tldrFlywheelTools: TldrFlywheelTool[] = [
         description: "Found tweets can become memories",
       },
     ],
-    techStack: ["Rust", "Tantivy", "Hash embeddings", "RRF"],
+    techStack: ["Rust", "Tantivy", "SQLite", "FNV-1a hash embeddings"],
     keyFeatures: [
-      "Sub-second search over large archives",
-      "Semantic + keyword hybrid search",
-      "No external API dependencies",
-      "Privacy-preserving local processing",
+      "Sub-millisecond lexical, <10ms hybrid search",
+      "DM context view with full conversation threads",
+      "JSON/CSV/compact output formats",
+      "Interactive REPL shell (xf shell)",
     ],
     useCases: [
       "Finding that thread you bookmarked months ago",
-      "Researching past discussions on a topic",
-      "Building on ideas from your tweet history",
+      "Searching DMs with full conversation context",
+      "Exporting tweets to JSON for analysis pipelines",
     ],
   },
   {
