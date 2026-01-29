@@ -504,8 +504,10 @@ record_change() {
     local depends_on="${8:-[]}"  # JSON array of dependency change IDs
 
     # Generate unique ID
-    local seq_num
-    seq_num=$(wc -l < "$ACFS_CHANGES_FILE" 2>/dev/null || echo "0")
+    local seq_num=0
+    if [[ -f "$ACFS_CHANGES_FILE" ]]; then
+        seq_num=$(wc -l < "$ACFS_CHANGES_FILE" 2>/dev/null) || seq_num=0
+    fi
     local change_id
     change_id="chg_$(printf '%04d' $((seq_num + 1)))"
     local timestamp
@@ -547,7 +549,7 @@ record_change() {
     record=$(echo "$record" | jq -c --arg sum "$record_checksum" '. + {record_checksum: $sum}')
 
     # Store in memory
-    ACFS_CHANGE_RECORDS[$change_id]="$record"
+    ACFS_CHANGE_RECORDS["$change_id"]="$record"
     ACFS_CHANGE_ORDER+=("$change_id")
 
     # Persist atomically with fsync
@@ -569,17 +571,17 @@ undo_change() {
     local skip_deps="${3:-false}"
 
     # Load from file if not in memory
-    if [[ -z "${ACFS_CHANGE_RECORDS[$change_id]:-}" ]]; then
+    if [[ -z "${ACFS_CHANGE_RECORDS["$change_id"]:-}" ]]; then
         local record
         record=$(grep -F "\"id\":\"$change_id\"" "$ACFS_CHANGES_FILE" | tail -1)
         if [[ -z "$record" ]]; then
             log_error "Unknown change ID: $change_id"
             return 1
         fi
-        ACFS_CHANGE_RECORDS[$change_id]="$record"
+        ACFS_CHANGE_RECORDS["$change_id"]="$record"
     fi
 
-    local record="${ACFS_CHANGE_RECORDS[$change_id]}"
+    local record="${ACFS_CHANGE_RECORDS["$change_id"]}"
 
     # Verify record integrity
     local stored_checksum
@@ -691,7 +693,7 @@ rollback_all_on_failure() {
     # Undo in reverse order
     for ((i=${#ACFS_CHANGE_ORDER[@]}-1; i>=0; i--)); do
         local change_id="${ACFS_CHANGE_ORDER[$i]}"
-        local record="${ACFS_CHANGE_RECORDS[$change_id]}"
+        local record="${ACFS_CHANGE_RECORDS["$change_id"]}"
         local desc
         desc=$(echo "$record" | jq -r '.description')
 
@@ -737,7 +739,7 @@ print_undo_summary() {
     printf "%-10s %-12s %-50s\n" "----------" "------------" "--------------------------------------------------"
 
     for change_id in "${ACFS_CHANGE_ORDER[@]}"; do
-        local record="${ACFS_CHANGE_RECORDS[$change_id]}"
+        local record="${ACFS_CHANGE_RECORDS["$change_id"]}"
         local desc
         desc=$(echo "$record" | jq -r '.description' | cut -c1-50)
         local cat
