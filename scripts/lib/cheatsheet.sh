@@ -419,12 +419,20 @@ main() {
         shift
         ;;
       --format|-f)
+        if [[ -z "${2:-}" || "$2" == -* ]]; then
+          echo "Error: --format requires a value (json or toon)" >&2
+          return 1
+        fi
         _CHEATSHEET_OUTPUT_FORMAT="$2"
         json_mode=true
         shift 2
         ;;
       --format=*)
         _CHEATSHEET_OUTPUT_FORMAT="${1#*=}"
+        if [[ -z "$_CHEATSHEET_OUTPUT_FORMAT" ]]; then
+          echo "Error: --format requires a value (json or toon)" >&2
+          return 1
+        fi
         json_mode=true
         shift
         ;;

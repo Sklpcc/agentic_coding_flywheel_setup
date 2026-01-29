@@ -677,11 +677,19 @@ info_main() {
                 ;;
             --format|-f)
                 shift
+                if [[ -z "${1:-}" || "$1" == -* ]]; then
+                    echo "Error: --format requires a value (json or toon)" >&2
+                    return 1
+                fi
                 _INFO_OUTPUT_FORMAT="$1"
                 output_mode="json"  # --format implies structured output
                 ;;
             --format=*)
                 _INFO_OUTPUT_FORMAT="${1#*=}"
+                if [[ -z "$_INFO_OUTPUT_FORMAT" ]]; then
+                    echo "Error: --format requires a value (json or toon)" >&2
+                    return 1
+                fi
                 output_mode="json"
                 ;;
             --toon|-t)

@@ -63,12 +63,12 @@ acfs_resolve_format() {
         fmt="json"
     fi
 
-    # Validate and normalize
+    # Validate and normalize (fmt is already lowercase)
     case "$fmt" in
-        toon|TOON)
+        toon)
             echo "toon"
             ;;
-        json|JSON|*)
+        *)
             echo "json"
             ;;
     esac
@@ -96,6 +96,13 @@ acfs_format_output() {
             if _acfs_tru_available; then
                 local toon_data
                 toon_data=$(printf '%s' "$json_data" | tru --encode 2>/dev/null)
+
+                # If encoding failed (empty output), fall back to JSON
+                if [[ -z "$toon_data" ]]; then
+                    echo "[acfs] Warning: tru encoding failed, falling back to JSON" >&2
+                    printf '%s\n' "$json_data"
+                    return 0
+                fi
 
                 if [[ "$show_stats" == "true" ]]; then
                     local json_bytes toon_bytes savings

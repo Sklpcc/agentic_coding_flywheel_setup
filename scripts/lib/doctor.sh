@@ -2367,12 +2367,20 @@ main() {
                 ;;
             --format|-f)
                 shift
+                if [[ -z "${1:-}" || "$1" == -* ]]; then
+                    echo "Error: --format requires a value (json or toon)" >&2
+                    return 1
+                fi
                 _DOCTOR_OUTPUT_FORMAT="$1"
                 JSON_MODE=true
                 shift
                 ;;
             --format=*)
                 _DOCTOR_OUTPUT_FORMAT="${1#*=}"
+                if [[ -z "$_DOCTOR_OUTPUT_FORMAT" ]]; then
+                    echo "Error: --format requires a value (json or toon)" >&2
+                    return 1
+                fi
                 JSON_MODE=true
                 shift
                 ;;
