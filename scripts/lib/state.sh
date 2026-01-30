@@ -1296,8 +1296,10 @@ state_update() {
         return 1
     fi
 
-    state_save "$new_state"
+    local save_result=0
+    state_save "$new_state" || save_result=$?
     _state_release_lock
+    return $save_result
 }
 
 # ============================================================
@@ -1349,8 +1351,10 @@ state_phase_start() {
         ') || { _state_release_lock; return 1; }
     fi
 
-    state_save "$new_state"
+    local save_result=0
+    state_save "$new_state" || save_result=$?
     _state_release_lock
+    return $save_result
 }
 
 # Update the current step within a phase
@@ -1379,8 +1383,10 @@ state_step_update() {
         return 1
     fi
 
-    state_save "$new_state"
+    local save_result=0
+    state_save "$new_state" || save_result=$?
     _state_release_lock
+    return $save_result
 }
 
 # Mark a phase as completed
@@ -1434,8 +1440,10 @@ state_phase_complete() {
         return 1
     fi
 
-    state_save "$new_state"
+    local save_result=0
+    state_save "$new_state" || save_result=$?
     _state_release_lock
+    return $save_result
 }
 
 # Mark a phase as failed
@@ -1475,8 +1483,10 @@ state_phase_fail() {
         return 1
     fi
 
-    state_save "$new_state"
+    local save_result=0
+    state_save "$new_state" || save_result=$?
     _state_release_lock
+    return $save_result
 }
 
 # Mark a phase as skipped
