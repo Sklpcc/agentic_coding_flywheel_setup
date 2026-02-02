@@ -1751,9 +1751,9 @@ acfs_curl_with_retry() {
 
         if acfs_curl -o "$output_path" "$url"; then
             return 0
+        else
+            exit_code=$?
         fi
-
-        exit_code=$?
         if ! acfs_is_retryable_curl_exit_code "$exit_code"; then
             return "$exit_code"
         fi

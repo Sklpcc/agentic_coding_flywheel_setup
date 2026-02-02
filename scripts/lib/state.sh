@@ -713,9 +713,7 @@ confirm_resume() {
                     .completed_phases = (.completed_phases | map(select(. != "finalize"))) |
                     .version = $ver
                 ')
-                local state_file_path
-                state_file_path="$(state_get_file)"
-                printf '%s\n' "$updated_state" > "$state_file_path"
+                state_save "$updated_state"
             fi
         fi
     fi
