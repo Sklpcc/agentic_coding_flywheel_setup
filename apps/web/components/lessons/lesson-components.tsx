@@ -204,7 +204,7 @@ export function FeatureCard({
     >
       {/* Gradient overlay on hover */}
       <div
-        className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+        className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-500`}
       />
 
       <div className="relative flex items-start gap-4">

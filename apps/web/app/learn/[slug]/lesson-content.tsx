@@ -512,7 +512,7 @@ export function LessonContent({ lesson }: Props) {
                   <div className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-black/40 to-orange-500/5 backdrop-blur-2xl p-8">
                     {/* Animated accent */}
                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 via-transparent to-orange-500/5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-500" />
 
                     <div className="relative flex gap-6">
                       <div className="relative shrink-0">
@@ -564,7 +564,7 @@ export function LessonContent({ lesson }: Props) {
                 <div className={`absolute -inset-2 rounded-[28px] transition-all duration-700 ${
                   isCompleted
                     ? "bg-gradient-to-r from-emerald-500/40 via-emerald-400/30 to-emerald-500/40 blur-2xl opacity-100"
-                    : "bg-gradient-to-r from-primary/40 via-violet-500/30 to-primary/40 blur-2xl opacity-0 group-hover:opacity-100"
+                    : "bg-gradient-to-r from-primary/40 via-violet-500/30 to-primary/40 blur-2xl opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
                 }`} />
 
                 <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-white/[0.05] backdrop-blur-2xl p-10">
@@ -650,9 +650,9 @@ export function LessonContent({ lesson }: Props) {
                 {prevLesson ? (
                   <Link
                     href={`/learn/${prevLesson.slug}`}
-                    className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.05)] hover:-translate-y-1"
+                    className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.05)] hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background outline-none"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-500" />
                     <div className="relative flex items-center gap-5">
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] transition-all duration-500 group-hover:scale-110 group-hover:bg-white/[0.1] group-hover:border-white/20">
                         <ChevronLeft className="h-6 w-6 text-white/60 transition-all duration-500 group-hover:text-white group-hover:-translate-x-1" />
@@ -669,9 +669,9 @@ export function LessonContent({ lesson }: Props) {
                 {nextLesson ? (
                   <Link
                     href={`/learn/${nextLesson.slug}`}
-                    className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.05)] hover:-translate-y-1 text-right"
+                    className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[0_0_40px_rgba(255,255,255,0.05)] hover:-translate-y-1 text-right focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background outline-none"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-l from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-l from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-500" />
                     <div className="relative flex items-center justify-end gap-5">
                       <div>
                         <div className="text-xs text-white/50 mb-1 uppercase tracking-wider font-medium">Next</div>

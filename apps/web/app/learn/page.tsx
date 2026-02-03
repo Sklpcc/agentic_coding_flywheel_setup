@@ -86,7 +86,7 @@ function LessonCard({
       >
         {/* Ambient glow on hover */}
         {isAccessible && (
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-emerald-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-focus-within:opacity-100" />
         )}
 
         {/* Top gradient line */}
@@ -149,7 +149,7 @@ function LessonCard({
 
         {/* Hover arrow */}
         {isAccessible && (
-          <ChevronRight className="absolute bottom-4 right-4 h-5 w-5 text-primary/40 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary group-hover:opacity-100" />
+          <ChevronRight className="absolute bottom-4 right-4 h-5 w-5 text-primary/40 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:text-primary group-hover:opacity-100 group-focus-within:translate-x-1 group-focus-within:text-primary group-focus-within:opacity-100" />
         )}
       </div>
     </motion.div>
@@ -522,7 +522,7 @@ export default function LearnDashboard() {
                         {item.desc}
                       </div>
                     </div>
-                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/40 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+                    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground/40 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100 group-focus-within:translate-x-0.5 group-focus-within:opacity-100" />
                   </Link>
                 </motion.div>
               ))}

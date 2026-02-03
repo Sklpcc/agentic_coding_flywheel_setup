@@ -180,7 +180,7 @@ function ToolCard({ tool, index }: ToolCardProps) {
                 href={tool.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-muted-foreground ring-1 ring-white/10 transition-all hover:bg-white/10 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-muted-foreground ring-1 ring-white/10 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-ring outline-none"
                 aria-label={`View ${tool.displayName} on GitHub`}
               >
                 <ExternalLink className="h-4 w-4" />
