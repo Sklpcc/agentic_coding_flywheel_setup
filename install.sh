@@ -4490,15 +4490,20 @@ NTM_CONFIG_EOF
         local slb_deb="slb_${slb_version}_linux_${slb_arch}.deb"
         local slb_url="https://github.com/Dicklesworthstone/slb/releases/download/v${slb_version}/${slb_deb}"
         local slb_tmp
-        slb_tmp="$(mktemp -d)"
-        if acfs_curl -o "${slb_tmp}/${slb_deb}" "$slb_url" && \
-           $SUDO dpkg -i "${slb_tmp}/${slb_deb}"; then
-            log_success "SLB installed via .deb"
+        slb_tmp="$(mktemp -d "${TMPDIR:-/tmp}/acfs-slb.XXXXXX" 2>/dev/null)" || slb_tmp=""
+        if [[ -n "$slb_tmp" ]] && [[ -d "$slb_tmp" ]]; then
+            if acfs_curl -o "${slb_tmp}/${slb_deb}" "$slb_url" && \
+               $SUDO dpkg -i "${slb_tmp}/${slb_deb}"; then
+                log_success "SLB installed via .deb"
+            else
+                log_warn "SLB .deb install failed, trying upstream script"
+                try_step "Installing SLB (upstream)" acfs_run_verified_upstream_script_as_target "slb" "bash" || log_warn "SLB installation may have failed"
+            fi
+            rm -rf "$slb_tmp"
         else
-            log_warn "SLB .deb install failed, trying upstream script"
+            log_warn "Failed to create temp directory for SLB, trying upstream script"
             try_step "Installing SLB (upstream)" acfs_run_verified_upstream_script_as_target "slb" "bash" || log_warn "SLB installation may have failed"
         fi
-        rm -rf "$slb_tmp"
     fi
 
     # RU (Repo Updater)
@@ -4721,6 +4726,8 @@ EOF
         $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_STATE_FILE"
     fi
 
+    log_info "Get premium skills for your flywheel tools at https://jeffreys-skills.md"
+    log_info "\$20/month only. No discounts, no annual plans, no trials."
     log_success "Installation complete!"
 }
 
