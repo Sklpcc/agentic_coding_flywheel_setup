@@ -3,7 +3,7 @@
 #
 # Tests:
 #   - 7 First-class flywheel tools: br, ms, rch, wa, brenner, dcg, ru
-#   - 9 Utility tools: toon, rust_proxy, rano, xf, mdwb, pt, aadc, s2p, caut
+#   - 9 Utility tools: tru, rust_proxy, rano, xf, mdwb, pt, aadc, s2p, caut
 #   - Integration: acfs doctor, flywheel.ts, br primary command
 #
 # Related: bead bd-1ega.7
