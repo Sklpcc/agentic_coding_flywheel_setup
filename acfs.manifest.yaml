@@ -1879,7 +1879,7 @@ modules:
       - xf --help || xf --version
 
   - id: utils.toon_rust
-    description: toon_rust (tru) - Token-optimized notation format for LLM context efficiency
+    description: toon_rust (toon) - Token-optimized notation format for LLM context efficiency
     category: tools
     phase: 9
     run_as: target_user
@@ -1890,14 +1890,14 @@ modules:
       - lang.rust
     installed_check:
       run_as: target_user
-      command: "command -v tru"
+      command: "command -v toon"
     verified_installer:
-      tool: tru
+      tool: toon
       runner: bash
       url: "https://raw.githubusercontent.com/Dicklesworthstone/toon_rust/master/install.sh"
     install: []
     verify:
-      - tru --help || tru --version
+      - toon --help || toon --version
 
   - id: utils.rano
     description: rano - Network observer for AI CLIs with request/response logging
