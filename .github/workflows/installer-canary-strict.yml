@@ -38,11 +38,11 @@ jobs:
 
           rc=0
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            ./tests/vm/test_install_ubuntu.sh --all --mode "vibe" --strict 2>&1 | tee canary.log || rc=${PIPESTATUS[0]:-$?}
+            (set -o pipefail; ./tests/vm/test_install_ubuntu.sh --all --mode "vibe" --strict 2>&1 | tee canary.log) || rc=$?
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "$UBUNTU" == "all" ]]; then
-            ./tests/vm/test_install_ubuntu.sh --all --mode "$MODE" --strict 2>&1 | tee canary.log || rc=${PIPESTATUS[0]:-$?}
+            (set -o pipefail; ./tests/vm/test_install_ubuntu.sh --all --mode "$MODE" --strict 2>&1 | tee canary.log) || rc=$?
           else
-            ./tests/vm/test_install_ubuntu.sh --ubuntu "$UBUNTU" --mode "$MODE" --strict 2>&1 | tee canary.log || rc=${PIPESTATUS[0]:-$?}
+            (set -o pipefail; ./tests/vm/test_install_ubuntu.sh --ubuntu "$UBUNTU" --mode "$MODE" --strict 2>&1 | tee canary.log) || rc=$?
           fi
 
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
