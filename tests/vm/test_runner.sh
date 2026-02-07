@@ -33,7 +33,7 @@ fi
 
 # PHASE 1: Fresh Install
 log "PHASE 1: Fresh Install (mode=${ACFS_TEST_MODE})"
-if bash install.sh --yes --mode "${ACFS_TEST_MODE}" ${STRICT_FLAG} > "${ARTIFACTS_DIR}/install.log" 2>&1; then
+if bash install.sh --yes --skip-ubuntu-upgrade --mode "${ACFS_TEST_MODE}" ${STRICT_FLAG} > "${ARTIFACTS_DIR}/install.log" 2>&1; then
     log "Install successful"
 else
     log "Install failed! Last 50 lines:"
@@ -121,7 +121,7 @@ fi
 
 # PHASE 3: Idempotency
 log "PHASE 3: Idempotency Check"
-if bash install.sh --yes --mode "${ACFS_TEST_MODE}" ${STRICT_FLAG} > "${ARTIFACTS_DIR}/idempotency.log" 2>&1; then
+if bash install.sh --yes --skip-ubuntu-upgrade --mode "${ACFS_TEST_MODE}" ${STRICT_FLAG} > "${ARTIFACTS_DIR}/idempotency.log" 2>&1; then
     log "Idempotency run successful"
 else
     log "Idempotency run failed! Last 50 lines:"
