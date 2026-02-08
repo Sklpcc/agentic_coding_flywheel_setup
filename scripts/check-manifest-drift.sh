@@ -75,8 +75,6 @@ SHA_LINE_COUNT=$(grep -c 'ACFS_MANIFEST_SHA256=' "$INDEX" || true)
 
 # Count modules in manifest vs generated index
 MANIFEST_MODULE_COUNT=$(grep -c '^\s*- id:' "$MANIFEST" || true)
-INDEX_MODULE_COUNT=$(grep -c '^\s*"[a-z]' "$REPO_ROOT/scripts/generated/manifest_index.sh" | head -1 || true)
-# More reliable: count entries in ACFS_MODULES_IN_ORDER array
 INDEX_MODULE_COUNT=$(awk '/^ACFS_MODULES_IN_ORDER=/,/^\)/' "$INDEX" | grep -c '"' || true)
 
 DRIFT_DETECTED=false
