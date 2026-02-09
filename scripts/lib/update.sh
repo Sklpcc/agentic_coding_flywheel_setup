@@ -972,19 +972,15 @@ wait_for_apt_lock() {
     local waited=0
 
     while [[ $waited -lt $max_wait ]]; do
-        # Check if any apt-related process is running
-        local apt_procs=""
-        apt_procs=$(pgrep -a 'apt|dpkg|unattended-upgr' 2>/dev/null | head -3 || true)
-
-        # Check for lock files
+        # Only check actual lock files — background processes (e.g. unattended-upgrades
+        # daemon) don't hold locks unless actively installing
         local lock_held=false
-        if [[ -f /var/lib/dpkg/lock-frontend ]] && fuser /var/lib/dpkg/lock-frontend &>/dev/null; then
-            lock_held=true
-        elif [[ -f /var/lib/apt/lists/lock ]] && fuser /var/lib/apt/lists/lock &>/dev/null; then
-            lock_held=true
-        elif [[ -n "$apt_procs" ]]; then
-            lock_held=true
-        fi
+        for lockfile in /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/lib/dpkg/lock; do
+            if [[ -f "$lockfile" ]] && fuser "$lockfile" &>/dev/null; then
+                lock_held=true
+                break
+            fi
+        done
 
         if [[ "$lock_held" == "false" ]]; then
             return 0
@@ -993,9 +989,9 @@ wait_for_apt_lock() {
         if [[ $waited -eq 0 ]]; then
             log_item "wait" "apt lock" "waiting for other package operations to complete..."
             log_to_file "APT lock detected, waiting up to ${max_wait}s for release"
-            if [[ -n "$apt_procs" ]]; then
-                log_to_file "Running processes: $apt_procs"
-            fi
+            local lock_info=""
+            lock_info=$(fuser -v /var/lib/dpkg/lock-frontend 2>&1 || true)
+            [[ -n "$lock_info" ]] && log_to_file "Lock holder: $lock_info"
         fi
 
         sleep "$interval"
@@ -1050,44 +1046,37 @@ fix_apt_issues() {
 
 # Check if apt is locked by another process, with automatic waiting and fixing
 check_apt_lock() {
-    # First attempt: check if lock is immediately available
-    local apt_procs=""
-    apt_procs=$(pgrep -a 'apt|dpkg|unattended-upgr' 2>/dev/null | head -1 || true)
-
-    if [[ -z "$apt_procs" ]]; then
-        # Also check lock files directly
-        if [[ -f /var/lib/dpkg/lock-frontend ]] && ! fuser /var/lib/dpkg/lock-frontend &>/dev/null; then
-            return 0  # Lock is free
-        elif [[ ! -f /var/lib/dpkg/lock-frontend ]]; then
-            return 0  # Lock file doesn't exist
+    # Only check if actual dpkg/apt lock files are held by a process.
+    # Background daemons (e.g. unattended-upgrades) don't hold locks unless
+    # actively installing, so pgrep-based checks cause false positives.
+    local locks_held=false
+    for lockfile in /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock /var/lib/dpkg/lock; do
+        if [[ -f "$lockfile" ]] && fuser "$lockfile" &>/dev/null; then
+            locks_held=true
+            break
         fi
+    done
+
+    if [[ "$locks_held" == "false" ]]; then
+        return 0  # No locks held, safe to proceed
     fi
 
-    # Lock is held - wait for it to be released
+    # Lock IS held — wait for release
     if wait_for_apt_lock 120; then
         log_item "ok" "apt lock" "lock released, proceeding"
         return 0
     fi
 
-    # Still locked after waiting - try to diagnose
-    log_item "warn" "apt lock" "still locked after 2 minutes"
+    # Still locked after waiting — show diagnostic
+    log_item "skip" "apt" "dpkg lock held after 2m wait"
     log_to_file "APT lock still held after waiting"
 
-    # Show what's holding the lock
     local lock_holder=""
     lock_holder=$(sudo fuser -v /var/lib/dpkg/lock-frontend 2>&1 || true)
     if [[ -n "$lock_holder" ]]; then
         log_to_file "Lock holder: $lock_holder"
         if [[ "$QUIET" != "true" ]]; then
             echo -e "       ${DIM}Lock held by: $lock_holder${NC}"
-        fi
-    fi
-
-    # Check for unattended-upgrades specifically
-    if pgrep -x "unattended-upgr" &>/dev/null; then
-        log_item "info" "apt" "unattended-upgrades is running (this is normal on fresh systems)"
-        if [[ "$QUIET" != "true" ]]; then
-            echo -e "       ${DIM}Tip: You can wait, or stop it with: sudo systemctl stop unattended-upgrades${NC}"
         fi
     fi
 
