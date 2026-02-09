@@ -761,9 +761,48 @@ update_acfs_self() {
         return 0
     fi
 
-    # Check if ACFS repo exists and is a git repo
+    # Check if ACFS repo exists and is a git repo.
+    # If installed via tarball (no .git dir), bootstrap a git repo so
+    # the existing pull-based self-update logic works on subsequent runs.
     if [[ ! -d "$ACFS_REPO_ROOT/.git" ]]; then
-        log_item "skip" "ACFS self-update" "not a git repository at $ACFS_REPO_ROOT"
+        log_to_file "No .git directory found at $ACFS_REPO_ROOT — bootstrapping git repo for self-update..."
+
+        # Check if git is available before attempting bootstrap
+        if ! command -v git &>/dev/null; then
+            log_item "skip" "ACFS self-update" "git not found, cannot bootstrap"
+            return 0
+        fi
+
+        if ! git -C "$ACFS_REPO_ROOT" init 2>/dev/null; then
+            log_item "warn" "ACFS self-update" "git init failed at $ACFS_REPO_ROOT"
+            return 0
+        fi
+
+        if ! git -C "$ACFS_REPO_ROOT" remote add origin \
+                https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup.git 2>/dev/null; then
+            # Remote may already exist from a partial prior run; verify it points to the right URL
+            local existing_url
+            existing_url=$(git -C "$ACFS_REPO_ROOT" remote get-url origin 2>/dev/null) || true
+            if [[ "$existing_url" != *"agentic_coding_flywheel_setup"* ]]; then
+                log_item "warn" "ACFS self-update" "unexpected origin remote: $existing_url"
+                return 0
+            fi
+        fi
+
+        if ! git -C "$ACFS_REPO_ROOT" fetch origin main --quiet 2>/dev/null; then
+            log_item "warn" "ACFS self-update" "git fetch failed during bootstrap (network issue?)"
+            return 0
+        fi
+
+        # Use --mixed reset so local modifications (custom configs, etc.) are
+        # preserved as unstaged changes rather than being destroyed.
+        if ! git -C "$ACFS_REPO_ROOT" reset --mixed origin/main 2>/dev/null; then
+            log_item "warn" "ACFS self-update" "git reset failed during bootstrap"
+            return 0
+        fi
+
+        log_item "ok" "ACFS" "git repo bootstrapped from tarball install"
+        log_to_file "ACFS git repo initialized at $ACFS_REPO_ROOT — run 'acfs update' again for full self-update"
         return 0
     fi
 
