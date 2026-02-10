@@ -867,7 +867,7 @@ update_acfs_self() {
 
     # Stash local modifications so they don't block the pull
     local stashed=false
-    if ! git -C "$ACFS_REPO_ROOT" diff --quiet 2>/dev/null; then
+    if ! git -C "$ACFS_REPO_ROOT" diff --quiet 2>/dev/null || ! git -C "$ACFS_REPO_ROOT" diff --cached --quiet 2>/dev/null; then
         log_to_file "Local modifications detected, stashing before update..."
         if git -C "$ACFS_REPO_ROOT" stash --quiet 2>/dev/null; then
             stashed=true
@@ -970,6 +970,11 @@ wait_for_apt_lock() {
     local max_wait=${1:-120}  # Default 120 seconds (2 minutes)
     local interval=5
     local waited=0
+
+    if ! command -v fuser &>/dev/null; then
+        log_to_file "fuser not available (psmisc not installed), skipping apt lock detection"
+        return 0
+    fi
 
     while [[ $waited -lt $max_wait ]]; do
         # Only check actual lock files — background processes (e.g. unattended-upgrades

@@ -1365,6 +1365,13 @@ detect_environment() {
                             echo "ERROR: INTEGRITY: $_ics_path checksum mismatch" >&2
                         fi
                     fi
+                else
+                    _ics_fail=$((_ics_fail + 1))
+                    if declare -f log_error &>/dev/null; then
+                        log_error "INTEGRITY: $_ics_path missing (expected checksum ${_ics_expected:0:12}…)"
+                    else
+                        echo "ERROR: INTEGRITY: $_ics_path missing" >&2
+                    fi
                 fi
             done
             if [[ "$_ics_fail" -gt 0 ]]; then

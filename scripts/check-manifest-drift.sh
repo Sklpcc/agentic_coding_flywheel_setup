@@ -169,6 +169,13 @@ if $JSON_MODE; then
             },
             reasons: $reasons
         }'
+    if ! $FIX_MODE; then
+        if $DRIFT_DETECTED; then
+            exit 1
+        else
+            exit 0
+        fi
+    fi
 fi
 
 if ! $DRIFT_DETECTED; then
