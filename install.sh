@@ -959,6 +959,10 @@ cleanup() {
         if type -t webhook_notify &>/dev/null; then
             webhook_notify "failure" "${ACFS_SUMMARY_FILE:-}" 2>/dev/null || true
         fi
+        # Send ntfy.sh notification for failure (bd-2igt6)
+        if type -t acfs_notify_install_failure &>/dev/null; then
+            acfs_notify_install_failure 2>/dev/null || true
+        fi
     fi
     # Finalize log file (restore stderr, strip colors, add footer)
     acfs_log_close 2>/dev/null || true
@@ -1465,6 +1469,11 @@ detect_environment() {
     if [[ -f "$ACFS_LIB_DIR/webhook.sh" ]]; then
         # shellcheck source=scripts/lib/webhook.sh
         source "$ACFS_LIB_DIR/webhook.sh"
+    fi
+    # Source ntfy.sh notification library (bd-2igt6)
+    if [[ -f "$ACFS_LIB_DIR/notify.sh" ]]; then
+        # shellcheck source=scripts/lib/notify.sh
+        source "$ACFS_LIB_DIR/notify.sh"
     fi
 
     # Source manifest index (data-only, safe to source)
@@ -4738,6 +4747,8 @@ finalize() {
     try_step "Installing info.sh" install_asset "scripts/lib/info.sh" "$ACFS_HOME/scripts/lib/info.sh" || return 1
     try_step "Installing cheatsheet.sh" install_asset "scripts/lib/cheatsheet.sh" "$ACFS_HOME/scripts/lib/cheatsheet.sh" || return 1
     try_step "Installing webhook.sh" install_asset "scripts/lib/webhook.sh" "$ACFS_HOME/scripts/lib/webhook.sh" || return 1
+    try_step "Installing notify.sh" install_asset "scripts/lib/notify.sh" "$ACFS_HOME/scripts/lib/notify.sh" || return 1
+    try_step "Installing notifications.sh" install_asset "scripts/lib/notifications.sh" "$ACFS_HOME/scripts/lib/notifications.sh" || return 1
     try_step "Installing dashboard.sh" install_asset "scripts/lib/dashboard.sh" "$ACFS_HOME/scripts/lib/dashboard.sh" || return 1
 
     # Install acfs-update wrapper command
@@ -5584,6 +5595,10 @@ main() {
         # Send webhook notification if configured (bd-2zqr)
         if type -t webhook_notify &>/dev/null; then
             webhook_notify "success" "${ACFS_SUMMARY_FILE:-}" 2>/dev/null || true
+        fi
+        # Send ntfy.sh notification if configured (bd-2igt6)
+        if type -t acfs_notify_install_success &>/dev/null; then
+            acfs_notify_install_success 2>/dev/null || true
         fi
 
         SMOKE_TEST_FAILED=false

@@ -1198,6 +1198,7 @@ update_agents() {
         if ! run_cmd_claude_update; then
             log_to_file "Claude update failed, attempting reinstall via official installer"
             if update_require_security; then
+                # INTENTIONAL: verified installer is the correct fallback for failed updates
                 run_cmd "Claude Code (reinstall)" update_run_verified_installer claude latest
             else
                 log_item "fail" "Claude Code" "update failed and reinstall unavailable (missing security.sh)"
@@ -1211,6 +1212,7 @@ update_agents() {
     elif [[ "$FORCE_MODE" == "true" ]]; then
         capture_version_before "claude"
         if update_require_security; then
+            # INTENTIONAL: verified installer is the correct path for fresh installs
             run_cmd "Claude Code (install)" update_run_verified_installer claude latest
             if capture_version_after "claude"; then
                 [[ "$QUIET" != "true" ]] && printf "       ${DIM}%s → %s${NC}\n" "${VERSION_BEFORE[claude]}" "${VERSION_AFTER[claude]}"
@@ -1271,9 +1273,12 @@ update_agents() {
 }
 
 # Helper for Claude update with proper error handling
+# FIX(bd-gsjqf.2): Replaced bare "claude update --channel latest" (flag does not exist)
+# with update_run_verified_installer which uses the official install.sh script.
+# See: https://github.com/Dicklesworthstone/agentic_coding_flywheel_setup/issues/125
 run_cmd_claude_update() {
-    local desc="Claude Code (native update)"
-    local cmd_display="claude update --channel latest"
+    local desc="Claude Code (verified installer)"
+    local cmd_display="update_run_verified_installer claude latest"
 
     log_to_file "Running: $cmd_display"
 
@@ -1295,27 +1300,27 @@ run_cmd_claude_update() {
         fi
 
         if [[ "$QUIET" != "true" ]] && [[ -n "${UPDATE_LOG_FILE:-}" ]]; then
-            if claude update --channel latest 2>&1 | tee -a "$UPDATE_LOG_FILE"; then
+            if update_run_verified_installer claude latest 2>&1 | tee -a "$UPDATE_LOG_FILE"; then
                 exit_code=0
             else
                 exit_code=${PIPESTATUS[0]}
             fi
         elif [[ -n "${UPDATE_LOG_FILE:-}" ]]; then
-            if claude update --channel latest >> "$UPDATE_LOG_FILE" 2>&1; then
+            if update_run_verified_installer claude latest >> "$UPDATE_LOG_FILE" 2>&1; then
                 exit_code=0
             else
                 exit_code=$?
             fi
         else
             if [[ "$QUIET" != "true" ]]; then
-                claude update --channel latest || exit_code=$?
+                update_run_verified_installer claude latest || exit_code=$?
             else
-                claude update --channel latest >/dev/null 2>&1 || exit_code=$?
+                update_run_verified_installer claude latest >/dev/null 2>&1 || exit_code=$?
             fi
         fi
     else
         local output=""
-        output=$(claude update --channel latest 2>&1) || exit_code=$?
+        output=$(update_run_verified_installer claude latest 2>&1) || exit_code=$?
         [[ -n "$output" ]] && log_to_file "Output: $output"
     fi
 
@@ -2192,7 +2197,7 @@ WHAT EACH CATEGORY UPDATES:
   apt:      System packages via apt update && apt upgrade && apt autoremove
   shell:    Oh-My-Zsh, Powerlevel10k, zsh plugins (git pull)
             Atuin, Zoxide (reinstall from upstream)
-  agents:   Claude Code (claude update --channel latest)
+  agents:   Claude Code (verified installer: curl claude.ai/install.sh | bash -- latest)
             Codex CLI (bun install -g --trust @openai/codex@latest)
             Gemini CLI (bun install -g --trust @google/gemini-cli@latest)
   cloud:    Wrangler, Vercel (bun install -g --trust <pkg>@latest)
@@ -2228,7 +2233,7 @@ TROUBLESHOOTING:
       sudo systemctl start unattended-upgrades
 
   - If an agent update fails: try running the update command directly:
-    claude update --channel latest
+    curl -fsSL https://claude.ai/install.sh | bash -s -- latest
     bun install -g --trust @openai/codex@latest
     bun install -g --trust @google/gemini-cli@latest
 

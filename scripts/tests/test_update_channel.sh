@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# Test: Update Channel Fix (bd-1ddv)
-# Validates all update paths use --channel latest, not bare
-# "claude update" which silently uses the stable channel.
+# Test: Update Channel Fix (bd-gsjqf)
+# Validates all update paths use the verified installer
+# (update_run_verified_installer), not bare "claude update"
+# which has no --channel flag and forces stable channel.
 # ============================================================
 
 set -euo pipefail
@@ -22,46 +23,35 @@ section() { log ""; log "=== $1 ==="; }
 UPDATE_SH="$REPO_ROOT/scripts/lib/update.sh"
 ZSHRC="$REPO_ROOT/acfs/zsh/acfs.zshrc"
 
-log "Test: Update Channel Fix (bd-1ddv)"
+log "Test: Update Channel Fix (bd-gsjqf)"
 log "Log file: $LOG_FILE"
 log "Repo root: $REPO_ROOT"
 
 # ============================================================
-section "Test 1: No bare 'claude update' in run_cmd_claude_update()"
+section "Test 1: run_cmd_claude_update() uses update_run_verified_installer"
 # ============================================================
-# Extract the function body and check for bare invocations
 func_body=$(sed -n '/^run_cmd_claude_update()/,/^}/p' "$UPDATE_SH")
-if echo "$func_body" | grep -qP 'claude update(?!\s+--channel)' 2>/dev/null ||
-   echo "$func_body" | grep -q 'claude update"' 2>/dev/null; then
-    # Check if any grep matches are NOT --channel latest
-    bare_count=$(echo "$func_body" | grep -c 'claude update' || true)
-    channel_count=$(echo "$func_body" | grep -c 'claude update --channel latest' || true)
-    if [[ "$bare_count" -gt "$channel_count" ]]; then
-        fail "Found bare 'claude update' without --channel in run_cmd_claude_update()"
-    else
-        pass "No bare 'claude update' in run_cmd_claude_update()"
-    fi
+if echo "$func_body" | grep -q 'update_run_verified_installer claude latest'; then
+    installer_count=$(echo "$func_body" | grep -c 'update_run_verified_installer claude latest' || true)
+    pass "run_cmd_claude_update() uses update_run_verified_installer ($installer_count calls)"
 else
-    pass "No bare 'claude update' in run_cmd_claude_update()"
+    fail "run_cmd_claude_update() does not use update_run_verified_installer"
 fi
 
 # ============================================================
-section "Test 2: All claude update calls use --channel latest"
+section "Test 2: No bare 'claude update' execution in run_cmd_claude_update()"
 # ============================================================
-# Count total "claude update" and "claude update --channel latest" in function
-total=$(echo "$func_body" | grep -c 'claude update' || true)
-with_channel=$(echo "$func_body" | grep -c 'claude update --channel latest' || true)
-log "  Found $total total 'claude update' references, $with_channel with --channel latest"
-if [[ "$total" -eq "$with_channel" ]] && [[ "$total" -gt 0 ]]; then
-    pass "All $total claude update calls in function use --channel latest"
+# Check for any actual 'claude update' command invocations (not comments or strings)
+bare_exec=$(echo "$func_body" | grep -v '^\s*#' | grep -v 'cmd_display=' | grep 'claude update' || true)
+if [[ -z "$bare_exec" ]]; then
+    pass "No bare 'claude update' execution in run_cmd_claude_update()"
 else
-    fail "Mismatch: $total total vs $with_channel with --channel latest"
+    fail "Found bare 'claude update' execution in run_cmd_claude_update(): $bare_exec"
 fi
 
 # ============================================================
 section "Test 3: Dry-run code path exists"
 # ============================================================
-# Verify the function has a DRY_RUN check that returns early
 if echo "$func_body" | grep -q 'DRY_RUN.*true'; then
     if echo "$func_body" | grep -q 'return 0'; then
         pass "run_cmd_claude_update() has DRY_RUN early-return path"
@@ -73,27 +63,27 @@ else
 fi
 
 # ============================================================
-section "Test 4: cmd_display uses --channel latest"
+section "Test 4: cmd_display references verified installer"
 # ============================================================
-if grep -q 'cmd_display="claude update --channel latest"' "$UPDATE_SH"; then
-    pass "cmd_display variable uses --channel latest"
+if grep -q 'cmd_display="update_run_verified_installer claude latest"' "$UPDATE_SH"; then
+    pass "cmd_display variable references verified installer"
 else
-    fail "cmd_display does not use --channel latest"
+    fail "cmd_display does not reference verified installer"
 fi
 
 # ============================================================
-section "Test 5: uca alias uses --channel latest"
+section "Test 5: uca alias uses verified installer (not bare claude update)"
 # ============================================================
 if [[ -f "$ZSHRC" ]]; then
     uca_line=$(grep "alias uca=" "$ZSHRC" || true)
     if [[ -z "$uca_line" ]]; then
         fail "uca alias not found in acfs.zshrc"
-    elif echo "$uca_line" | grep -q 'claude update --channel latest'; then
-        pass "uca alias uses --channel latest"
     elif echo "$uca_line" | grep -q 'install.sh.*latest'; then
         pass "uca alias uses verified installer with latest channel"
+    elif echo "$uca_line" | grep -q 'update_run_verified_installer'; then
+        pass "uca alias uses update_run_verified_installer"
     else
-        fail "uca alias does not use --channel latest: $uca_line"
+        fail "uca alias does not use verified installer: $uca_line"
     fi
 else
     skip "acfs.zshrc not found"
@@ -117,19 +107,11 @@ else
 fi
 
 # ============================================================
-section "Test 7: Completeness sweep — shell files"
+section "Test 7: Completeness sweep — no bare claude update in shell files"
 # ============================================================
 # Find bare "claude update" in shell files (excluding comments, test files, beads)
 bare_hits=$(
-    grep -rn "claude update" "$REPO_ROOT" \
-        --include="*.sh" --include="*.zsh" --include="*.zshrc" --include="*.bashrc" \
-        --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.beads --exclude-dir=target \
-        2>/dev/null \
-    | grep -v "claude update --channel" \
-    | grep -v "^[[:space:]]*#" \
-    | grep -v "test_update_channel" \
-    | grep -v "PLAN_TO_CREATE" \
-    || true
+    rg -n "claude update" "$REPO_ROOT"         -g '*.sh' -g '*.zsh' -g '*.zshrc' -g '*.bashrc'         --glob '!.git' --glob '!node_modules' --glob '!.beads' --glob '!target'         2>/dev/null     | grep -v 'update_run_verified_installer'     | grep -v 'install.sh.*latest'     | grep -v '^\s*#'     | grep -v 'test_update_channel'     | grep -v 'PLAN_TO_CREATE'     | grep -v 'cmd_display='     | grep -v 'FIX(bd-gsjqf'     || true
 )
 if [[ -z "$bare_hits" ]]; then
     pass "No bare 'claude update' in any shell files"
@@ -143,10 +125,7 @@ fi
 section "Test 8: Documentation consistency"
 # ============================================================
 readme_bare=$(
-    grep -n "claude update" "$REPO_ROOT/README.md" 2>/dev/null \
-    | grep -v "claude update --channel" \
-    | grep -v "^[[:space:]]*#" \
-    || true
+    rg -n "claude update" "$REPO_ROOT/README.md" 2>/dev/null     | grep -v 'install.sh'     | grep -v 'update_run_verified_installer'     | grep -v '^\s*#'     || true
 )
 if [[ -z "$readme_bare" ]]; then
     pass "README.md has no bare 'claude update' references"
@@ -160,13 +139,7 @@ fi
 section "Test 9: Lesson/tutorial consistency"
 # ============================================================
 lesson_bare=$(
-    grep -rn "claude update" \
-        "$REPO_ROOT/acfs/onboard/" \
-        "$REPO_ROOT/apps/web/components/lessons/" \
-        2>/dev/null \
-    | grep -v "claude update --channel" \
-    | grep -v "^[[:space:]]*#" \
-    || true
+    rg -rn "claude update"         "$REPO_ROOT/acfs/onboard/"         "$REPO_ROOT/apps/web/components/lessons/"         2>/dev/null     | grep -v 'install.sh'     | grep -v 'update_run_verified_installer'     | grep -v '^\s*#'     || true
 )
 if [[ -z "$lesson_bare" ]]; then
     pass "Lessons/tutorials have no bare 'claude update' references"
