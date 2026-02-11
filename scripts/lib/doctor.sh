@@ -1118,19 +1118,26 @@ check_stack() {
         _ms_os="$(uname -s 2>/dev/null || echo unknown)"
         _ms_fix="Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/meta_skill/main/scripts/install.sh | bash"
 
-        # Pre-built binaries exist for: x86_64-linux, aarch64-darwin, x86_64-windows, aarch64-linux
-        # If a platform has no binary, suggest building from source instead
+        # Pre-built binaries exist for: x86_64-linux, aarch64-darwin, x86_64-darwin
+        # ARM64 Linux (aarch64-Linux) does NOT have a pre-built binary yet (GH#1)
         case "${_ms_arch}-${_ms_os}" in
-            x86_64-Linux|aarch64-Linux|arm64-Linux|x86_64-Darwin|arm64-Darwin|aarch64-Darwin)
-                # These platforms have pre-built binaries (or will once the next release ships)
+            aarch64-Linux|arm64-Linux)
+                # ARM64 Linux binary is not yet published; the install script will 404
+                check "stack.meta_skill" "meta_skill (ms)" "warn" \
+                    "ARM64 Linux binary not yet available (see meta_skill GH#1)" \
+                    "Build from source: cargo install --git https://github.com/Dicklesworthstone/meta_skill"
+                ;;
+            x86_64-Linux|x86_64-Darwin|arm64-Darwin|aarch64-Darwin)
+                # These platforms have pre-built binaries
+                check "stack.meta_skill" "meta_skill (ms)" "warn" "not installed" \
+                    "$_ms_fix"
                 ;;
             *)
                 _ms_fix="meta_skill has no pre-built binary for ${_ms_arch}-${_ms_os}. Build from source: cargo install --git https://github.com/Dicklesworthstone/meta_skill"
+                check "stack.meta_skill" "meta_skill (ms)" "warn" "not installed" \
+                    "$_ms_fix"
                 ;;
         esac
-
-        check "stack.meta_skill" "meta_skill (ms)" "warn" "not installed" \
-            "$_ms_fix"
     fi
 
     # Check rch (Remote Compilation Helper)
