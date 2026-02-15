@@ -244,28 +244,29 @@ mark_state_complete() {
 # see what happened and re-run at their convenience.
 update_motd_upgrade_complete() {
     local motd_file="/etc/update-motd.d/00-acfs-upgrade"
+    local repo_owner="${ACFS_REPO_OWNER:-Sklpcc}"
+    local repo_name="${ACFS_REPO_NAME:-agentic_coding_flywheel_setup}"
+    local install_cmd="curl -fsSL https://raw.githubusercontent.com/${repo_owner}/${repo_name}/main/install.sh | bash -s -- --yes --mode vibe"
 
-    cat > "$motd_file" << 'MOTD_SCRIPT'
+    cat > "$motd_file" << MOTD_SCRIPT
 #!/bin/bash
-G='\033[0;32m'    # Green
-B='\033[1m'       # Bold
-D='\033[2m'       # Dim
-N='\033[0m'       # Reset
+G='\\033[0;32m'    # Green
+B='\\033[1m'       # Bold
+D='\\033[2m'       # Dim
+N='\\033[0m'       # Reset
 
 echo ""
-echo -e "${G}╔══════════════════════════════════════════════════════════════╗${N}"
-echo -e "${G}║${N}        ${G}${B}*** UBUNTU UPGRADE COMPLETED SUCCESSFULLY ***${N}       ${G}║${N}"
-echo -e "${G}╠══════════════════════════════════════════════════════════════╣${N}"
-echo -e "${G}║${N}                                                              ${G}║${N}"
-echo -e "${G}║${N}  ${B}Re-run the ACFS installer to continue setup:${N}               ${G}║${N}"
-echo -e "${G}║${N}                                                              ${G}║${N}"
-echo -e "${G}║${N}    curl -fsSL https://raw.githubusercontent.com/             ${G}║${N}"
-echo -e "${G}║${N}      Dicklesworthstone/agentic_coding_flywheel_setup/        ${G}║${N}"
-echo -e "${G}║${N}      main/install.sh | bash -s -- --yes --mode vibe          ${G}║${N}"
-echo -e "${G}║${N}                                                              ${G}║${N}"
-echo -e "${G}║${N}  ${D}This message will disappear after you re-run the installer${N} ${G}║${N}"
-echo -e "${G}║${N}                                                              ${G}║${N}"
-echo -e "${G}╚══════════════════════════════════════════════════════════════╝${N}"
+echo -e "\${G}╔══════════════════════════════════════════════════════════════╗\${N}"
+echo -e "\${G}║\${N}        \${G}\${B}*** UBUNTU UPGRADE COMPLETED SUCCESSFULLY ***\${N}       \${G}║\${N}"
+echo -e "\${G}╠══════════════════════════════════════════════════════════════╣\${N}"
+echo -e "\${G}║\${N}                                                              \${G}║\${N}"
+echo -e "\${G}║\${N}  \${B}Re-run the ACFS installer to continue setup:\${N}               \${G}║\${N}"
+echo -e "\${G}║\${N}                                                              \${G}║\${N}"
+echo -e "\${G}║\${N}  ${install_cmd}"
+echo -e "\${G}║\${N}                                                              \${G}║\${N}"
+echo -e "\${G}║\${N}  \${D}This message will disappear after you re-run the installer\${N} \${G}║\${N}"
+echo -e "\${G}║\${N}                                                              \${G}║\${N}"
+echo -e "\${G}╚══════════════════════════════════════════════════════════════╝\${N}"
 echo ""
 MOTD_SCRIPT
 
