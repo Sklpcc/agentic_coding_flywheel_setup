@@ -1102,6 +1102,10 @@ set -euo pipefail
 # Ensure HOME is set (required when running via systemd)
 export HOME="\${HOME:-/root}"
 
+# Preserve the original TARGET_USER so the installer doesn't fall back to
+# root when this script is executed by systemd as root.
+export TARGET_USER="\${TARGET_USER:-${TARGET_USER:-ubuntu}}"
+
 echo "Ubuntu upgrade complete. Resuming ACFS installation..."
 
 # Prefer local source dir (only if it still exists), else fetch from GitHub.

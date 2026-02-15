@@ -130,9 +130,10 @@ TARGET_UBUNTU_VERSION="25.10"
 
 # Target user configuration
 # Default: detect the current user (or SUDO_USER if running under sudo).
+# If the detected user is root, fall back to "ubuntu" (the typical VM user).
 # Override with env var: TARGET_USER=myuser
-# Note: Previously defaulted to "ubuntu" which broke non-ubuntu VPS installs.
 _ACFS_DETECTED_USER="${SUDO_USER:-$(whoami)}"
+[[ "$_ACFS_DETECTED_USER" == "root" ]] && _ACFS_DETECTED_USER="ubuntu"
 TARGET_USER="${TARGET_USER:-$_ACFS_DETECTED_USER}"
 unset _ACFS_DETECTED_USER
 # Leave TARGET_HOME unset by default; init_target_paths will derive it from:

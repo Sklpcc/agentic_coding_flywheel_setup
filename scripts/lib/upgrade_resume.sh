@@ -276,6 +276,7 @@ launch_continue_script() {
                 --property=Type=oneshot \
                 --property=TimeoutStartSec=7200 \
                 --setenv=HOME=/root \
+                --setenv=TARGET_USER="${TARGET_USER:-ubuntu}" \
                 /bin/bash "$script" 2>&1 | tee -a "$ACFS_LOG"
             exit "${PIPESTATUS[0]:-1}"
         ); then
