@@ -1053,86 +1053,6 @@ upgrade_setup_infrastructure() {
         cp "$state_file" "$dest_state_file"
     fi
 
-    # For normal upgrades, the continuation script should skip Ubuntu upgrade (we just finished it).
-    # For the pre-upgrade reboot stage (kernel updates pending), we must continue WITH the Ubuntu upgrade.
-    local append_skip_upgrade="true"
-    if [[ -f "$dest_state_file" ]]; then
-        local stage=""
-        if command -v jq &>/dev/null; then
-            stage="$(jq -r '.ubuntu_upgrade.current_stage // empty' "$dest_state_file" 2>/dev/null || true)"
-        else
-            # Fallback: best-effort parse (the state file is written by jq and is pretty-printed).
-            stage="$(sed -n 's/.*"current_stage"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$dest_state_file" 2>/dev/null | head -n 1)"
-        fi
-
-        if [[ "$stage" == "pre_upgrade_reboot" ]]; then
-            append_skip_upgrade="false"
-        fi
-    fi
-
-    # Create continue_install.sh script
-    # This runs after all upgrades complete to resume ACFS installation
-    log_detail "Creating continuation script..."
-    local repo_owner repo_name repo_ref
-    repo_owner="${ACFS_REPO_OWNER:-Dicklesworthstone}"
-    repo_name="${ACFS_REPO_NAME:-agentic_coding_flywheel_setup}"
-    repo_ref="${ACFS_COMMIT_SHA_FULL:-${ACFS_REF:-main}}"
-    local source_dir_q repo_ref_q install_url install_url_q
-    source_dir_q=$(printf '%q' "$source_dir")
-    repo_ref_q=$(printf '%q' "$repo_ref")
-    install_url="https://raw.githubusercontent.com/${repo_owner}/${repo_name}/${repo_ref}/install.sh"
-    install_url_q=$(printf '%q' "$install_url")
-
-    local -a continue_args=("${install_args[@]}")
-    if [[ "$append_skip_upgrade" == "true" ]]; then
-        continue_args+=("--skip-ubuntu-upgrade")
-    fi
-    local rendered_args=""
-    local arg=""
-    for arg in "${continue_args[@]}"; do
-        rendered_args+=" $(printf '%q' "$arg")"
-    done
-    rendered_args="${rendered_args# }"
-
-    cat > "${ACFS_RESUME_DIR}/continue_install.sh" << CONTINUE_SCRIPT
-#!/usr/bin/env bash
-# Auto-generated script to continue ACFS installation after Ubuntu upgrades
-set -euo pipefail
-
-# Ensure HOME is set (required when running via systemd)
-export HOME="\${HOME:-/root}"
-
-# Preserve the original TARGET_USER so the installer doesn't fall back to
-# root when this script is executed by systemd as root.
-export TARGET_USER="\${TARGET_USER:-${TARGET_USER:-ubuntu}}"
-
-echo "Ubuntu upgrade complete. Resuming ACFS installation..."
-
-# Prefer local source dir (only if it still exists), else fetch from GitHub.
-SOURCE_DIR=${source_dir_q}
-export ACFS_REF=${repo_ref_q}
-INSTALL_URL=${install_url_q}
-
-INSTALL_ARGS=(${rendered_args})
-
-if [[ -f "\${SOURCE_DIR}/install.sh" ]]; then
-    echo "Using local installer: \${SOURCE_DIR}/install.sh"
-    (cd "\${SOURCE_DIR}" && bash ./install.sh "\${INSTALL_ARGS[@]}")
-else
-    echo "Fetching installer: \${INSTALL_URL}"
-
-    CURL_ARGS=(-fsSL)
-    if curl --help all 2>/dev/null | grep -q -- '--proto'; then
-        CURL_ARGS=(--proto '=https' --proto-redir '=https' -fsSL)
-    fi
-
-    curl "\${CURL_ARGS[@]}" "\${INSTALL_URL}" | bash -s -- "\${INSTALL_ARGS[@]}"
-fi
-
-echo "ACFS installation complete!"
-CONTINUE_SCRIPT
-    chmod +x "${ACFS_RESUME_DIR}/continue_install.sh"
-
     # Install systemd service
     log_detail "Installing systemd service..."
     if [[ -f "$service_template" ]]; then
@@ -1192,12 +1112,10 @@ upgrade_teardown_infrastructure() {
 
     local lib_dir="${ACFS_RESUME_DIR}/lib"
     local resume_script="${ACFS_RESUME_DIR}/upgrade_resume.sh"
-    local continue_script="${ACFS_RESUME_DIR}/continue_install.sh"
     local state_file="${ACFS_RESUME_DIR}/state.json"
 
     rm -rf -- "$lib_dir"
     rm -f -- "$resume_script"
-    rm -f -- "$continue_script"
     rm -f -- "$state_file"
 
     # Keep the directory for logs reference

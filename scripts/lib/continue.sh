@@ -54,8 +54,6 @@ is_upgrade_service_running() {
 # Check if the installer process is running
 is_installer_running() {
     # Check for ACFS installer specifically (not just any install.sh)
-    # Look for bash running the continue_install.sh or install.sh with ACFS args
-    pgrep -f "bash.*/var/lib/acfs/continue_install.sh" &>/dev/null || \
     pgrep -f "bash.*install.sh.*--mode" &>/dev/null || \
     pgrep -f "bash.*install.sh.*--yes" &>/dev/null
 }

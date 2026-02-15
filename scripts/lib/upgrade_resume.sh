@@ -13,7 +13,7 @@
 # 1. FIRST: Check if already at target version (prevent loops)
 # 2. Source libraries from /var/lib/acfs/lib/
 # 3. Check if more upgrades needed
-# 4. If complete: cleanup, disable service, launch continue_install.sh
+# 4. If complete: cleanup, disable service, show MOTD with re-run instructions
 # 5. If not complete: run next upgrade and trigger reboot
 # 6. On failure: update MOTD with error, disable service, exit (NO reboot)
 #
@@ -212,10 +212,6 @@ MOTD_FOOTER
     chmod +x "$motd_file"
 }
 
-# Remove MOTD
-remove_motd() {
-    rm -f /etc/update-motd.d/00-acfs-upgrade 2>/dev/null || true
-}
 
 # Update state to mark upgrade as complete
 mark_state_complete() {
@@ -242,58 +238,38 @@ mark_state_complete() {
     fi
 }
 
-# Launch continue script using systemd-run for reliability
-# nohup+background is unreliable when parent service exits
-launch_continue_script() {
-    local script="${ACFS_RESUME_DIR}/continue_install.sh"
+# Show MOTD telling the user to re-run the installer manually.
+# Running the full installer automatically as root after reboot is opaque
+# (no SSH key, no user context, hard to debug). Instead, let the user
+# see what happened and re-run at their convenience.
+update_motd_upgrade_complete() {
+    local motd_file="/etc/update-motd.d/00-acfs-upgrade"
 
-    if [[ ! -f "$script" ]]; then
-        log "No continue_install.sh found - manual installation needed"
-        local curl_cmd="curl -fsSL"
-        if command -v curl &>/dev/null && curl --help all 2>/dev/null | grep -q -- '--proto'; then
-            curl_cmd="curl --proto '=https' --proto-redir '=https' -fsSL"
-        fi
-        log "Run: ${curl_cmd} https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/install.sh | bash -s -- --yes --mode vibe"
-        return 1
-    fi
+    cat > "$motd_file" << 'MOTD_SCRIPT'
+#!/bin/bash
+G='\033[0;32m'    # Green
+B='\033[1m'       # Bold
+D='\033[2m'       # Dim
+N='\033[0m'       # Reset
 
-    log "Launching continue_install.sh to resume ACFS installation"
+echo ""
+echo -e "${G}╔══════════════════════════════════════════════════════════════╗${N}"
+echo -e "${G}║${N}        ${G}${B}*** UBUNTU UPGRADE COMPLETED SUCCESSFULLY ***${N}       ${G}║${N}"
+echo -e "${G}╠══════════════════════════════════════════════════════════════╣${N}"
+echo -e "${G}║${N}                                                              ${G}║${N}"
+echo -e "${G}║${N}  ${B}Re-run the ACFS installer to continue setup:${N}               ${G}║${N}"
+echo -e "${G}║${N}                                                              ${G}║${N}"
+echo -e "${G}║${N}    curl -fsSL https://raw.githubusercontent.com/             ${G}║${N}"
+echo -e "${G}║${N}      Dicklesworthstone/agentic_coding_flywheel_setup/        ${G}║${N}"
+echo -e "${G}║${N}      main/install.sh | bash -s -- --yes --mode vibe          ${G}║${N}"
+echo -e "${G}║${N}                                                              ${G}║${N}"
+echo -e "${G}║${N}  ${D}This message will disappear after you re-run the installer${N} ${G}║${N}"
+echo -e "${G}║${N}                                                              ${G}║${N}"
+echo -e "${G}╚══════════════════════════════════════════════════════════════╝${N}"
+echo ""
+MOTD_SCRIPT
 
-    # Use systemd-run to spawn a proper transient service that survives this script's exit
-    # --collect: auto-cleanup unit after it finishes (avoids "unit already exists" errors)
-    # --no-block: don't wait for service to complete (we want to exit immediately)
-    # --setenv: ensure HOME is set (required by preflight checks and installer)
-    # Service output goes to journal (check with: journalctl -u acfs-continue-install)
-    if command -v systemd-run &>/dev/null; then
-        # Remove any stale unit from previous failed attempts
-        systemctl reset-failed acfs-continue-install 2>/dev/null || true
-
-        if (
-            set -o pipefail
-            systemd-run --collect --no-block \
-                --unit=acfs-continue-install \
-                --description="ACFS Installation Continuation" \
-                --property=Type=oneshot \
-                --property=TimeoutStartSec=7200 \
-                --setenv=HOME=/root \
-                --setenv=TARGET_USER="${TARGET_USER:-ubuntu}" \
-                /bin/bash "$script" 2>&1 | tee -a "$ACFS_LOG"
-            exit "${PIPESTATUS[0]:-1}"
-        ); then
-            log "ACFS continuation launched via systemd-run"
-            log "Monitor with: journalctl -u acfs-continue-install -f"
-        else
-            log "systemd-run failed, falling back to nohup"
-            nohup bash "$script" >> "$ACFS_LOG" 2>&1 &
-            log "ACFS continuation launched via nohup (PID: $!)"
-        fi
-    else
-        # Fallback to nohup if systemd-run unavailable (shouldn't happen on Ubuntu)
-        nohup bash "$script" >> "$ACFS_LOG" 2>&1 &
-        log "ACFS continuation launched via nohup (PID: $!)"
-    fi
-
-    return 0
+    chmod +x "$motd_file"
 }
 
 # ============================================================
@@ -334,13 +310,10 @@ if ubuntu_is_at_or_beyond_target_version "$CURRENT_UBUNTU_VERSION"; then
     export ACFS_STATE_FILE="${ACFS_RESUME_DIR}/state.json"
     mark_state_complete
 
-    # Remove MOTD
-    remove_motd
+    # Show MOTD so the user knows to re-run the installer
+    update_motd_upgrade_complete
 
-    # Launch continue script BEFORE removing files (it may need them)
-    launch_continue_script || log "Note: Manual installation may be needed"
-
-    # Clean up resume files (after launching continue script)
+    # Clean up resume files
     cleanup_resume_files || true
 
     log "=== Upgrade Resume Complete (target reached) ==="
@@ -400,14 +373,9 @@ fi
 log "Current stage from state file: $current_stage"
 
 # Pre-upgrade reboot: system rebooted to apply pending updates before the first do-release-upgrade.
-# At this point, we should disable the resume service and re-run install.sh (continue_install.sh)
-# which will proceed with the Ubuntu upgrade normally.
+# Just log and fall through to the upgrade logic below.
 if [[ "$current_stage" == "pre_upgrade_reboot" ]]; then
-    log "Detected pre-upgrade reboot marker. Continuing ACFS installer after reboot..."
-    cleanup_service
-    launch_continue_script || log "Note: Manual installation may be needed"
-    log "=== Upgrade Resume Complete (pre-upgrade reboot) ==="
-    exit 0
+    log "Pre-upgrade reboot complete. Pending updates cleared, proceeding with upgrade..."
 fi
 
 # Ensure non-LTS upgrades are permitted
@@ -426,13 +394,12 @@ if state_upgrade_is_complete; then
 
     state_upgrade_mark_complete
     ubuntu_restore_lts_only || true
-    remove_motd
     cleanup_service
 
-    # Launch continue script BEFORE cleaning up files (it may need them)
-    launch_continue_script || log "Note: Manual installation may be needed"
+    # Show MOTD so the user knows to re-run the installer
+    update_motd_upgrade_complete
 
-    # Clean up resume files (after launching continue script)
+    # Clean up resume files
     cleanup_resume_files || true
 
     log "=== Upgrade Resume Complete ==="
@@ -452,8 +419,7 @@ if [[ -z "$next_version" ]]; then
     if ubuntu_is_at_or_beyond_target_version "$CURRENT_UBUNTU_VERSION"; then
         log "Actually at or beyond target version - cleaning up anyway"
         cleanup_service
-        remove_motd
-        launch_continue_script || true
+        update_motd_upgrade_complete
         exit 0
     fi
 

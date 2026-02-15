@@ -3021,9 +3021,9 @@ run_ubuntu_upgrade_phase() {
                     return 1
                 fi
 
-                # upgrade_setup_infrastructure generates the correct continue_install.sh for both:
-                # - pre-upgrade reboot (continue WITH upgrade)
-                # - post-upgrade continuation (skip upgrade)
+                # upgrade_setup_infrastructure sets up the systemd service that
+                # handles upgrade steps and reboots automatically. Once all
+                # upgrades are done, an MOTD tells the user to re-run the installer.
             else
                 log_warn "Resume infrastructure not available. After reboot, re-run installer manually."
             fi
@@ -4850,6 +4850,9 @@ finalize() {
 EOF
         $SUDO chown "$TARGET_USER:$TARGET_USER" "$ACFS_STATE_FILE"
     fi
+
+    # Remove upgrade-complete MOTD if present (the user has re-run the installer)
+    rm -f /etc/update-motd.d/00-acfs-upgrade 2>/dev/null || true
 
     log_success "Installation complete!"
 }
